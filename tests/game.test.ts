@@ -303,3 +303,20 @@ describe('paid staff', () => {
     expect(st.unpaid).toBe(false);
   });
 });
+
+describe('manager runs the crew', () => {
+  it('re-hires the keeper and sells spare crops for wages', async () => {
+    const st = await import('../src/game/staff');
+    S.level = 10; S.coins = 100000;
+    st.hireStaff('manager', 8, t);
+    st.hireStaff('keeper', 1, t);
+    const end = S.staff.keeper;
+    st.staffWork(end - 60_000, true);
+    expect(S.staff.keeper).toBe(end + 3600_000);
+    S.coins = 0; S.farmhands = 3; S.inv.wheat = 500;
+    st.payWages(3600);
+    expect(st.unpaid).toBe(false);
+    expect(inv('wheat')).toBeLessThan(500);
+    expect(inv('wheat')).toBeGreaterThanOrEqual(10);
+  });
+});

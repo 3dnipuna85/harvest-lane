@@ -1,8 +1,8 @@
-import { CROPS } from '../data/crops';
+import { CROPS, CROP_IDS } from '../data/crops';
 import { ANIMAL_IDS } from '../data/animals';
 import { animalUnlocked, collectAnimal, feedAnimal } from './animals';
 import { clock, now } from './clock';
-import { harvest, plant, ripe } from './economy';
+import { harvest, inv, plant, ripe, sell } from './economy';
 import { emit, muteEvents } from './events';
 import { S } from './state';
 import { canFillTruck, deliverTruck } from './trucks';
@@ -16,7 +16,7 @@ export type StaffId = 'manager' | 'keeper';
 export interface StaffDef { name: string; lvl: number; perHour: (level: number) => number; job: string }
 
 export const STAFF: Record<StaffId, StaffDef> = {
-  manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops and loads trucks, even while you’re away.' },
+  manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops, loads trucks so you never lose a buyer, keeps your animal keeper re-hired, and sells spare crops to pay your helpers’ wages. Works while you’re away too.' },
   keeper: { name: 'Animal keeper', lvl: 4, perHour: l => 30 + 9 * l, job: 'Feeds your animals and collects eggs, milk, truffles and wool, even while you’re away.' },
 };
 export const STAFF_IDS = Object.keys(STAFF) as StaffId[];
@@ -52,16 +52,24 @@ export function hireStaff(k: StaffId, h: number, t = now()): HireResult {
 
 /** One round of staff work at time t. `patient` gives the player first go at ripe crops and trucks. */
 export function staffWork(t = now(), patient = true) {
-  const done = { crops: 0, products: 0, trucks: 0, seeds: 0 };
+  const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0 };
   if (onDuty('manager', t)) {
     S.plots.forEach((p, i) => {
-      if (p.crop && ripe(p) && (!patient || t - (p.at + CROPS[p.crop].time * 1000) >= MANAGER_DELAY_MS)) {
+      // Crops a waiting truck needs are picked at once, so the truck can be loaded before it leaves.
+      const urgent = !!S.truck?.items[p.crop!];
+      if (p.crop && ripe(p) && (!patient || urgent || t - (p.at + CROPS[p.crop].time * 1000) >= MANAGER_DELAY_MS)) {
         const crop = p.crop;
         done.crops += harvest(i);
         if (plant(i, crop)) done.seeds += CROPS[crop].seed;
       }
     });
     if (canFillTruck() && (!patient || t - S.truck!.arrive >= TRUCK_DELAY_MS) && deliverTruck(t)) done.trucks++;
+    // He keeps the animal keeper on: a keeper you hired is re-hired for another hour just before the contract runs out.
+    const kl = timeLeft('keeper', t);
+    if (S.staff.keeper && kl > 0 && kl < 5 * 60_000 && S.level >= STAFF.keeper.lvl && S.coins >= termCost('keeper', 1)) {
+      hireStaff('keeper', 1, t);
+      done.renewed++;
+    }
   }
   if (onDuty('keeper', t)) {
     for (const k of ANIMAL_IDS) {
@@ -119,6 +127,14 @@ export function payWages(dt: number) {
   owed += (crew * wagePerHour() * dt) / 3600;
   if (owed < 1) return;
   const due = Math.floor(owed);
+  // Short of coins, the manager sells spare crops from the barn (cheapest first, keeping 10 of each) to pay the crew.
+  if (S.coins < due && onDuty('manager')) {
+    for (const c of CROP_IDS.slice().sort((a, b) => CROPS[a].sell - CROPS[b].sell)) {
+      if (S.coins >= due) break;
+      const spare = inv(c) - 10;
+      if (spare > 0) sell(c, Math.min(spare, Math.ceil((due - S.coins) / CROPS[c].sell)));
+    }
+  }
   if (S.coins >= due) {
     S.coins -= due; owed -= due;
     if (unpaid) { unpaid = false; emit('wagesPaid', {}); }
