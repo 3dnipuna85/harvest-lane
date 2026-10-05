@@ -74,18 +74,22 @@ export function poseChar(c: Char, t: number) {
 }
 
 /**
- * The main character plays real frame animations: an 8-frame walk cycle (two steps per cycle),
+ * The main character plays real frame animations: an 8-frame walk cycle in four directions,
  * digging and planting a seedling when planting, and pulling up a crop when harvesting.
  */
 function poseFarmer(c: Char, t: number) {
   const v = c.v;
   const at = (p: number) => Math.min(FARMER_FRAMES - 1, Math.floor(p * FARMER_FRAMES));
   if (c.state === 'walk') {
-    const d = screenDir(c.tx - c.x, c.tz - c.z);
+    // Four painted walk directions. Moves along the world x axis (along the plot rows) show the side
+    // view; moves along z show the front (coming toward the camera) or the back (walking away).
+    const dx = c.tx - c.x, dz = c.tz - c.z;
+    const dir = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'right' : 'left') : (dz > 0 ? 'down' : 'up');
+    const d = screenDir(dx, dz);
     if (Math.abs(d.x) > 0.05) c.flip = d.x < 0;
     const cyc = c.phase / (Math.PI * 2);
     const f = Math.floor((cyc - Math.floor(cyc)) * FARMER_FRAMES);
-    setFrame(v, `farmer-walk-${f}`, c.flip, 1, 1, Math.abs(Math.sin(c.phase)) * 0.03);
+    setFrame(v, `farmer-${dir}-${f}`, false, 1, 1, Math.abs(Math.sin(c.phase)) * 0.02);
     return;
   }
   if (c.state === 'work') {
