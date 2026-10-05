@@ -41,6 +41,9 @@ export function initFriends(f: Fb, openSignIn: () => void) {
   if (pendingInvite()) setTimeout(() => { if (!me) toast('Sign in to accept your friend’s invite.'); }, 2500);
 }
 
+/** Who is signed in, before their farm has finished loading. */
+export function friendsMe(u: { uid: string; name: string; photo: string; email?: string }) { me = u; }
+
 /** Signed in (or out). Accepts a waiting invite, and publishes this player's card so friends can see the farm. */
 export async function friendsUser(u: { uid: string; name: string; photo: string; email?: string } | null) {
   me = u;

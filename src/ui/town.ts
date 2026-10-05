@@ -10,6 +10,7 @@ import {
 } from '../game/town';
 import { enterTown, inTown, leaveTown } from '../scene/mode';
 import type { Place } from '../scene/town/town';
+import { SERVICES, type ServiceId } from '../scene/town/services';
 import { iconHTML, uiImg } from './art';
 import { markDirty } from './dirty';
 import { $, coinHTML, fmt } from './format';
@@ -43,6 +44,12 @@ function travel(toTown: boolean, then?: Place) {
 
 export const goTown = (then?: Place) => travel(true, then);
 export const goFarm = () => travel(false);
+
+/** Tapping one of the town's other services: say what it will do. */
+export function serviceInfo(k: string) {
+  const v = SERVICES[k as ServiceId];
+  if (v) toast(`${v.name}: ${v.soon}`);
+}
 
 /** Tapping a building in town. */
 export function visitPlace(p: Place) { openPlace(p); }

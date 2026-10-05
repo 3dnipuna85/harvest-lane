@@ -5,7 +5,7 @@
 import { connectRemote, disconnectRemote } from '../cloud';
 import { toast } from '../ui/toasts';
 import { S } from '../game/state';
-import { catchInvite, friendsUser, initFriends } from './friends';
+import { catchInvite, friendsMe, friendsUser, initFriends } from './friends';
 
 type Fb = typeof import('./firebase');
 let fb: Fb | null = null;
@@ -163,8 +163,10 @@ export async function initOnline() {
     if (u) {
       who = { uid: u.uid, name: u.displayName || u.email || 'Farmer', email: u.email || '', photo: u.photoURL || '' };
       setGuest(false); hide(); updateAccount();
-      await connectRemote(fb!.farmStore(u.uid, { name: who.name, photo: who.photo }));
-      friendsUser(who);
+      // Friends know who is signed in straight away; the public card waits until the cloud farm has loaded.
+      friendsMe(who);
+      const me = who;
+      try { await connectRemote(fb!.farmStore(u.uid, { name: me.name, photo: me.photo })); } finally { friendsUser(me); }
     } else {
       who = null; disconnectRemote(); updateAccount(); friendsUser(null);
       if (!guest()) welcome();

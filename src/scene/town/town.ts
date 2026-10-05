@@ -11,6 +11,7 @@ import { lbl } from '../fx/labels';
 import { buildChicken, buildCow, buildPig, buildSheep } from '../actors/animals';
 import { buildPerson, type PersonView } from '../actors/person';
 import { bush, tree } from '../world/props';
+import { SERVICES, SERVICE_IDS, STALLS, buildServices, serviceDoor } from './services';
 
 /**
  * Market Town: a second little map, drawn in its own THREE.Scene with its own camera. The farm keeps running
@@ -31,7 +32,7 @@ const fwd = (p: { x: number; z: number }, d: number) => ({ x: p.x + d * Math.SQR
 /** Where shoppers stand, in front of each door. */
 export const DOOR: Record<Place, { x: number; z: number }> = { market: fwd(SPOT.market, 2.2), store: fwd(SPOT.store, 2.2), shop: fwd(SPOT.shop, 2.4) };
 const PLAZA = { x: 0.6, z: 0.6, r: 4.4 };
-const TW = 44;
+const TW = 60;
 
 export const town = {
   scene: null as unknown as THREE.Scene,
@@ -76,6 +77,11 @@ function groundTexture() {
   const road: [number, number][] = [[-2.5, TW / 2], [-1.2, 8], [PLAZA.x - 0.6, PLAZA.z + 2]];
   bed(road, 2.0);
   for (const p of Object.values(DOOR)) bed([[p.x, p.z], [PLAZA.x, PLAZA.z]], 1.4);
+  // side streets out to the services, and a market lane past the stalls
+  bed([[PLAZA.x - 3, PLAZA.z + 3], [-6, 8], [-3.4, 13.4]], 1.8);
+  bed([[PLAZA.x + 3, PLAZA.z - 3], [10.8, -6.4], [13.4, -0.4]], 1.8);
+  bed([[2.4, 9.6], [7, 5], [14, -2]], 2.4);
+  for (const id of SERVICE_IDS) { const d = serviceDoor(SERVICES[id]); bed([[d.x, d.z], [PLAZA.x + (d.x - PLAZA.x) * 0.3, PLAZA.z + (d.z - PLAZA.z) * 0.3]], 1.3); }
   // the square
   for (const [col, r] of [['#b48c55', PLAZA.r + 0.2], ['#dcc28e', PLAZA.r]] as [string, number][]) {
     const [a, b] = P(PLAZA.x, PLAZA.z);
@@ -228,20 +234,27 @@ function paddock(g: THREE.Object3D) {
 
 interface Walker { v: PersonView; x: number; z: number; tx: number; tz: number; wait: number; ph: number; face: number }
 let folk: Walker[] = [];
-const OUTFITS = [
-  { shirt: '#f06aa8', pants: '#5a4a8a', hat: '#fff4e0', band: '#f06aa8', hair: '#3b2416' },
-  { shirt: '#4aa3e8', pants: '#6d5844', hat: '#e7bd6c', band: '#4aa3e8', hair: '#e0b060' },
-  { shirt: '#ff9a3c', pants: '#34466e', hat: '#ffffff', band: '#ff9a3c', hair: '#1f1a17' },
-  { shirt: '#9b6be8', pants: '#8a5a36', hat: '#ffcf3a', band: '#9b6be8', hair: '#c27a3a' },
-  { shirt: '#3cc08f', pants: '#4a4a4a', hat: '#e9b864', band: '#3cc08f', hair: '#6b3d22' },
-];
+const SHIRTS = ['#f06aa8', '#4aa3e8', '#ff9a3c', '#9b6be8', '#3cc08f', '#e2463a', '#ffcf3a', '#8fd6c8'];
+const PANTS = ['#5a4a8a', '#6d5844', '#34466e', '#8a5a36', '#4a4a4a', '#2f6fd6'];
+const HATS = ['#fff4e0', '#e7bd6c', '#ffffff', '#ffcf3a', '#e9b864', '#f06aa8', '#3d6fb6'];
+const HAIR = ['#3b2416', '#e0b060', '#1f1a17', '#c27a3a', '#6b3d22', '#9a9a9a'];
+/** Sixteen townsfolk; every fourth one is a child. */
+const OUTFITS = Array.from({ length: 16 }, (_, i) => ({
+  shirt: SHIRTS[i % SHIRTS.length], pants: PANTS[(i * 3) % PANTS.length], hat: HATS[(i * 5) % HATS.length],
+  band: SHIRTS[(i + 3) % SHIRTS.length], hair: HAIR[(i * 7) % HAIR.length], kid: i % 4 === 3,
+}));
+let vendors: PersonView[] = [];
+let flags: THREE.Mesh[] = [];
 let keeper: PersonView;
 
 function pickSpot(w: Walker) {
   const r = Math.random();
   // with the shop open, a good share of townsfolk drop by to buy something
   const shopOpen = S.town.shop && onDuty('shopkeeper');
-  const p = shopOpen && r < 0.35 ? DOOR.shop : r < 0.5 ? DOOR.market : r < 0.65 ? DOOR.store : null;
+  const svc = SERVICES[SERVICE_IDS[Math.floor(Math.random() * SERVICE_IDS.length)]];
+  const st = STALLS[Math.floor(Math.random() * STALLS.length)];
+  const p = shopOpen && r < 0.25 ? DOOR.shop : r < 0.35 ? DOOR.market : r < 0.42 ? DOOR.store
+    : r < 0.65 ? serviceDoor(svc, 2.6) : r < 0.78 ? { x: st.x + 0.9, z: st.z + 0.9 } : null;
   if (p) { w.tx = p.x + (Math.random() - 0.5) * 1.2; w.tz = p.z + (Math.random() - 0.5) * 0.6; return; }
   const a = Math.random() * Math.PI * 2, d = 1.8 + Math.random() * (PLAZA.r - 2.2);
   w.tx = PLAZA.x + Math.cos(a) * d; w.tz = PLAZA.z + Math.sin(a) * d;
@@ -257,8 +270,10 @@ function lights(scene: THREE.Scene) {
   const sun = new THREE.DirectionalLight('#fff1d6', 0.72);
   sun.position.set(-9, 20, 14);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 1, far: 60 });
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.target.position.set(2, 0, 0); scene.add(sun.target);
+  sun.position.set(-7, 20, 14);
+  Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 70 });
   sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
   scene.add(sun);
 }
@@ -284,12 +299,16 @@ export function buildTown() {
   shopRoot = roots.shop!;
   fountain(g);
   paddock(g);
-  for (const [x, z] of [[PLAZA.x + 3.4, PLAZA.z - 2.6], [PLAZA.x - 2.6, PLAZA.z + 3.4], [PLAZA.x + 3.9, PLAZA.z + 2.2], [PLAZA.x - 3.6, PLAZA.z - 2.0]]) lamp(g, x, z);
+  flags = buildServices(g, town.pickables);
+  for (const [x, z] of [[PLAZA.x + 3.4, PLAZA.z - 2.6], [PLAZA.x - 2.6, PLAZA.z + 3.4], [PLAZA.x + 3.9, PLAZA.z + 2.2], [PLAZA.x - 3.6, PLAZA.z - 2.0],
+    [-6.6, 5.6], [-2.6, 11], [6.4, -3.6], [11.6, -4.2], [3.6, 9.4], [9.6, 4.4]]) lamp(g, x, z);
   bench(g, PLAZA.x + 2.4, PLAZA.z + 2.9, -Math.PI * 0.75);
   bench(g, PLAZA.x + 3.6, PLAZA.z - 0.4, -Math.PI / 2);
   // trees and bushes framing the square
-  for (const [x, z, s, f] of [[-9.6, -3.4, 1.2, ''], [-6.6, -6.4, 1.3, '#ff5b5b'], [-3.4, -9.6, 1.2, ''], [2.6, -8.6, 1.25, '#ff8a3d'], [4.8, -5.2, 1.1, ''],
-    [6.8, -1.2, 1.2, '#ff5b5b'], [6.2, 3.6, 1.3, ''], [3.4, 7.2, 1.2, ''], [-8.4, 7.4, 1.3, '#ff8a3d'], [-10.6, 2.0, 1.2, ''], [-12, -1.6, 1.1, ''], [1.6, 9.8, 1.2, '#ff5b5b']] as [number, number, number, string][]) tree(g, x, z, s, f || undefined);
+  for (const [x, z, s, f] of [[-12, -4, 1.2, ''], [-9, -8, 1.3, '#ff5b5b'], [-5, -10.5, 1.2, ''], [-1, -12.5, 1.25, '#ff8a3d'], [3, -14.5, 1.2, ''],
+    [10.5, -11, 1.3, ''], [12.6, -8.4, 1.2, '#ff5b5b'], [16.5, -5, 1.3, ''], [16.6, 2, 1.2, '#ff8a3d'], [14.6, 5.4, 1.3, ''], [9.4, 9.4, 1.2, '#ff5b5b'],
+    [5.4, 11.6, 1.3, ''], [1.6, 13, 1.2, ''], [-9.4, 12.2, 1.2, '#ff8a3d'], [-12.2, 6.2, 1.3, ''], [-13.4, 1, 1.2, ''], [-8.6, 17, 1.3, '#ff5b5b'], [0.4, 17.4, 1.2, ''],
+    [4.8, -5.2, 1.0, '']] as [number, number, number, string][]) tree(g, x, z, s, f || undefined);
   for (const [x, z, s] of [[-8.6, -1.4, 0.9], [-5.6, -4.4, 0.9], [-2.6, -7.4, 0.9], [1.4, -6.4, 0.85], [4.6, 1.0, 0.9], [0.8, 5.6, 0.8], [-2.8, 6.6, 0.9]]) bush(g, x, z, s);
   // a signpost by the road home
   part(Cap(0.07, 1.1), '#9a6438', g, -3.4, 0.6, 9.2, { ol: 0.012 });
@@ -298,11 +317,18 @@ export function buildTown() {
   folk = OUTFITS.map((o, i) => {
     const v = buildPerson(o);
     g.add(v.root);
-    v.root.scale.setScalar(1.1);
-    const a = (i / OUTFITS.length) * Math.PI * 2;
-    const w: Walker = { v, x: PLAZA.x + Math.cos(a) * 2.6, z: PLAZA.z + Math.sin(a) * 2.6, tx: 0, tz: 0, wait: Math.random() * 2, ph: Math.random() * 6, face: 0 };
+    v.root.scale.setScalar(o.kid ? 0.8 : 1.1);
+    const a = (i / OUTFITS.length) * Math.PI * 2, d = 2.2 + (i % 3) * 2.5;
+    const w: Walker = { v, x: PLAZA.x + Math.cos(a) * d, z: PLAZA.z + Math.sin(a) * d, tx: 0, tz: 0, wait: Math.random() * 2, ph: Math.random() * 6, face: 0 };
     pickSpot(w);
     return w;
+  });
+  // a vendor behind every stall
+  vendors = STALLS.map((st, i) => {
+    const v = buildPerson({ shirt: st.a, pants: '#6d5844', hat: st.b, band: st.a, hair: HAIR[i * 2] });
+    g.add(v.root);
+    v.root.position.set(st.x - 0.55, 0, st.z - 0.55); v.root.rotation.y = FACE;
+    return v;
   });
   keeper = buildPerson({ shirt: '#ffffff', pants: '#3d6fb6', hat: '#e2463a', band: '#ffffff', hair: '#2e2018' });
   g.add(keeper.root);
@@ -334,13 +360,14 @@ function fitTown() {
   const inv = c.matrixWorldInverse, a = [1e9, -1e9, 1e9, -1e9];
   const pts: [number, number, number][] = [[-7, 0, 5.8], [-2.8, 0, 6.2], [5.2, 0, 5.2], [5.6, 0, -2], [1.6, 0, -8.2], [-8.6, 0, 1.6]];
   for (const k of Object.values(SPOT)) pts.push([k.x - 1, 3.2, k.z - 1]);
+  for (const k of SERVICE_IDS) { const v = SERVICES[k]; pts.push([v.x, 3.4, v.z], [v.x + 2, 0, v.z + 2]); }
   for (const p of pts) {
     const v = new THREE.Vector3(...p).applyMatrix4(inv);
     a[0] = Math.min(a[0], v.x); a[1] = Math.max(a[1], v.x); a[2] = Math.min(a[2], v.y); a[3] = Math.max(a[3], v.y);
   }
   Object.assign(cam, { cx: (a[0] + a[1]) / 2, cy: (a[2] + a[3]) / 2, sx: a[1] - a[0], sy: a[3] - a[2] });
   // tall phone screens fit the town by its width, which leaves it tiny; start closer in (drag to look around)
-  if (ctx.CW < ctx.CH) cam.Z = 1.6;
+  cam.Z = ctx.CW < ctx.CH ? 2.0 : 1.15;
   applyTownCam();
 }
 
@@ -386,6 +413,11 @@ export function updateTown(dt: number, t: number) {
     v.arms[0].rotation.set(-sw * 0.8, 0, 0.12); v.arms[1].rotation.set(sw * 0.8, 0, -0.12);
     v.head.rotation.set(0, walking ? 0 : Math.sin(t * 0.7 + w.ph) * 0.3, 0);
   }
+  vendors.forEach((v, i) => {
+    v.arms[0].rotation.set(-0.4 + Math.max(0, Math.sin(t * 1.8 + i * 2)) * -1.4, 0, 0.15);
+    v.head.rotation.set(0, Math.sin(t * 0.5 + i) * 0.4, 0);
+  });
+  for (const f of flags) f.rotation.y = Math.sin(t * 3) * 0.25;
   // the shopkeeper, behind the counter while on duty
   const on = S.town.shop && onDuty('shopkeeper');
   keeper.root.visible = on;
@@ -404,6 +436,10 @@ export function updateTown(dt: number, t: number) {
   lbl('town-shop', S.town.shop
     ? `<b>Your Shop</b><span>${on ? 'Open · ' + fmt(S.stats.shop || 0) + ' earned' : 'Closed · hire a shopkeeper'}</span>`
     : `<b>Shop for sale</b><span class="r">${coinHTML}${fmt(SHOP_COST)}</span>`, at('shop', S.town.shop ? 3.0 : 2.0), 'townsign p-shop' + (S.town.shop ? '' : ' forsale'));
+  for (const id of SERVICE_IDS) {
+    const v = SERVICES[id], d = serviceDoor(v, 0.4);
+    lbl('town-' + id, `<b>${v.name}</b>`, tmp.set(d.x, id === 'hall' ? 4.9 : 2.95, d.z), 'townsign small p-info-' + id);
+  }
   lbl('town-home', '<b>← Farm</b>', tmp.set(-3.25, 1.6, 9.2), 'townsign home p-farm');
 }
 

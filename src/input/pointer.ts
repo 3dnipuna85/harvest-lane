@@ -11,7 +11,7 @@ import { $ } from '../ui/format';
 import { openOffice } from '../ui/office';
 import { inTown } from '../scene/mode';
 import { applyTownCam, setTownZoom, town, townView, type Place } from '../scene/town/town';
-import { goFarm, goTown, visitPlace } from '../ui/town';
+import { goFarm, goTown, serviceInfo, visitPlace } from '../ui/town';
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
@@ -36,6 +36,7 @@ function pick(cx: number, cy: number) {
     if (u.type === 'cart') { openTab('helpers'); return; }
     if (u.type === 'animal') { tapAnimal(u.kind, u.i); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'place') { visitPlace(u.k as Place); return; }
+    if (u.type === 'info') { serviceInfo(u.k); return; }
     if (u.type === 'town') { goTown(); return; }
     if (u.type === 'land') { buyLand(); save(); return; }
     if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
@@ -107,6 +108,7 @@ export function bindInput() {
       const k = sign && [...sign.classList].find(c => c.startsWith('p-'))?.slice(2);
       if (k === 'town') goTown();
       else if (k === 'farm') goFarm();
+      else if (k?.startsWith('info-')) serviceInfo(k.slice(5));
       else if (k) visitPlace(k as Place);
     }
   });

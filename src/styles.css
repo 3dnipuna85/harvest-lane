@@ -495,3 +495,5 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .fr-row.req .btn{padding:7px 10px}
 .friendspill{position:relative}
 .friendspill .badge{top:-5px;right:-5px}
+.lbl.townsign.small{padding:3px 8px}
+.lbl.townsign.small b{font-size:12.5px}
