@@ -5,7 +5,7 @@ export const ART: Partial<Record<ItemId, string>> = {
   wheat: 'wheat', corn: 'corn', carrot: 'carrot', tomato: 'tomato', strawberry: 'strawberry',
 };
 
-export const artUrl = (name: string) => `/ui/${name}.webp`;
+export const artUrl = (name: string) => `${import.meta.env.BASE_URL}ui/${name}.webp`;
 export const itemArt = (k: ItemId) => (ART[k] ? artUrl(ART[k]!) : null);
 
 /** An item's icon as HTML: the painted sprite if there is one, otherwise the emoji. */

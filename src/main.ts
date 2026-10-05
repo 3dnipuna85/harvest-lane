@@ -58,5 +58,5 @@ start();
 
 // Offline support: only in production builds, so the dev server always serves fresh code.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+  addEventListener('load', () => { navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').catch(() => {}); });
 }
