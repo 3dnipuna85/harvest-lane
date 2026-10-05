@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buyLand, buyPlot, loadTruck, tapAnimal } from '../ui/actions';
-import { save, type Tab } from '../game/state';
+import { save, visiting, type Tab } from '../game/state';
 import { isFishing, tapPlot } from '../scene/actors/ai';
 import { line } from '../game/fishing';
 import { applyCam, cancelFocus, focusOn, getZoom, pan, setZoom, view } from '../scene/camera';
@@ -16,6 +16,7 @@ function openTab(t: Tab) { openOffice(t); }
 
 /** Raycast a tap and route it to whatever was hit. */
 function pick(cx: number, cy: number) {
+  if (visiting) return;
   const r = ctx.cvs.getBoundingClientRect();
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -(((cy - r.top) / r.height) * 2 - 1));
   ray.setFromCamera(ndc, ctx.camera);

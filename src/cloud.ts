@@ -8,7 +8,7 @@
  */
 import { fillOrders } from './game/orders';
 import { resetSim } from './game/sim';
-import { migrate, setState, S } from './game/state';
+import { migrate, setState, S, visiting } from './game/state';
 import { initScene } from './scene/renderer';
 import { markDirty } from './ui/dirty';
 import { toast } from './ui/toasts';
@@ -77,7 +77,7 @@ export function disconnectRemote() { remote = null; lastSent = ''; }
 
 /** Push the farm when it changed: at most every 10 seconds, or right away when the page is being hidden. */
 export async function syncCloud(force = false) {
-  if (!remote || writing) return;
+  if (!remote || writing || visiting) return;
   if (!force && performance.now() - lastWrite < 10000) return;
   // Compare without the save timestamp, so an idle farm is not rewritten every few seconds.
   const k = key();

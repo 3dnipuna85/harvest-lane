@@ -5,6 +5,7 @@
 import { connectRemote, disconnectRemote } from '../cloud';
 import { toast } from '../ui/toasts';
 import { S } from '../game/state';
+import { catchInvite, friendsUser, initFriends } from './friends';
 
 type Fb = typeof import('./firebase');
 let fb: Fb | null = null;
@@ -155,14 +156,17 @@ export async function initOnline() {
   document.querySelector('.hud')!.insertBefore(account, document.getElementById('coinPill'));
   account.addEventListener('click', () => (who ? accountPanel() : welcome()));
 
+  catchInvite();
   fb = await import('./firebase');
+  initFriends(fb, welcome);
   fb.watchUser(async u => {
     if (u) {
       who = { uid: u.uid, name: u.displayName || u.email || 'Farmer', email: u.email || '', photo: u.photoURL || '' };
       setGuest(false); hide(); updateAccount();
-      await connectRemote(fb!.farmStore(u.uid));
+      await connectRemote(fb!.farmStore(u.uid, { name: who.name, photo: who.photo }));
+      friendsUser(who);
     } else {
-      who = null; disconnectRemote(); updateAccount();
+      who = null; disconnectRemote(); updateAccount(); friendsUser(null);
       if (!guest()) welcome();
     }
   });

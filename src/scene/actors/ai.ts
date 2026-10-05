@@ -3,7 +3,7 @@ import { CROPS, type CropId } from '../../data/crops';
 import { MAX_QUEUE } from '../../data/limits';
 import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
-import { S } from '../../game/state';
+import { S, visiting } from '../../game/state';
 import { fx, shakeScene, toast } from '../../ui/toasts';
 import { CARTP, FISH_SPOT, PITCH, ROADZ, plotPos } from '../layout';
 import { cast, stopFishing } from '../../game/fishing';
@@ -96,7 +96,7 @@ function seedDenied(crop: CropId = S.sel) {
 function updateChar(c: Char, dt: number) {
   if (c.state === 'idle') {
     if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) { leaveWater(); goTo(c, q.i, q.crop); } }
-    else if (c.kind === 'hand') { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i); else c.idleT = 0.6; } }
+    else if (c.kind === 'hand' && !visiting) { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i); else c.idleT = 0.6; } }
   }
   if (c.state === 'walk') {
     const dx = c.tx - c.x, dz = c.tz - c.z, d = Math.hypot(dx, dz), step = c.speed * dt;

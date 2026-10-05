@@ -63,6 +63,10 @@ export interface State {
 export let S: State;
 export function setState(s: State) { S = s; }
 
+/** True while looking around a friend's farm: S is their copy, so nothing may change it, save it or simulate it. */
+export let visiting = false;
+export function setVisiting(on: boolean) { visiting = on; }
+
 function freshHerds() {
   const h = {} as Record<AnimalId, Herd>;
   for (const k of ANIMAL_IDS) h[k] = { n: ANIMALS[k].start, ready: Array(ANIMALS[k].start).fill(null) };
@@ -130,7 +134,7 @@ function storage(): Storage | null {
 }
 
 export function save() {
-  if (!S) return;
+  if (!S || visiting) return;
   S.saved = now();
   try { storage()?.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* storage full or blocked */ }
 }

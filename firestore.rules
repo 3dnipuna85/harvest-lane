@@ -1,10 +1,21 @@
 rules_version = '2';
-// Each player can read and write only their own farm.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Each player can read and write only their own farm.
     match /farms/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid
         && (request.resource == null || request.resource.data.state is string);
+    }
+    // A public card for each player (name, photo, level and a copy of the farm to visit).
+    // Any signed-in player can read it; only its owner can write it.
+    match /players/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+      // Friends: accepting an invite writes the link on both players, so either one may write it.
+      match /friends/{fid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if request.auth != null && (request.auth.uid == uid || request.auth.uid == fid);
+      }
     }
   }
 }

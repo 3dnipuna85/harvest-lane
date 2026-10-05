@@ -10,7 +10,7 @@ import { onlineEnabled } from './online/config';
 import { now } from './game/clock';
 import { fillOrders } from './game/orders';
 import { sim } from './game/sim';
-import { load, migrate, save, setState, S } from './game/state';
+import { load, migrate, save, setState, S, visiting } from './game/state';
 import { bindInput } from './input/pointer';
 import { resize } from './scene/camera';
 import { initScene, renderScene, setup3D } from './scene/renderer';
@@ -27,7 +27,7 @@ let seedSig = '', panelSig = '', lastT = 0;
 function frame(ts: number) {
   const dt = Math.min(0.05, Math.max(0, (ts - lastT) / 1000));
   lastT = ts;
-  sim(dt);
+  if (!visiting) sim(dt);
   renderScene(dt, ts / 1000);
   const dirty = takeDirty();
   const ss = S.sel + S.level + S.tab;
