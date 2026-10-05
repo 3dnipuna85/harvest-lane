@@ -92,3 +92,30 @@ export function emojiSprite(ch: string, s: number) {
   sp.scale.set(s, s, 1);
   return sp;
 }
+
+/** Many copies of one shape in two draw calls (body + outline). Per-instance colours are optional. */
+export function instanced(g: THREE.BufferGeometry, color: string, items: { m: THREE.Matrix4; c?: string }[],
+  parent: THREE.Object3D, ol: number | false = 0.02, shadow = true) {
+  const body = new THREE.InstancedMesh(g, T(color), items.length);
+  const tmp = new THREE.Color();
+  items.forEach((it, i) => { body.setMatrixAt(i, it.m); if (it.c) body.setColorAt(i, tmp.set(it.c)); });
+  body.castShadow = shadow; body.receiveShadow = true;
+  parent.add(body);
+  if (ol !== false) {
+    const line = new THREE.InstancedMesh(g, olMat(ol), items.length);
+    items.forEach((it, i) => line.setMatrixAt(i, it.m));
+    line.raycast = () => {};
+    parent.add(line);
+  }
+  return body;
+}
+
+const _o = new THREE.Object3D();
+/** Matrix from position, uniform-or-xyz scale and Euler rotation. */
+export function mat(x: number, y: number, z: number, s: number | Vec3 = 1, r: Vec3 = [0, 0, 0]) {
+  _o.position.set(x, y, z);
+  if (Array.isArray(s)) _o.scale.set(...s); else _o.scale.setScalar(s);
+  _o.rotation.set(...r);
+  _o.updateMatrix();
+  return _o.matrix.clone();
+}

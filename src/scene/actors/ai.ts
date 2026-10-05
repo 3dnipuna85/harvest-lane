@@ -18,6 +18,9 @@ let hands: Char[] = [];
 let sellers: Char[] = [];
 let saleTurn = 0;
 
+/** The player's farmer, for followers like the dog. */
+export const getPlayer = () => player;
+
 export function initActors() {
   queue = []; res.clear(); hands = []; sellers = []; saleTurn = 0;
   player = mkChar('player', 0);

@@ -41,9 +41,9 @@ function buildPlot(i: number): PlotView {
   const q = plotPos(i), g = new THREE.Group();
   g.position.set(q.x, 0, q.z);
   g.userData = { type: 'plot', i };
-  part(RB(PSZ, 0.3, PSZ, 0.13), '#a8693b', g, 0, 0.15, 0, { shadow: false });
+  part(RB(PSZ, 0.3, PSZ, 0.13), '#8a5530', g, 0, 0.15, 0, { shadow: false });
   for (const z of [-0.5, 0.5]) {
-    const m = part(Cap(0.27, 1.4), '#8e5530', g, 0, 0.3, z, { ol: 0.02, shadow: false });
+    const m = part(Cap(0.27, 1.4), '#6e4022', g, 0, 0.3, z, { ol: 0.02, shadow: false });
     m.rotation.z = Math.PI / 2; m.scale.set(1, 1, 0.9);
   }
   const ripeF = frame4('#ffd84a', g, 0.33);

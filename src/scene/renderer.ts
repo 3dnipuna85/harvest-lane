@@ -5,6 +5,7 @@ import { fmt } from '../ui/format';
 import { fx } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
 import { initAnimals, updateAnimals } from './actors/animals';
+import { initDog, updateDog } from './actors/dog';
 import { computeFull, resize } from './camera';
 import { ctx } from './context';
 import { resetFlyers, spawnFly, updateFlies } from './fx/flyers';
@@ -13,6 +14,7 @@ import { dust3, resetParticles, updatePuffs } from './fx/particles';
 import { CARTP, barnDoor, plotPos } from './layout';
 import { buildBarn, updateBarn } from './world/barn';
 import { initPlots, syncPlots, updatePlots } from './world/plots';
+import { buildDecor, updateDecor } from './world/decor';
 import { buildCart, buildWorld, updateCart } from './world/props';
 import { initWorkshops, syncBuildings, updateBuildings, workshopDoor } from './world/workshops';
 
@@ -63,12 +65,14 @@ export function initScene() {
   sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
   scene.add(sun);
   buildWorld();
+  buildDecor();
   buildBarn();
   initWorkshops();
   buildCart();
   initPlots();
   initActors();
   initAnimals();
+  initDog();
   syncPlots();
   syncBuildings();
 }
@@ -80,6 +84,8 @@ export function renderScene(dt: number, t: number) {
   syncPlots(); syncBuildings(); syncCrew();
   updateActors(dt, t);
   updateAnimals(dt, t);
+  updateDog(dt, t);
+  updateDecor(dt, t);
   updatePlots(t, dt);
   updateBuildings(dt);
   updateBarn();

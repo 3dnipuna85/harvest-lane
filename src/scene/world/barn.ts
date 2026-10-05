@@ -9,7 +9,7 @@ export function buildBarn() {
   const g = new THREE.Group();
   g.position.set(BX[0], 0, BZ);
   part(RB(3.0, 1.8, 2.4, 0.14), '#d9483a', g, 0, 0.9, 0);
-  for (const s of [-1, 1]) part(RB(1.9, 0.2, 2.8, 0.08), '#7b4a2e', g, s * 0.72, 2.22, 0, { r: [0, 0, -s * 0.68] });
+  for (const s of [-1, 1]) part(RB(1.9, 0.2, 2.8, 0.08), '#5f9e3a', g, s * 0.72, 2.22, 0, { r: [0, 0, -s * 0.68] });
   part(Tri(2.7, 1.0, 2.38), '#d9483a', g, 0, 1.75, 0, { ol: false });
   part(RB(3.1, 0.14, 2.5, 0.06), '#fff7ea', g, 0, 1.78, 0);
   for (const s of [-1, 1]) part(RB(0.14, 1.8, 0.14, 0.05), '#fff7ea', g, s * 1.45, 0.9, 1.15);

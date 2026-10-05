@@ -28,7 +28,7 @@ function bush(g: THREE.Object3D, x: number, z: number, s: number) {
 }
 
 /** A fence along a polyline. Posts are instanced; rails are one capsule per segment and height. */
-function fenceLine(g: THREE.Object3D, pts: [number, number][], step: number) {
+function fenceLine(g: THREE.Object3D, pts: [number, number][], step: number, post = '#c98f55', rail = '#dba56a') {
   const posts: [number, number][] = [], rails: { x: number; z: number; L: number; a: number }[] = [];
   for (let s = 0; s < pts.length - 1; s++) {
     const [x0, z0] = pts[s], [x1, z1] = pts[s + 1], L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / step));
@@ -36,13 +36,13 @@ function fenceLine(g: THREE.Object3D, pts: [number, number][], step: number) {
     rails.push({ x: (x0 + x1) / 2, z: (z0 + z1) / 2, L, a: Math.atan2(x1 - x0, z1 - z0) });
   }
   const postG = Cap(0.09, 0.55);
-  const pm = new THREE.InstancedMesh(postG, T('#c98f55'), posts.length), po = new THREE.InstancedMesh(postG, olMat(0.025), posts.length);
+  const pm = new THREE.InstancedMesh(postG, T(post), posts.length), po = new THREE.InstancedMesh(postG, olMat(0.025), posts.length);
   const d = new THREE.Object3D();
   posts.forEach(([x, z], i) => { d.position.set(x, 0.38, z); d.rotation.set(0, 0, 0); d.updateMatrix(); pm.setMatrixAt(i, d.matrix); po.setMatrixAt(i, d.matrix); });
   pm.castShadow = true;
   g.add(pm, po);
   for (const r of rails) for (const y of [0.5, 0.27]) {
-    const m = part(Cap(0.05, r.L), '#dba56a', g, r.x, y, r.z, { ol: 0.02 });
+    const m = part(Cap(0.05, r.L), rail, g, r.x, y, r.z, { ol: 0.02 });
     m.rotation.set(Math.PI / 2, 0, 0); m.rotation.y = r.a; m.rotation.order = 'YXZ';
   }
 }
@@ -54,27 +54,19 @@ export function buildWorld() {
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; g.add(ground);
   const far = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), T('#74c043'));
   far.rotation.x = -Math.PI / 2; far.position.y = -0.02; g.add(far);
-  // farm fence (gaps where the road leaves)
-  fenceLine(g, [[-13, ROADZ - 1.6], [-13, 10.6], [13, 10.6], [13, ROADZ + 1.6]], 1.3);
-  fenceLine(g, [[-13, ROADZ - 1.6], [-13, -9.4], [13, -9.4], [13, ROADZ - 1.6]], 1.3);
+  // white picket farm fence (gaps where the road leaves)
+  fenceLine(g, [[-13, ROADZ + 1.6], [-13, 10.6], [13, 10.6], [13, ROADZ + 1.6]], 0.75, '#fffaf0', '#f3ead8');
+  fenceLine(g, [[-13, ROADZ - 1.6], [-13, -9.4], [13, -9.4], [13, ROADZ - 1.6]], 0.75, '#fffaf0', '#f3ead8');
   // animal pen with a trough
   fenceLine(g, [[PEN.x0, PEN.z0], [PEN.x1, PEN.z0], [PEN.x1, PEN.z1], [PEN.x0, PEN.z1], [PEN.x0, PEN.z0]], 0.85);
   part(RB(0.9, 0.35, 0.5, 0.12), '#a8774a', g, PEN.x0 + 0.8, 0.2, PEN.z1 - 0.6);
   part(RB(0.75, 0.12, 0.36, 0.08), '#7ec6e8', g, PEN.x0 + 0.8, 0.4, PEN.z1 - 0.6, { ol: false });
-  // pond with lily pads
-  part(Cyl(1.55, 1.65, 0.12, 32), '#cfc5a8', g, -9.4, 0.05, 7.9);
-  part(Cyl(1.38, 1.38, 0.13, 32), T('#5cc3ea', {}), g, -9.4, 0.07, 7.9, { ol: false, shadow: false });
-  for (const [a, b] of [[-9.8, 7.5], [-8.9, 8.3], [-9.2, 7.3]]) part(Cyl(0.22, 0.22, 0.04, 14), '#61b84a', g, a, 0.15, b, { ol: 0.015, shadow: false });
-  for (let k = 0; k < 12; k++) {
-    const an = (k / 12) * Math.PI * 2;
-    part(Sph(0.17), k % 2 ? '#b9b4a6' : '#cfcabd', g, -9.4 + Math.cos(an) * 1.6, 0.1, 7.9 + Math.sin(an) * 1.6, { s: [1, 0.6, 1], ol: 0.015 });
-  }
   // trees, bushes, hay
-  tree(g, -12, -8.2, 1.2); tree(g, -6.2, -9.2, 0.95, '#ff8a3d'); tree(g, 3.2, -9.4, 1.05); tree(g, 11.8, -8.4, 1.25, '#ff5b5b');
-  tree(g, 11.6, 7.2, 1.3, '#ff8a3d'); tree(g, 11.3, 2.2, 1.0); tree(g, -11.8, -1.4, 1.05, '#ff5b5b'); tree(g, -12, 10, 1.2); tree(g, 4.5, 12, 1.3); tree(g, -4, 12.4, 1.2);
+  tree(g, -6.2, -9.2, 0.95, '#ff5b5b'); tree(g, 3.2, -9.4, 1.05, '#ff5b5b'); tree(g, 9.3, -8.6, 1.1);
+  tree(g, 11.6, 7.4, 1.3, '#ff5b5b'); tree(g, -12, 10, 1.2); tree(g, 4.5, 12, 1.3); tree(g, -4, 12.4, 1.2);
   tree(g, 15, 0, 1.4); tree(g, -15.5, 4, 1.4); tree(g, 14.5, -6, 1.3, '#ff8a3d'); tree(g, -15, -7, 1.3); tree(g, 9, 13, 1.3); tree(g, -9.5, 13.5, 1.3, '#ff5b5b');
-  for (const [x, z, s] of [[9.2, 9.8, 1], [10.3, 9.6, 0.8], [-6, 10, 0.9], [2, 10.1, 0.85], [8.6, -0.6, 0.8], [-12.2, 6.5, 0.9], [12.2, -1.7, 0.9], [-3, -9, 0.8], [7, -9, 0.85]]) bush(g, x, z, s);
-  for (const [x, z] of [[10.6, 4.6], [11.3, 5.3]]) {
+  for (const [x, z, s] of [[9.2, 9.8, 1], [10.3, 9.6, 0.8], [-6, 10, 0.9], [2, 10.1, 0.85], [-12.2, 6.5, 0.9], [12.2, -1.7, 0.9], [-3, -9, 0.8], [7, -9, 0.85]]) bush(g, x, z, s);
+  for (const [x, z] of [[9.4, 5.2], [10.1, 5.9]]) {
     const h = part(Cyl(0.38, 0.38, 0.6, 18), '#f0cd5f', g, x, 0.38, z);
     h.rotation.z = Math.PI / 2;
     part(Cyl(0.39, 0.39, 0.08, 18), '#d9a843', h, 0, 0.15, 0, { ol: false });

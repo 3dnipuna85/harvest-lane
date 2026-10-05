@@ -46,7 +46,7 @@ function updateChicken(h: Wanderer<ChickenView>, dt: number) {
   if (h.t <= 0) {
     h.t = 1.5 + Math.random() * 3;
     if (Math.random() < 0.6) { h.tx = -11 + Math.random() * 19; h.tz = ROADZ - 0.6 + Math.random() * 1.2; }
-    else { h.tx = 8.6 + Math.random() * 3.4; h.tz = -1.5 + Math.random() * 9; }
+    else { h.tx = 8.6 + Math.random() * 2.2; h.tz = 4 + Math.random() * 4.5; }
   }
   h.v.g.position.set(h.x, d > 0.05 ? Math.abs(Math.sin(h.phase)) * 0.05 : 0, h.z);
   h.v.g.rotation.y = h.face;
