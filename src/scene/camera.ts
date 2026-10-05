@@ -32,7 +32,7 @@ export function computeFull() {
     a[0] = Math.min(a[0], v.x); a[1] = Math.max(a[1], v.x); a[2] = Math.min(a[2], v.y); a[3] = Math.max(a[3], v.y);
   }
   full = { cx: (a[0] + a[1]) / 2, cy: (a[2] + a[3]) / 2, sx: a[1] - a[0], sy: a[3] - a[2] };
-  for (const x of [-13.5, 13.5]) pts.push([x, 0, 16.8]);
+  for (const x of [-23.5, 23.5]) for (const z of [-9.8, 16.8]) pts.push([x, 0, z]);
   const b = [1e9, -1e9, 1e9, -1e9];
   for (const p of pts) {
     const v = new THREE.Vector3(...p).applyMatrix4(inv);

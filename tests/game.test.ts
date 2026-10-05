@@ -256,3 +256,23 @@ describe('fishing', () => {
     expect(f.reel(t + 2700, () => 0.99)).toBe('goldfish');
   });
 });
+
+describe('land', () => {
+  it('needs a full home field, the level and the coins, then adds 12 plots', async () => {
+    const { buyLand } = await import('../src/game/economy');
+    S.level = 20; S.coins = 1e6;
+    expect(buyLand()).toMatchObject({ ok: false, reason: 'field' });
+    while (S.plots.length < 20) S.plots.push({ crop: null, at: 0 });
+    S.level = 3;
+    expect(buyLand()).toMatchObject({ ok: false, reason: 'locked' });
+    S.level = 20; S.coins = 100;
+    expect(buyLand()).toMatchObject({ ok: false, reason: 'coins' });
+    S.coins = 1e6;
+    expect(buyLand()).toMatchObject({ ok: true, k: 0 });
+    expect(S.plots.length).toBe(32);
+    expect(S.land).toBe(1);
+    expect(buyLand()).toMatchObject({ ok: true, k: 1 });
+    expect(buyLand()).toMatchObject({ ok: false, reason: 'max' });
+    expect(migrate(JSON.parse(JSON.stringify(S))).land).toBe(2);
+  });
+});

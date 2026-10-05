@@ -47,13 +47,20 @@ function pickJob() {
 /** Column paths run between plot columns, row paths in front of each plot row. */
 const colGap = (x: number) => (Math.round(x / PITCH - 0.5) + 0.5) * PITCH;
 const onColGap = (x: number) => Math.abs(x - colGap(x)) < 0.2;
+/** Which field a point is in: the home field inside the fence (0), or the land east (1) or west (-1) of it. */
+const zone = (x: number) => (x > 13 ? 1 : x < -13 ? -1 : 0);
 
 function goTo(c: Char, i: number, crop: CropId = S.sel) {
   // Work from the path beside the plot, never standing in the soil: the farmer at the front edge
   // (down-screen), a farmhand on the right-hand edge. Walks stick to the paths between plots.
   const q = plotPos(i), gx = q.x + (c.kind === 'hand' ? PITCH / 2 : -PITCH / 2), gz = q.z + PITCH / 2;
   const end = c.kind === 'hand' ? { x: gx, z: q.z + 0.35 } : { x: q.x - 0.2, z: gz };
-  const pts = onColGap(c.x)
+  let pts: { x: number; z: number }[];
+  if (zone(c.x) !== zone(q.x)) {
+    // To another field: up the nearest column path to the road, along it, then down into the other field.
+    const cx = onColGap(c.x) ? c.x : colGap(c.x);
+    pts = [{ x: cx, z: c.z }, { x: cx, z: ROADZ }, { x: gx, z: ROADZ }, { x: gx, z: c.kind === 'hand' ? end.z : gz }, end];
+  } else pts = onColGap(c.x)
     ? [{ x: c.x, z: gz }, { x: gx, z: gz }, end]
     : [{ x: gx, z: c.z }, { x: gx, z: c.kind === 'hand' ? end.z : gz }, end];
   const first = pts.shift()!;
@@ -171,8 +178,15 @@ function leaveWater() {
 export function goFish(): 'walking' | 'there' | 'busy' {
   if (fishing) return 'there';
   if (player.state !== 'idle' || player.task || queue.length) return 'busy';
-  player.tx = FISH_SPOT.x; player.tz = player.z;
-  player.path = [{ x: FISH_SPOT.x, z: FISH_SPOT.z }];
+  if (zone(player.x) !== 0) {
+    // From the land outside the fence, come back along the road first.
+    const cx = onColGap(player.x) ? player.x : colGap(player.x);
+    player.tx = cx; player.tz = player.z;
+    player.path = [{ x: cx, z: ROADZ }, { x: FISH_SPOT.x, z: ROADZ }, { x: FISH_SPOT.x, z: FISH_SPOT.z }];
+  } else {
+    player.tx = FISH_SPOT.x; player.tz = player.z;
+    player.path = [{ x: FISH_SPOT.x, z: FISH_SPOT.z }];
+  }
   player.state = 'walk';
   player.onArrive = () => { fishing = true; player.face = 0; cast(); };
   return 'walking';

@@ -1,6 +1,6 @@
 import type { CropId } from '../data/crops';
 import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
-import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_SELLERS } from '../data/limits';
+import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
 import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines';
 import { now } from '../game/clock';
 import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../game/economy';
@@ -212,7 +212,7 @@ export function bindPanelInput() {
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
     if (a === 'seed') S.sel = k as CropId;
-    else if (a === 'expand') act.buyPlot();
+    else if (a === 'expand') { if (S.plots.length >= MAX_PLOTS) act.buyLand(); else act.buyPlot(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);
     else if (a === 'close') closeOffice();
     else if (a === 'sell') act.sell(k as ItemId, b.dataset.n === 'all' ? inv(k as ItemId) : 1, cx, cy);

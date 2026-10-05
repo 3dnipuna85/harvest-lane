@@ -1,6 +1,6 @@
 import { MAX_PLOTS } from '../data/limits';
 import { on } from '../game/events';
-import { plotCost, xpNeed } from '../game/economy';
+import { nextParcel, plotCost, xpNeed } from '../game/economy';
 import { S } from '../game/state';
 import { now } from '../game/clock';
 import { canFillTruck } from '../game/trucks';
@@ -51,8 +51,19 @@ export function updateHud() {
   $('lvl').textContent = String(S.level);
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
   const ex = $('expand') as HTMLButtonElement;
-  if (S.plots.length >= MAX_PLOTS) { ex.disabled = true; ex.textContent = 'All land'; }
-  else {
+  if (S.plots.length >= MAX_PLOTS) {
+    // The home field is full: the button becomes a savings goal for the next parcel of land.
+    const p = nextParcel();
+    ex.classList.toggle('land', !!p);
+    if (!p) { ex.disabled = true; ex.textContent = 'All land'; }
+    else {
+      ex.disabled = false;
+      const pct = Math.min(100, (S.coins / p.cost) * 100).toFixed(0);
+      const h = `<b>${p.name}</b><span>${coinHTML}${fmt(p.cost)}</span><i class="save"><i style="width:${pct}%"></i></i>`;
+      if (ex.innerHTML !== h) ex.innerHTML = h;
+      ex.classList.toggle('ready', S.coins >= p.cost && S.level >= p.lvl);
+    }
+  } else {
     const c = plotCost();
     ex.disabled = S.coins < c;
     const h = '<b>New plot</b><span>' + coinHTML + fmt(c) + '</span>';

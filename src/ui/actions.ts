@@ -8,6 +8,8 @@ import { ANIMALS, type AnimalId } from '../data/animals';
 import { buyAnimal as buyA, tapAnimal as tapA, tendAll as tendA } from '../game/animals';
 import { CROPS } from '../data/crops';
 import { initScene } from '../scene/renderer';
+import { focusOn } from '../scene/camera';
+import { parcelBox } from '../scene/layout';
 import { markDirty } from './dirty';
 import { fmt } from './format';
 import { fx, shakeScene, toast } from './toasts';
@@ -18,6 +20,19 @@ export function buyPlot() {
   const r = eco.buyPlot();
   if (r.ok) toast('New plot ready to plant');
   else if (r.reason === 'coins') { toast('A new plot costs ' + fmt(r.cost!) + ' coins'); shakeScene(); }
+}
+
+/** Buy the next land parcel, or say what is still needed and show where it is. */
+export function buyLand() {
+  const p = eco.nextParcel();
+  if (!p) return;
+  const r = eco.buyLand();
+  if (r.ok) { toast(p.name + ' is yours! 12 new plots are ready to plant.'); return; }
+  const b = parcelBox(S.land);
+  focusOn(b.x, b.z);
+  if (r.reason === 'field') toast('Fill your home field with plots first, then you can buy ' + p.name + '.');
+  else if (r.reason === 'locked') toast(p.name + ' opens at level ' + r.lvl + '.');
+  else if (r.reason === 'coins') { toast('Save ' + fmt(r.cost! - S.coins) + ' more coins to buy ' + p.name + '.'); shakeScene(); }
 }
 
 export function sell(k: Parameters<typeof eco.sell>[0], n: number, x: number, y: number) {

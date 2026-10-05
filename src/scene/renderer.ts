@@ -10,6 +10,9 @@ import { TRUCK_STOP, initTruck, truckAngry, truckLeaving, truckPos, truckSay, up
 import { chaChing, honk } from '../ui/sound';
 import { computeFull, focusOn, inView, resize, updateCam } from './camera';
 import { buildRiver, updateRiver } from './world/river';
+import { initLand, updateLand } from './world/land';
+import { LAND } from '../data/land';
+import { parcelBox } from './layout';
 import { bobberPos, initFishing, reelAnim, updateFishing } from './actors/fishing';
 import { isFishing, walkingToFish } from './actors/ai';
 import { ITEMS } from '../data/goods';
@@ -73,6 +76,7 @@ export function initScene() {
   buildWorld();
   buildDecor();
   buildRiver();
+  initLand();
   buildBarn();
   initWorkshops();
   buildCart();
@@ -95,6 +99,7 @@ export function renderScene(dt: number, t: number) {
   updateActors(dt, t);
   updateFishing(dt, t);
   updateRiver(dt, t);
+  updateLand();
   updateAnimals(dt, t);
   updateDog(dt, t);
   updateTruck(dt);
@@ -136,6 +141,13 @@ function bindSceneEvents() {
     spawnFly(product, q.clone().setY(1.2), barnDoor(), 0);
     const [sx, sy] = toScreen(q.clone().setY(1.6));
     fx(sx, sy, '+1 ' + iconHTML(product, 'ic-fx'), 'green');
+  });
+  on('landBought', ({ k }) => {
+    const b = parcelBox(k);
+    focusOn(b.x, b.z);
+    for (let i = 0; i < 24; i++) dust3(b.x + (Math.random() * 2 - 1) * b.hw, b.z + (Math.random() * 2 - 1) * b.hd);
+    chaChing();
+    setTimeout(() => { const [sx, sy] = toScreen(new THREE.Vector3(b.x, 1.5, b.z)); fx(sx, sy, LAND[k].name + ' is yours!', 'gold'); }, 700);
   });
   on('fishCast', () => { const b = bobberPos(); splash3(b.x, b.z, 5); });
   on('fishBite', () => { const b = bobberPos(); splash3(b.x, b.z, 8); });

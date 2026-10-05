@@ -2,6 +2,7 @@ import { CROPS, CROP_IDS, DOUBLE_HARVEST_CHANCE, type CropId } from '../data/cro
 import { GOODS, ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS } from '../data/limits';
+import { LAND, PARCEL_PLOTS } from '../data/land';
 import { now } from './clock';
 import { emit } from './events';
 import { S, type Plot } from './state';
@@ -84,6 +85,25 @@ export function buyPlot(): BuyResult {
   S.coins -= c;
   S.plots.push({ crop: null, at: 0 });
   return { ok: true };
+}
+
+/** The next land parcel for sale, if any. */
+export const nextParcel = () => LAND[S.land];
+
+export type LandResult = { ok: true; k: number } | { ok: false; reason: 'max' | 'coins' | 'locked' | 'field'; cost?: number; lvl?: number };
+
+/** Buy the next parcel of land: it arrives with a full field of empty plots. The home field must be full first. */
+export function buyLand(): LandResult {
+  const p = nextParcel();
+  if (!p) return { ok: false, reason: 'max' };
+  if (S.plots.length < MAX_PLOTS + S.land * PARCEL_PLOTS) return { ok: false, reason: 'field' };
+  if (S.level < p.lvl) return { ok: false, reason: 'locked', lvl: p.lvl };
+  if (S.coins < p.cost) return { ok: false, reason: 'coins', cost: p.cost };
+  S.coins -= p.cost;
+  const k = S.land++;
+  for (let j = 0; j < PARCEL_PLOTS; j++) S.plots.push({ crop: null, at: 0 });
+  emit('landBought', { k });
+  return { ok: true, k };
 }
 
 export function buyMachine(k: MachineId): BuyResult {

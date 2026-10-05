@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buyPlot, loadTruck, tapAnimal } from '../ui/actions';
+import { buyLand, buyPlot, loadTruck, tapAnimal } from '../ui/actions';
 import { save, type Tab } from '../game/state';
 import { isFishing, tapPlot } from '../scene/actors/ai';
 import { line } from '../game/fishing';
@@ -30,6 +30,7 @@ function pick(cx: number, cy: number) {
     if (u.type === 'bld') { openTab(u.id === 'barn' ? 'barn' : 'machines'); return; }
     if (u.type === 'cart') { openTab('helpers'); return; }
     if (u.type === 'animal') { tapAnimal(u.kind, u.i); $('hint').classList.add('gone'); save(); return; }
+    if (u.type === 'land') { buyLand(); save(); return; }
     if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'truck') { if (!loadTruck(cx, cy)) openTab('orders'); save(); return; }
   }
@@ -83,7 +84,11 @@ export function bindInput() {
   addEventListener('pointercancel', e => { pd = null; touches.delete(e.pointerId); pinch = null; });
   $('fishBtn').addEventListener('click', () => { focusOn(FISH_SPOT.x + 1, FISH_SPOT.z - 1); tapWater(); });
   // The fishing labels over the water are tappable too.
-  ctx.overlay.addEventListener('click', e => { if ((e.target as HTMLElement).closest('.fishsign')) { tapWater(); save(); } });
+  ctx.overlay.addEventListener('click', e => {
+    const el = e.target as HTMLElement;
+    if (el.closest('.fishsign')) { tapWater(); save(); }
+    else if (el.closest('.lbl.land')) { buyLand(); save(); }
+  });
   $('zin').addEventListener('click', () => setZoom(getZoom() * 1.2));
   $('zout').addEventListener('click', () => setZoom(getZoom() / 1.2));
 }

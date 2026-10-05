@@ -416,3 +416,14 @@ body.office-open .zoom{display:none}
 @keyframes fishPulse{from{scale:1}to{scale:1.15}}
 @keyframes fishDot{0%,100%{opacity:.25}50%{opacity:1}}
 .zoom .fishbtn{font-size:20px}
+
+/* land parcels: the dock button and the For sale sign become a savings goal */
+.dock .expand.land{border-style:solid;border-color:#f0cd5f;background:rgba(255,240,200,.18)}
+.dock .expand.land.ready{background:#f2b632;border-color:#fff3c4;color:#5a3a10;animation:fishPulse .6s ease-in-out infinite alternate}
+.expand .save,.lbl .save{display:block;width:100%;min-width:64px;height:6px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden}
+.expand .save i,.lbl .save i{display:block;height:100%;background:#6cc04a}
+.lbl.land{font-size:12px;padding:5px 10px;gap:2px;min-width:120px;pointer-events:auto;cursor:pointer}
+.lbl.land b{font-family:var(--display);font-weight:400;font-size:14px;color:#7a3b10}
+.lbl.land .note{font-size:11px;color:#7a5a34}
+.lbl.land.ready{background:#fff3b0;border-color:#c98a2e;animation:fishPulse .5s ease-in-out infinite alternate}
+.lbl.land.locked{opacity:.8}

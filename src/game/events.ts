@@ -18,6 +18,7 @@ export interface GameEvents {
   fishCaught: { kind: ProductId };
   /** The fish got away: reeled in too early, or too late after the bite. */
   fishMissed: { early: boolean };
+  landBought: { k: number };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };
