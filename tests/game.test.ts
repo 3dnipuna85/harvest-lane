@@ -320,3 +320,17 @@ describe('manager runs the crew', () => {
     expect(inv('wheat')).toBeGreaterThanOrEqual(10);
   });
 });
+
+describe('manager plans for the truck', () => {
+  it('plants what the next truck wants', async () => {
+    const st = await import('../src/game/staff');
+    S.level = 10; S.coins = 100000; S.inv = {};
+    st.hireStaff('manager', 8, t);
+    S.nextWants = { carrot: 6 };
+    S.plots.forEach(p => { p.crop = null; p.at = 0; });
+    expect(st.neededCrop()).toBe('carrot');
+    st.staffWork(t, true);
+    expect(S.plots.filter(p => p.crop === 'carrot').length).toBe(6);
+    expect(st.neededCrop()).toBeNull();
+  });
+});

@@ -4,7 +4,7 @@ import { MAX_QUEUE } from '../../data/limits';
 import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
 import { S, visiting } from '../../game/state';
-import { unpaid } from '../../game/staff';
+import { neededCrop, onDuty, unpaid } from '../../game/staff';
 import { fx, shakeScene, toast } from '../../ui/toasts';
 import { CARTP, FISH_SPOT, PITCH, ROADZ, plotPos } from '../layout';
 import { cast, stopFishing } from '../../game/fishing';
@@ -39,11 +39,16 @@ export const isQueued = (i: number) => inQueue(i) || !!(player.task && player.ta
 
 /** A farmhand's next job: a ripe plot first, otherwise an empty plot if the selected seed is affordable. */
 function pickJob() {
+  // With a manager on duty, ripe crops a truck is waiting on come first.
+  const want = S.truck ? S.plots.findIndex((p, j) => ripe(p) && !isBusy(j) && !!S.truck!.items[p.crop!]) : -1;
+  if (want >= 0 && onDuty('manager')) return want;
   let i = S.plots.findIndex((p, j) => ripe(p) && !isBusy(j));
   if (i >= 0) return i;
-  if (S.coins >= CROPS[S.sel].seed) { i = S.plots.findIndex((p, j) => !p.crop && !isBusy(j)); if (i >= 0) return i; }
+  if (S.coins >= CROPS[handSeed()].seed) { i = S.plots.findIndex((p, j) => !p.crop && !isBusy(j)); if (i >= 0) return i; }
   return -1;
 }
+/** The seed farmhands plant: the manager's pick for the next truck, otherwise the player's selected seed. */
+const handSeed = () => neededCrop() ?? S.sel;
 
 /** Column paths run between plot columns, row paths in front of each plot row. */
 const colGap = (x: number) => (Math.round(x / PITCH - 0.5) + 0.5) * PITCH;
@@ -97,7 +102,7 @@ function seedDenied(crop: CropId = S.sel) {
 function updateChar(c: Char, dt: number) {
   if (c.state === 'idle') {
     if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) { leaveWater(); goTo(c, q.i, q.crop); } }
-    else if (c.kind === 'hand' && !visiting && !unpaid) { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i); else c.idleT = 0.6; } }
+    else if (c.kind === 'hand' && !visiting && !unpaid) { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i, handSeed()); else c.idleT = 0.6; } }
   }
   if (c.state === 'walk') {
     const dx = c.tx - c.x, dz = c.tz - c.z, d = Math.hypot(dx, dz), step = c.speed * dt;

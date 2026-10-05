@@ -1,4 +1,4 @@
-import { CROPS, CROP_IDS } from '../data/crops';
+import { CROPS, CROP_IDS, type CropId } from '../data/crops';
 import { ANIMAL_IDS } from '../data/animals';
 import { animalUnlocked, collectAnimal, feedAnimal } from './animals';
 import { clock, now } from './clock';
@@ -37,6 +37,24 @@ const TRUCK_DELAY_MS = 6000;
 export const onDuty = (k: StaffId, t = now()) => (S.staff[k] || 0) > t;
 export const timeLeft = (k: StaffId, t = now()) => Math.max(0, (S.staff[k] || 0) - t);
 
+/**
+ * The crop the manager wants planted next: whatever the waiting truck (or the next one) asks for that the barn
+ * plus the crops already growing won't cover. Null when every truck crop is covered.
+ */
+export function neededCrop(): CropId | null {
+  if (!onDuty('manager')) return null;
+  const wants = { ...(S.nextWants || {}) } as Partial<Record<string, number>>;
+  if (S.truck) for (const [k, q] of Object.entries(S.truck.items)) wants[k] = (wants[k] || 0) + (q || 0);
+  for (const [k, q] of Object.entries(wants)) {
+    if (!(k in CROPS)) continue;
+    const c = k as CropId;
+    if (CROPS[c].lvl > S.level || S.coins < CROPS[c].seed) continue;
+    const growing = S.plots.filter(p => p.crop === c).length;
+    if (inv(c) + growing < (q || 0)) return c;
+  }
+  return null;
+}
+
 export type HireResult = { ok: true; until: number } | { ok: false; reason: 'locked' | 'coins'; cost?: number };
 
 /** Hire (or extend) a contract for h hours, paid up front. */
@@ -60,9 +78,12 @@ export function staffWork(t = now(), patient = true) {
       if (p.crop && ripe(p) && (!patient || urgent || t - (p.at + CROPS[p.crop].time * 1000) >= MANAGER_DELAY_MS)) {
         const crop = p.crop;
         done.crops += harvest(i);
-        if (plant(i, crop)) done.seeds += CROPS[crop].seed;
+        const next = neededCrop() ?? crop;
+        if (plant(i, next)) done.seeds += CROPS[next].seed;
       }
     });
+    // Empty plots get the crop a truck is waiting on.
+    S.plots.forEach((p, i) => { const c = !p.crop && neededCrop(); if (c && plant(i, c)) done.seeds += CROPS[c].seed; });
     if (canFillTruck() && (!patient || t - S.truck!.arrive >= TRUCK_DELAY_MS) && deliverTruck(t)) done.trucks++;
     // He keeps the animal keeper on: a keeper you hired is re-hired for another hour just before the contract runs out.
     const kl = timeLeft('keeper', t);
