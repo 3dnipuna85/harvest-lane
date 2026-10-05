@@ -62,3 +62,15 @@ The farmer, helpers and animals are 3D models built from smooth, high-detail sha
 ## Saving
 
 The farm saves to the browser's localStorage every few seconds. On the hosted claude.ai build it is also saved to the artifact's private per-player store (`src/cloud.ts`, the page declares the `db` and `user` capabilities), so progress survives cleared browser data and carries across devices. When both exist, the newer save wins.
+
+## Online play (Firebase + Cloudflare Pages)
+
+The public build can sign players in with Google or email (Firebase Auth) and keep each farm in Firestore at `farms/{uid}`; players can also skip sign-in and keep a browser-only save.
+
+1. In the Firebase console, add a Web app and put its `firebaseConfig` values in `.env.production` (see `.env.example`). They identify the project; they are not secrets.
+2. Turn on Google and Email/Password under Authentication > Sign-in method, and create a Firestore database.
+3. Paste `firestore.rules` into Firestore > Rules and publish (each player can only read and write their own farm).
+4. `npm run build` and upload `dist/` to Cloudflare Pages (Workers & Pages > Create > Pages > Upload assets).
+5. Add the Pages domain (for example `harvest-lane.pages.dev`) under Authentication > Settings > Authorized domains.
+
+Without a Firebase config the build skips sign-in. On claude.ai the artifact's own per-user store is used instead.

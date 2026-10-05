@@ -6,6 +6,7 @@ import '@fontsource/nunito/latin-900.css';
 import './styles.css';
 
 import { initCloud, syncCloud } from './cloud';
+import { onlineEnabled } from './online/config';
 import { now } from './game/clock';
 import { fillOrders } from './game/orders';
 import { sim } from './game/sim';
@@ -52,7 +53,8 @@ function start() {
     initScene();
     resize();
   }
-  initCloud(local?.saved || 0, has3D);
+  // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
+  initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
   if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   setInterval(() => { save(); syncCloud(); }, 5000);

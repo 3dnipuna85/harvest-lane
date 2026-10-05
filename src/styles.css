@@ -256,3 +256,28 @@ body.office-open .zoom{display:none}
 
 .toasts{top:calc(var(--safe-t) + 66px)}
 @media (prefers-reduced-motion:reduce){.hint,.office,.game.shake{animation:none!important}}
+
+/* ---------- Sign-in panel and account button (public build with Firebase) ---------- */
+.login{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(40,60,20,.35);backdrop-filter:blur(2px)}
+.login[hidden]{display:none!important}
+.login-card{width:min(400px,100%);max-height:calc(100% - 20px);display:flex;flex-direction:column}
+.login-body{overflow:auto;min-height:0;display:flex;flex-direction:column;gap:12px;padding:4px 8px 8px;user-select:text;-webkit-user-select:text}
+.login-lead{margin:0;text-align:center;color:#6b4423;font-weight:800;font-size:14.5px;line-height:1.4}
+.login-form{display:flex;flex-direction:column;gap:9px}
+.login-form input{font:inherit;font-weight:700;font-size:15px;padding:10px 12px;border-radius:12px;border:2px solid #e2c48f;background:#fff;color:var(--ink);min-width:0}
+.login-form input:focus{outline:none;border-color:var(--leaf);box-shadow:0 0 0 3px rgba(63,143,47,.2)}
+.login-row{display:flex;gap:8px}
+.login-row .btn{flex:1;justify-content:center;padding:10px 12px;font-size:15px}
+.btn.google{justify-content:center;gap:10px;padding:11px 12px;font-size:15px;background:#fff;color:#3c4043;border:2px solid #dadce0;text-shadow:none;box-shadow:0 3px 0 #c8cbd0}
+.login-or{display:flex;align-items:center;gap:10px;color:#9b7a55;font-weight:800;font-size:12.5px}
+.login-or::before,.login-or::after{content:"";flex:1;height:2px;background:#ecd3a3;border-radius:2px}
+.login-err{margin:0;color:#b3261e;font-weight:800;font-size:13px;text-align:center}
+.linkbtn{background:none;border:none;color:#8a5a2e;font-weight:800;font-size:13px;text-decoration:underline;padding:4px;align-self:center}
+.linkbtn.guest{color:#7b6a52;font-size:12.5px}
+.hud .account{white-space:nowrap;margin-left:auto;margin-right:0;padding:6px 14px;font-family:var(--display);font-weight:400;font-size:16px;color:#6b4423;letter-spacing:.3px}
+.hud .account.in{width:42px;height:42px;padding:0;justify-content:center;border-radius:50%;background:linear-gradient(#86d856,#3f9f2c);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.hud .brand + .account{margin-left:0}
+.hud{justify-content:flex-end}
+.hud .lvlpill{margin-right:auto}
+.hud .brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.hud .account,.hud .account.in{margin:0}
