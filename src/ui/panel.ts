@@ -7,7 +7,7 @@ import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../ga
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { save, S, type Tab } from '../game/state';
 import * as act from './actions';
-import { iconHTML, uiImg } from './art';
+import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
 
 const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
@@ -61,7 +61,7 @@ export function renderPanel() {
   let h = '';
   if (S.tab === 'orders') {
     h = '<div class="list">' + S.orders.map((o, i) => `
-      <div class="card"><div class="top"><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
+      <div class="card"><div class="top"><div class="big">${customerFace(o.who)}</div><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
         <div class="reward">${coinHTML}${fmt(o.coins)} <span class="small">+${o.xp} XP</span></div></div>
         <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
         <div class="row"><button class="btn" data-act="deliver" data-i="${i}" data-check="order:${i}">Deliver</button>
@@ -77,10 +77,10 @@ export function renderPanel() {
   if (S.tab === 'helpers') {
     const fhLock = S.level < 2, slLock = S.level < 3;
     h = `<div class="list">
-      <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${uiImg('farmer', 'portrait')}</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
+      <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('girl-head')}</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
         <div class="sub">They walk the field on their own, harvesting ripe plots and replanting with your selected seed.</div></div>
         ${fhLock ? '<span class="small">Lv 2</span>' : S.farmhands >= MAX_FARMHANDS ? '<span class="small">Full crew</span>' : `<button class="btn gold" data-act="hire" data-k="fh" data-check="cost:${farmhandCost()}">Hire ${coinHTML}${fmt(farmhandCost())}</button>`}</div></div>
-      <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${uiImg('friends')}</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
+      <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('baker')}</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
         <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s.</div></div>
         ${slLock ? '<span class="small">Lv 3</span>' : S.sellers >= MAX_SELLERS ? '<span class="small">Full stall</span>' : `<button class="btn gold" data-act="hire" data-k="sl" data-check="cost:${sellerCost()}">Hire ${coinHTML}${fmt(sellerCost())}</button>`}</div>
         ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}</div>

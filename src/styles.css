@@ -178,3 +178,12 @@ img.coin-dot{background:none;box-shadow:none;object-fit:contain;border-radius:0}
 .btn.alt{background:linear-gradient(#fffaf0,#efd9ad);border-color:#c9a26a;color:#6b4423;text-shadow:none;box-shadow:inset 0 2px 0 #fff,0 3px 0 #c9a26a}
 .zoom button{border-color:#a86b36;background:#fff6e2;box-shadow:0 3px 0 #6e4220}
 .scene-wrap{border-color:#6e4220}
+
+/* Wooden frame from assets/elements (close button removed) and painted portraits */
+.board{border-style:solid;border-width:44px 26px 16px;border-image:url(/ui/board-frame.webp) 72 98 24 fill / 44px 26px 16px stretch;
+  background:none;box-shadow:none;border-radius:0;padding:2px 2px 6px;filter:drop-shadow(0 4px 0 rgba(70,38,12,.28))}
+.board .plank-title{margin:-41px auto 10px;height:36px;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--display);font-weight:400;font-size:20px;color:#fff;letter-spacing:.4px;text-shadow:0 2px 0 #5a3214,0 0 3px #5a3214}
+.board h2.plank-title{color:#fff}
+.face{width:44px;height:44px;object-fit:contain;object-position:center top;display:block}
+.card .big:has(.face){width:46px}

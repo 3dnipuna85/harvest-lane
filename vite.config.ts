@@ -12,7 +12,7 @@ function serviceWorker(): Plugin {
     apply: 'build',
     generateBundle(_, bundle) {
       const built = Object.keys(bundle).filter(f => f !== 'index.html').map(f => '/' + f);
-      const sprites = readdirSync('public/ui').map(f => '/ui/' + f);
+      const sprites = ['ui', 'chars'].flatMap(d => readdirSync('public/' + d).map(f => `/${d}/${f}`));
       const files = [...PUBLIC_FILES, ...sprites, ...built];
       const version = createHash('sha256').update(files.join('\n')).digest('hex').slice(0, 10);
       const source = readFileSync('sw/sw.js', 'utf8')
