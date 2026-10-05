@@ -7,6 +7,7 @@ import { add, gainXP, goodXP, inv, mTime, sell } from './economy';
 import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
+import { fishTick } from './fishing';
 
 let sellAcc = 0;
 
@@ -24,6 +25,7 @@ export function nextSale(): ItemId | undefined {
 export function sim(dt: number) {
   const t = now();
   truckTick(t);
+  fishTick(t);
   for (const k of MACHINE_IDS) {
     const m = S.machines[k], d = MACHINES[k];
     if (!m.owned) continue;

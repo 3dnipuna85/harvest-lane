@@ -6,13 +6,17 @@ import { fx } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
 import { animalPos, initAnimals, updateAnimals } from './actors/animals';
 import { initDog, updateDog } from './actors/dog';
-import { initTruck, truckAngry, truckLeaving, truckPos, truckSay, updateTruck } from './actors/truck';
+import { TRUCK_STOP, initTruck, truckAngry, truckLeaving, truckPos, truckSay, updateTruck } from './actors/truck';
 import { chaChing, honk } from '../ui/sound';
-import { computeFull, resize } from './camera';
+import { computeFull, focusOn, inView, resize, updateCam } from './camera';
+import { buildRiver, updateRiver } from './world/river';
+import { bobberPos, initFishing, reelAnim, updateFishing } from './actors/fishing';
+import { isFishing, walkingToFish } from './actors/ai';
+import { ITEMS } from '../data/goods';
 import { ctx } from './context';
 import { resetFlyers, spawnFly, updateFlies } from './fx/flyers';
 import { beginLabels, clearLabels, endLabels, toScreen } from './fx/labels';
-import { dust3, resetParticles, updatePuffs } from './fx/particles';
+import { dust3, resetParticles, splash3, updatePuffs } from './fx/particles';
 import { CARTP, barnDoor, plotPos } from './layout';
 import { buildBarn, updateBarn } from './world/barn';
 import { initPlots, syncPlots, updatePlots } from './world/plots';
@@ -68,6 +72,7 @@ export function initScene() {
   scene.add(sun);
   buildWorld();
   buildDecor();
+  buildRiver();
   buildBarn();
   initWorkshops();
   buildCart();
@@ -76,6 +81,7 @@ export function initScene() {
   initAnimals();
   initDog();
   initTruck();
+  initFishing();
   syncPlots();
   syncBuildings();
 }
@@ -85,7 +91,10 @@ export function renderScene(dt: number, t: number) {
   if (!ctx.ok3d) return;
   beginLabels();
   syncPlots(); syncBuildings(); syncCrew();
+  updateCam(dt);
   updateActors(dt, t);
+  updateFishing(dt, t);
+  updateRiver(dt, t);
   updateAnimals(dt, t);
   updateDog(dt, t);
   updateTruck(dt);
@@ -128,10 +137,28 @@ function bindSceneEvents() {
     const [sx, sy] = toScreen(q.clone().setY(1.6));
     fx(sx, sy, '+1 ' + iconHTML(product, 'ic-fx'), 'green');
   });
+  on('fishCast', () => { const b = bobberPos(); splash3(b.x, b.z, 5); });
+  on('fishBite', () => { const b = bobberPos(); splash3(b.x, b.z, 8); });
+  on('fishCaught', ({ kind }) => {
+    reelAnim();
+    const b = bobberPos();
+    splash3(b.x, b.z, 10);
+    spawnFly(kind, b.clone().setY(0.6), barnDoor(), 0.1);
+    const [sx, sy] = toScreen(b.clone().setY(1.6));
+    fx(sx, sy, (kind === 'goldfish' ? 'Wow! ' : '+1 ') + iconHTML(kind, 'ic-fx') + ' ' + ITEMS[kind].name + (kind === 'goldfish' ? '!' : ''), kind === 'goldfish' ? 'gold' : 'green');
+  });
+  on('fishMissed', ({ early }) => {
+    reelAnim();
+    const b = bobberPos();
+    const [sx, sy] = toScreen(b.clone().setY(1.4));
+    fx(sx, sy, early ? 'Too early! Wait for the splash' : 'It got away!', 'red');
+  });
   on('truckArrive', ({ who }) => {
     truckLeaving(false);
     truckSay('Beep beep! Order for ' + who + '!');
     honk();
+    // On a small screen the truck can park out of view; glide over to it (but never yank the view off the river).
+    if (!isFishing() && !walkingToFish() && !inView(TRUCK_STOP.x, TRUCK_STOP.z, 0.5)) focusOn(TRUCK_STOP.x - 1, TRUCK_STOP.z);
   });
   on('truckDone', ({ coins, tip, items }) => {
     truckLeaving(true);

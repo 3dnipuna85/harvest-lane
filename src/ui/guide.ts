@@ -13,6 +13,8 @@ const PAGES: { pic: string; title: string; body: string }[] = [
     body: 'The 🚚 pill at the top shows when the next truck comes and what it wants, so you can grow it in time. When the truck parks, tap it to load. Load it fast for a <b>tip</b>. If you\'re too late the driver leaves angry and your ★ stars drop. More stars means trucks pay more.' },
   { pic: uiImg('cow'), title: 'Animals',
     body: '🐔 Hens eat wheat and lay 🥚 eggs. 🐄 Cows eat corn and give 🥛 milk. 🐖 Pigs eat carrots and dig up 🍄 truffles. 🐑 Sheep eat corn and grow 🧶 wool. Tap an animal to feed it, and tap again when its product is ready. Or use <b>Feed and collect all</b> in the Animals tab.' },
+  { pic: '<span class="g-emoji">🎣</span>', title: 'Fishing',
+    body: 'Tap the river, or the 🎣 button, and your farmer walks down to the dock and casts. Watch the bobber. When it splashes and says <b>Tap now!</b>, tap quickly to reel in a 🐟 fish, a 🦀 crab, or if you\'re lucky a rare 🐠 golden fish. Tap too early and it swims away.' },
   { pic: uiImg('hammer'), title: 'Machines',
     body: 'Build a Bakery, Popcorn Pot, Juicer and more in <b>Machines</b>. They turn crops into goods that sell for much more than raw crops.' },
   { pic: charImg('girl-head'), title: 'Helpers',

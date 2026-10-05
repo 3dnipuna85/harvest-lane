@@ -13,6 +13,11 @@ export interface GameEvents {
   sellerSale: { item: ItemId; coins: number };
   animalFed: { kind: AnimalId; i: number };
   animalCollect: { kind: AnimalId; i: number; product: ProductId };
+  fishCast: Record<string, never>;
+  fishBite: Record<string, never>;
+  fishCaught: { kind: ProductId };
+  /** The fish got away: reeled in too early, or too late after the bite. */
+  fishMissed: { early: boolean };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };

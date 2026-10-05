@@ -2,7 +2,7 @@ import { CROPS, type CropId } from './crops';
 
 export type GoodId = 'bread' | 'popcorn' | 'juice' | 'sauce' | 'cake';
 /** Things animals give: collected from the pen and the yard, not made in a workshop. */
-export type ProductId = 'egg' | 'milk' | 'truffle' | 'wool';
+export type ProductId = 'egg' | 'milk' | 'truffle' | 'wool' | 'fish' | 'crab' | 'goldfish';
 export type ItemId = CropId | GoodId | ProductId;
 
 export interface Good {
@@ -26,6 +26,9 @@ export const PRODUCTS: Record<ProductId, Good> = {
   milk:    { name: 'Milk',    icon: '🥛', sell: 26 },
   truffle: { name: 'Truffle', icon: '🍄', sell: 55 },
   wool:    { name: 'Wool',    icon: '🧶', sell: 48 },
+  fish:    { name: 'Fish',    icon: '🐟', sell: 14 },
+  crab:    { name: 'Crab',    icon: '🦀', sell: 34 },
+  goldfish: { name: 'Golden Fish', icon: '🐠', sell: 150 },
 };
 export const PRODUCT_IDS = Object.keys(PRODUCTS) as ProductId[];
 

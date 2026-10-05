@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { buyPlot, loadTruck, tapAnimal } from '../ui/actions';
 import { save, type Tab } from '../game/state';
-import { tapPlot } from '../scene/actors/ai';
-import { applyCam, getZoom, pan, setZoom, view } from '../scene/camera';
+import { isFishing, tapPlot } from '../scene/actors/ai';
+import { line } from '../game/fishing';
+import { applyCam, cancelFocus, focusOn, getZoom, pan, setZoom, view } from '../scene/camera';
+import { tapWater } from '../scene/actors/fishing';
+import { FISH_SPOT } from '../scene/layout';
 import { ctx } from '../scene/context';
 import { $ } from '../ui/format';
 import { openOffice } from '../ui/office';
@@ -27,8 +30,11 @@ function pick(cx: number, cy: number) {
     if (u.type === 'bld') { openTab(u.id === 'barn' ? 'barn' : 'machines'); return; }
     if (u.type === 'cart') { openTab('helpers'); return; }
     if (u.type === 'animal') { tapAnimal(u.kind, u.i); $('hint').classList.add('gone'); save(); return; }
+    if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'truck') { if (!loadTruck(cx, cy)) openTab('orders'); save(); return; }
   }
+  // With a line in the water, a tap anywhere else reels in, so a bite is never lost to a near miss.
+  if (isFishing() && line.state !== 'idle') tapWater();
 }
 
 /** Tap vs drag, one-finger pan, two-finger pinch, mouse wheel and the +/- buttons. */
@@ -39,6 +45,7 @@ export function bindInput() {
   let pd: { x: number; y: number; px: number; py: number; drag: boolean } | null = null;
 
   cvs.addEventListener('pointerdown', e => {
+    cancelFocus();
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (touches.size === 2) {
       const [a, b] = [...touches.values()];
@@ -74,6 +81,9 @@ export function bindInput() {
     if (!was.drag && Math.hypot(e.clientX - was.x, e.clientY - was.y) < 10) pick(e.clientX, e.clientY);
   });
   addEventListener('pointercancel', e => { pd = null; touches.delete(e.pointerId); pinch = null; });
+  $('fishBtn').addEventListener('click', () => { focusOn(FISH_SPOT.x + 1, FISH_SPOT.z - 1); tapWater(); });
+  // The fishing labels over the water are tappable too.
+  ctx.overlay.addEventListener('click', e => { if ((e.target as HTMLElement).closest('.fishsign')) { tapWater(); save(); } });
   $('zin').addEventListener('click', () => setZoom(getZoom() * 1.2));
   $('zout').addEventListener('click', () => setZoom(getZoom() / 1.2));
 }

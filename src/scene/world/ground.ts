@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BX, BZ, CARTP, GW, PEN, ROADZ } from '../layout';
+import { BX, BZ, CARTP, DOCK, GW, PEN, RIVER_HW, ROADZ, riverZ } from '../layout';
 
 type Pt = [number, number];
 
@@ -58,13 +58,22 @@ export function groundTexture() {
   for (let j = 1; j < 6; j++) path([[BX[j], BZ + 1], [BX[j], ROADZ]], 0.8);
   path([[0, ROADZ], [0, -2]], 1.2);
   path([[CARTP.x, ROADZ], [CARTP.x, CARTP.z]], 1.3);
+  // the dock path: along the front of the field, through the gate, down to the river
+  path([[DOCK.x, 9.2], [DOCK.x, DOCK.z0 + 0.3]], 1.0);
+  // sandy river banks under the water ribbon
+  for (const [col, w] of [['#c9b27a', RIVER_HW + 0.75], ['#e6d3a0', RIVER_HW + 0.5]] as [string, number][]) {
+    x.fillStyle = col; x.beginPath();
+    for (let wx = -GW / 2; wx <= GW / 2; wx += 0.5) { const [a, b] = P(wx, riverZ(wx) - w); wx === -GW / 2 ? x.moveTo(a, b) : x.lineTo(a, b); }
+    for (let wx = GW / 2; wx >= -GW / 2; wx -= 0.5) { const [a, b] = P(wx, riverZ(wx) + w); x.lineTo(a, b); }
+    x.closePath(); x.fill();
+  }
   // pen ground
   rr(PEN.x0, PEN.z0, PEN.x1, PEN.z1, 0.8, '#b9a55c', '#957f40');
   // grass tufts and tiny flowers
   for (let i = 0; i < 2200; i++) {
     const px = Math.random() * N, pz = Math.random() * N, wx = px / k - GW / 2, wz = pz / k - GW / 2;
     if (wx > -7.4 && wx < 7.4 && wz > -2.3 && wz < 9.1) continue;
-    if (Math.abs(wz - ROADZ) < 1.2) continue;
+    if (Math.abs(wz - ROADZ) < 1.2 || Math.abs(wz - riverZ(wx)) < RIVER_HW + 0.8) continue;
     x.strokeStyle = 'rgba(70,140,40,.55)'; x.lineWidth = 2.2;
     x.beginPath();
     x.moveTo(px - 4, pz); x.lineTo(px - 1, pz - 8);
@@ -75,7 +84,7 @@ export function groundTexture() {
   const fc = ['#ffffff', '#ffe066', '#ff8fbf', '#c8a6ff', '#ff6b5e'];
   for (let i = 0; i < 520; i++) {
     const px = Math.random() * N, pz = Math.random() * N, wx = px / k - GW / 2, wz = pz / k - GW / 2;
-    if ((wx > -7.6 && wx < 7.6 && wz > -2.5 && wz < 9.3) || Math.abs(wz - ROADZ) < 1.3) continue;
+    if ((wx > -7.6 && wx < 7.6 && wz > -2.5 && wz < 9.3) || Math.abs(wz - ROADZ) < 1.3 || Math.abs(wz - riverZ(wx)) < RIVER_HW + 0.8) continue;
     x.fillStyle = fc[i % 5];
     for (let a = 0; a < 5; a++) { x.beginPath(); x.arc(px + Math.cos(a * 1.26) * 4, pz + Math.sin(a * 1.26) * 4, 3.4, 0, 7); x.fill(); }
     x.fillStyle = '#f2b318'; x.beginPath(); x.arc(px, pz, 2.6, 0, 7); x.fill();

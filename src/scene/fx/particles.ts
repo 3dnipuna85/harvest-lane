@@ -46,3 +46,13 @@ export function updatePuffs(dt: number) {
   }
   puffs = puffs.filter(p => p.life > 0);
 }
+
+/** Water droplets thrown up from the river. */
+export function splash3(x: number, z: number, n = 6) {
+  for (let k = 0; k < n; k++) {
+    const m = new THREE.Mesh(Sph(0.07 + Math.random() * 0.05), puffMat(k % 2 ? '#ffffff' : '#bfeaff', 0.95));
+    m.position.set(x, 0.15, z); ctx.scene.add(m);
+    const a = Math.random() * Math.PI * 2, s = 0.6 + Math.random() * 0.9;
+    puffs.push({ m, vx: Math.cos(a) * s, vy: 2 + Math.random() * 1.5, vz: Math.sin(a) * s, life: 0.6, max: 0.6, grow: 0.2, op: 0.95, g: -9 });
+  }
+}

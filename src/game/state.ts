@@ -1,5 +1,5 @@
 import { CROPS, type CropId } from '../data/crops';
-import type { ItemId } from '../data/goods';
+import { PRODUCT_IDS, type ItemId, type ProductId } from '../data/goods';
 import { MACHINE_IDS, type MachineId } from '../data/machines';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { START_PLOTS } from '../data/limits';
@@ -50,7 +50,7 @@ export interface State {
   /** Buyer reputation, 1 to 5 stars. On-time trucks raise it and pay more; missed trucks lower it. */
   rep: number;
   /** Lifetime totals shown on the player's profile. */
-  stats: { earned: number; harvested: number; orders: number; trucks: number; missed: number };
+  stats: { earned: number; harvested: number; orders: number; trucks: number; missed: number; fish: number };
   /** Lifetime count of each animal product collected. Buyers only ask for products the player has made before. */
   made: Partial<Record<ItemId, number>>;
   saved: number;
@@ -77,7 +77,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 }, made: {}, saved: t,
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0 }, made: {}, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -115,7 +115,7 @@ export function migrate(raw: unknown): State {
   if (!(out.sel in CROPS)) out.sel = 'wheat';
   if (!Array.isArray(out.orders)) out.orders = [];
   // Older saves could queue a truck for an animal product the player never made; ask again.
-  const unmade = (it: unknown) => !!it && Object.keys(it as object).some(k => ['egg', 'milk', 'truffle', 'wool'].includes(k) && !out.made[k as ItemId]);
+  const unmade = (it: unknown) => !!it && Object.keys(it as object).some(k => PRODUCT_IDS.includes(k as ProductId) && !out.made[k as ItemId]);
   if (unmade(out.nextWants)) out.nextWants = null;
   out.orders = out.orders.filter(o => !unmade(o?.items));
   return out;

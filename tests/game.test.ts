@@ -151,7 +151,7 @@ describe('profile stats', () => {
     expect(S.stats.orders).toBe(1);
     expect(S.stats.earned).toBe(o.coins);
     const { stats: _drop, ...old } = S;
-    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 });
+    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0 });
   });
 });
 
@@ -231,5 +231,28 @@ describe('buyers only ask for products you have made', () => {
   it('drops a queued truck preview for an unmade product on load', () => {
     const m = migrate({ ...fresh(), nextWants: { truffle: 2 }, made: undefined });
     expect(m.nextWants).toBeNull();
+  });
+});
+
+describe('fishing', () => {
+  it('bites after the wait, catches during the bite, misses when early or late', async () => {
+    const f = await import('../src/game/fishing');
+    f.resetFishing();
+    expect(f.cast(t, () => 0)).toBe(true);
+    expect(f.reel(t + 100)).toBeNull(); // too early
+    expect(f.line.state).toBe('idle');
+    f.cast(t, () => 0);
+    f.fishTick(t + 2600);
+    expect(f.line.state).toBe('bite');
+    expect(f.reel(t + 3000, () => 0.1)).toBe('fish');
+    expect(inv('fish')).toBe(1);
+    expect(S.made.fish).toBe(1);
+    expect(S.stats.fish).toBe(1);
+    f.cast(t, () => 0);
+    f.fishTick(t + 2600);
+    f.fishTick(t + 2600 + 2000); // waited too long
+    expect(f.line.state).toBe('idle');
+    f.cast(t, () => 0); f.fishTick(t + 2600);
+    expect(f.reel(t + 2700, () => 0.99)).toBe('goldfish');
   });
 });

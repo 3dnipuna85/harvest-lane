@@ -5,7 +5,8 @@ import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
 import { S } from '../../game/state';
 import { fx, shakeScene, toast } from '../../ui/toasts';
-import { CARTP, PITCH, ROADZ, plotPos } from '../layout';
+import { CARTP, FISH_SPOT, PITCH, ROADZ, plotPos } from '../layout';
+import { cast, stopFishing } from '../../game/fishing';
 import { lbl, toScreen } from '../fx/labels';
 import { mkChar, poseChar, removeChar, type Char } from './person';
 
@@ -17,12 +18,15 @@ let player: Char;
 let hands: Char[] = [];
 let sellers: Char[] = [];
 let saleTurn = 0;
+/** True while the farmer stands at the end of the dock with a rod. */
+let fishing = false;
+export const isFishing = () => fishing;
 
 /** The player's farmer, for followers like the dog. */
 export const getPlayer = () => player;
 
 export function initActors() {
-  queue = []; res.clear(); hands = []; sellers = []; saleTurn = 0;
+  queue = []; res.clear(); hands = []; sellers = []; saleTurn = 0; fishing = false; stopFishing();
   player = mkChar('player', 0);
   player.x = 0; player.z = ROADZ; player.face = Math.PI / 4;
 }
@@ -84,7 +88,7 @@ function seedDenied(crop: CropId = S.sel) {
 
 function updateChar(c: Char, dt: number) {
   if (c.state === 'idle') {
-    if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) goTo(c, q.i, q.crop); }
+    if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) { leaveWater(); goTo(c, q.i, q.crop); } }
     else if (c.kind === 'hand') { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i); else c.idleT = 0.6; } }
   }
   if (c.state === 'walk') {
@@ -93,7 +97,9 @@ function updateChar(c: Char, dt: number) {
     if (d <= step) {
       c.x = c.tx; c.z = c.tz;
       const nx = c.path.shift();
-      if (nx) { c.tx = nx.x; c.tz = nx.z; } else startWork(c);
+      if (nx) { c.tx = nx.x; c.tz = nx.z; }
+      else if (c.onArrive) { const f = c.onArrive; c.onArrive = undefined; c.state = 'idle'; f(); }
+      else startWork(c);
     }
     else { c.x += (dx / d) * step; c.z += (dz / d) * step; c.phase += dt * (c.kind === 'player' ? 15 : 11); }
   } else if (c.state === 'work') {
@@ -154,3 +160,23 @@ export function tapPlot(i: number) {
   // Remember the seed selected right now, so changing the selection later never changes this plot.
   queue.push({ i, crop: S.sel });
 }
+
+function leaveWater() {
+  if (!fishing) return;
+  fishing = false;
+  stopFishing();
+}
+
+/** Send the farmer down the path between the plot columns, through the gate, to the end of the dock. Casts on arrival. */
+export function goFish(): 'walking' | 'there' | 'busy' {
+  if (fishing) return 'there';
+  if (player.state !== 'idle' || player.task || queue.length) return 'busy';
+  player.tx = FISH_SPOT.x; player.tz = player.z;
+  player.path = [{ x: FISH_SPOT.x, z: FISH_SPOT.z }];
+  player.state = 'walk';
+  player.onArrive = () => { fishing = true; player.face = 0; cast(); };
+  return 'walking';
+}
+
+/** True while the farmer is on the way to the dock. */
+export const walkingToFish = () => player.state === 'walk' && !!player.onArrive;

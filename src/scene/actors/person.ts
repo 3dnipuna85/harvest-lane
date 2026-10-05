@@ -31,6 +31,8 @@ export interface Char {
   task: { i: number; crop: CropId } | null;
   /** Remaining waypoints after (tx, tz), so walks follow the paths between plots. */
   path: { x: number; z: number }[];
+  /** Called instead of starting plot work when a walk with no task ends. */
+  onArrive?: () => void;
   done: boolean;
   idleT: number;
   wave: number;

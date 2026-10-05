@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { S } from '../../game/state';
 import { ctx } from '../context';
 import { Cap, Cyl, RB, Sph, part } from '../geometry';
-import { CARTP, GW, PEN, ROADZ } from '../layout';
+import { CARTP, DOCK, GW, PEN, ROADZ } from '../layout';
 import { T, olMat, toonGrad } from '../materials';
 import { groundTexture } from './ground';
 
@@ -55,7 +55,9 @@ export function buildWorld() {
   const far = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), T('#74c043'));
   far.rotation.x = -Math.PI / 2; far.position.y = -0.02; g.add(far);
   // white picket farm fence (gaps where the road leaves)
-  fenceLine(g, [[-13, ROADZ + 1.6], [-13, 10.6], [13, 10.6], [13, ROADZ + 1.6]], 0.75, '#fffaf0', '#f3ead8');
+  // a gate gap at the dock path to the river
+  fenceLine(g, [[-13, ROADZ + 1.6], [-13, 10.6], [DOCK.x - 0.75, 10.6]], 0.75, '#fffaf0', '#f3ead8');
+  fenceLine(g, [[DOCK.x + 0.75, 10.6], [13, 10.6], [13, ROADZ + 1.6]], 0.75, '#fffaf0', '#f3ead8');
   fenceLine(g, [[-13, ROADZ - 1.6], [-13, -9.4], [13, -9.4], [13, ROADZ - 1.6]], 0.75, '#fffaf0', '#f3ead8');
   // animal pen with a trough
   fenceLine(g, [[PEN.x0, PEN.z0], [PEN.x1, PEN.z0], [PEN.x1, PEN.z1], [PEN.x0, PEN.z1], [PEN.x0, PEN.z0]], 0.85);
@@ -63,9 +65,9 @@ export function buildWorld() {
   part(RB(0.75, 0.12, 0.36, 0.08), '#7ec6e8', g, PEN.x0 + 0.8, 0.4, PEN.z1 - 0.6, { ol: false });
   // trees, bushes, hay
   tree(g, -6.2, -9.2, 0.95, '#ff5b5b'); tree(g, 3.2, -9.4, 1.05, '#ff5b5b'); tree(g, 9.3, -8.6, 1.1);
-  tree(g, 11.6, 7.4, 1.3, '#ff5b5b'); tree(g, -12, 10, 1.2); tree(g, 4.5, 12, 1.3); tree(g, -4, 12.4, 1.2);
-  tree(g, 15, 0, 1.4); tree(g, -15.5, 4, 1.4); tree(g, 14.5, -6, 1.3, '#ff8a3d'); tree(g, -15, -7, 1.3); tree(g, 9, 13, 1.3); tree(g, -9.5, 13.5, 1.3, '#ff5b5b');
-  for (const [x, z, s] of [[9.2, 9.8, 1], [10.3, 9.6, 0.8], [-6, 10, 0.9], [2, 10.1, 0.85], [-12.2, 6.5, 0.9], [12.2, -1.7, 0.9], [-3, -9, 0.8], [7, -9, 0.85]]) bush(g, x, z, s);
+  tree(g, 11.6, 7.4, 1.3, '#ff5b5b'); tree(g, -12, 10, 1.2); tree(g, 4.5, 17.4, 1.3); tree(g, -4, 17.6, 1.2);
+  tree(g, 15, 0, 1.4); tree(g, -15.5, 4, 1.4); tree(g, 14.5, -6, 1.3, '#ff8a3d'); tree(g, -15, -7, 1.3); tree(g, 9.5, 17.2, 1.3); tree(g, -9.5, 17.4, 1.3, '#ff5b5b'); tree(g, 0.5, 18.2, 1.2, '#ff8a3d'); tree(g, 14, 17.8, 1.3);
+  for (const [x, z, s] of [[9.2, 9.8, 1], [10.3, 9.6, 0.8], [-6, 10, 0.9], [2.2, 10.1, 0.85], [-12.2, 6.5, 0.9], [12.2, -1.7, 0.9], [-3, -9, 0.8], [7, -9, 0.85]]) bush(g, x, z, s);
   for (const [x, z] of [[9.4, 5.2], [10.1, 5.9]]) {
     const h = part(Cyl(0.38, 0.38, 0.6, 18), '#f0cd5f', g, x, 0.38, z);
     h.rotation.z = Math.PI / 2;
