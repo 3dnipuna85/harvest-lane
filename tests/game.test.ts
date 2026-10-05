@@ -217,3 +217,19 @@ describe('animals', () => {
     expect(S.truck!.items).toEqual(wants);
   });
 });
+
+describe('buyers only ask for products you have made', () => {
+  it('skips animal products until one is collected', async () => {
+    const { newOrder } = await import('../src/game/orders');
+    S.level = 6; S.animals.pig.n = 1;
+    for (let j = 0; j < 200; j++) expect(newOrder().items.truffle).toBeUndefined();
+    S.made.truffle = 1;
+    let seen = false;
+    for (let j = 0; j < 400 && !seen; j++) seen = !!newOrder().items.truffle;
+    expect(seen).toBe(true);
+  });
+  it('drops a queued truck preview for an unmade product on load', () => {
+    const m = migrate({ ...fresh(), nextWants: { truffle: 2 }, made: undefined });
+    expect(m.nextWants).toBeNull();
+  });
+});

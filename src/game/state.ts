@@ -51,6 +51,8 @@ export interface State {
   rep: number;
   /** Lifetime totals shown on the player's profile. */
   stats: { earned: number; harvested: number; orders: number; trucks: number; missed: number };
+  /** Lifetime count of each animal product collected. Buyers only ask for products the player has made before. */
+  made: Partial<Record<ItemId, number>>;
   saved: number;
 }
 
@@ -75,7 +77,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 }, saved: t,
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 }, made: {}, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -100,6 +102,7 @@ export function migrate(raw: unknown): State {
   while (v < SAVE_VERSION && MIGRATIONS[v]) { s = MIGRATIONS[v](s); v++; }
   const out: State = { ...base, ...s, version: SAVE_VERSION, inv: { ...(s.inv || {}) }, machines: { ...base.machines } } as State;
   out.stats = { ...base.stats, ...(s.stats || {}) };
+  out.made = { ...(s.made && typeof s.made === 'object' ? s.made : {}) };
   out.animals = freshHerds();
   for (const k of ANIMAL_IDS) {
     const h = s.animals?.[k];
@@ -111,6 +114,10 @@ export function migrate(raw: unknown): State {
   out.plots = (s.plots as Raw[]).map(p => (p && p.crop in CROPS ? { crop: p.crop, at: +p.at || 0 } : { crop: null, at: 0 }));
   if (!(out.sel in CROPS)) out.sel = 'wheat';
   if (!Array.isArray(out.orders)) out.orders = [];
+  // Older saves could queue a truck for an animal product the player never made; ask again.
+  const unmade = (it: unknown) => !!it && Object.keys(it as object).some(k => ['egg', 'milk', 'truffle', 'wool'].includes(k) && !out.made[k as ItemId]);
+  if (unmade(out.nextWants)) out.nextWants = null;
+  out.orders = out.orders.filter(o => !unmade(o?.items));
   return out;
 }
 

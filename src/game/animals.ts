@@ -38,6 +38,7 @@ export function collectAnimal(k: AnimalId, i: number, t = now()): boolean {
   const a = ANIMALS[k];
   S.animals[k].ready[i] = null;
   add(a.product, 1);
+  S.made[a.product] = (S.made[a.product] || 0) + 1;
   gainXP(a.xp);
   emit('animalCollect', { kind: k, i, product: a.product });
   return true;

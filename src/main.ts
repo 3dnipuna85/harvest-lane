@@ -20,6 +20,7 @@ import { bindHud, updateHud } from './ui/hud';
 import { bindPanelInput, panelSignature, renderPanel, renderTabs, updatePanel } from './ui/panel';
 import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
+import { bindGuide } from './ui/guide';
 
 let seedSig = '', panelSig = '', lastT = 0;
 
@@ -44,6 +45,7 @@ function start() {
   fillOrders();
   bindHud();
   bindPanelInput();
+  bindGuide(S.level <= 2 && S.stats.harvested < 5);
   // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.
   const dock = document.querySelector<HTMLElement>('.dock')!;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px')).observe(dock);

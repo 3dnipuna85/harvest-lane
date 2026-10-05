@@ -8,7 +8,7 @@ import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { animalCost, animalState, animalUnlocked } from '../game/animals';
-import { save, S, type Tab } from '../game/state';
+import { save, S, type Order, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
@@ -68,7 +68,7 @@ export function renderPanel() {
     h = '<div class="list">' + truckCard() + S.orders.map((o, i) => `
       <div class="card"><div class="top"><div class="big">${customerFace(o.who)}</div><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
         <div class="reward">${coinHTML}${fmt(o.coins)} <span class="small">+${o.xp} XP</span></div></div>
-        <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
+        <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>${hints(o)}
         <div class="row"><button class="btn" data-act="deliver" data-i="${i}" data-check="order:${i}">Deliver</button>
         <button class="btn alt" data-act="skip" data-i="${i}" data-check="skip">Skip</button><span class="small" data-skipnote></span></div>
       </div>`).join('') + '</div>';
@@ -99,6 +99,19 @@ export function renderPanel() {
   $('panel').innerHTML = h;
 }
 
+/** Where to get an item, for any non-crop need the barn has none of. */
+function whereFrom(k: ItemId) {
+  const a = ANIMAL_IDS.find(id => ANIMALS[id].product === k);
+  if (a) return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} comes from the ${ANIMALS[a].name.toLowerCase()}: tap it on the farm to feed it ${ANIMALS[a].feedQty} ${iconHTML(ANIMALS[a].feed, 'ic-inline')}, then tap again to collect.`;
+  const m = MACHINE_IDS.find(id => MACHINES[id].out === k);
+  if (m) return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} is made in the ${MACHINES[m].name}.`;
+  return '';
+}
+const hints = (o: Order) => {
+  const h = orderItems(o).filter(([k]) => inv(k) === 0).map(([k]) => whereFrom(k)).filter(Boolean);
+  return h.length ? `<div class="wherefrom">${h.join('<br>')}</div>` : '';
+};
+
 const stars = () => '★★★★★'.slice(0, Math.round(S.rep)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(S.rep));
 
 function truckCard() {
@@ -110,7 +123,7 @@ function truckCard() {
       <div class="sub"><span class="rep">${stars()}</span> Load before the timer runs out or they leave.</div></div>
       <div class="reward">${coinHTML}<span data-tpay>${fmt(k.coins)}</span> <span class="small">+${k.xp} XP</span></div></div>
     <div class="tbar big"><i data-tbar></i></div>
-    <div class="needs">${orderItems(k).map(([i, q]) => `<span class="need" data-need="${i}" data-q="${q}">${iconHTML(i, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
+    <div class="needs">${orderItems(k).map(([i, q]) => `<span class="need" data-need="${i}" data-q="${q}">${iconHTML(i, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>${hints(k)}
     <div class="row"><button class="btn gold" data-act="truck" data-check="truck">Load truck</button><span class="small grow" data-tnote></span></div>
   </div>`;
 }

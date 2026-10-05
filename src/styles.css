@@ -379,3 +379,27 @@ body.office-open .zoom{display:none}
 @keyframes aBob{50%{margin-top:-5px}}
 .animal-ic{font-size:30px;display:grid;place-items:center}
 .row.tend{gap:8px;align-items:center}
+
+/* where a missing item comes from */
+.wherefrom { font-size: 12px; line-height: 1.35; color: #7a5a34; background: #fff3d6; border-radius: 10px; padding: 6px 9px; margin: 2px 0 6px; }
+.wherefrom .ic-inline { width: 16px; height: 16px; vertical-align: -3px; }
+
+/* How to play guide */
+.guide{position:fixed;inset:0;z-index:72;display:grid;place-items:center;padding:16px;background:rgba(30,45,15,.55);animation:luFade .3s ease-out}
+.guide.out{animation:luFade .3s ease-in reverse forwards}
+.g-card{position:relative;width:min(420px,100%);display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:16px;animation:luPop .45s cubic-bezier(.2,1.6,.4,1)}
+.g-card .close{position:absolute;right:10px;top:10px}
+.g-host{display:flex;align-items:center;gap:10px;padding:0 48px 0 14px}
+.g-host img{width:54px;height:54px;object-fit:contain}
+.g-page{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;min-height:220px}
+.g-pic img,.g-pic .ic-emoji,.g-emoji{width:64px;height:64px;object-fit:contain;font-size:52px;line-height:64px;display:block;animation:luBob 1.6s ease-in-out infinite}
+.g-page h3{margin:6px 0 4px;font-family:var(--display);font-weight:400;font-size:22px;color:#8a5a2e}
+.g-page p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink);max-width:36ch}
+.g-dots{display:flex;gap:7px}
+.g-dots i{width:9px;height:9px;border-radius:50%;background:#e5cfa4;cursor:pointer}
+.g-dots i.on{background:#c98a2e;transform:scale(1.25)}
+.g-nav{display:flex;gap:10px}
+.g-nav .btn{min-width:110px;font-size:16px;padding:9px 18px}
+.g-nav .btn:disabled{opacity:.45}
+.zoom .help{font-size:22px;color:#2e7d32}
+@media (prefers-reduced-motion:reduce){.g-pic img,.g-pic .ic-emoji,.g-emoji{animation:none}}

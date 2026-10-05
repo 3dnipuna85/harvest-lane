@@ -10,7 +10,7 @@ import { S, type Order } from './state';
 function orderPool() {
   const pool: { k: ItemId; crop: boolean }[] = unlockedCrops().map(k => ({ k, crop: true }));
   for (const m of MACHINE_IDS) if (S.machines[m].owned) pool.push({ k: MACHINES[m].out, crop: false });
-  for (const a of ANIMAL_IDS) if (S.level >= ANIMALS[a].lvl && S.animals[a].n > 0) pool.push({ k: ANIMALS[a].product, crop: false });
+  for (const a of ANIMAL_IDS) if (S.level >= ANIMALS[a].lvl && S.animals[a].n > 0 && (S.made[ANIMALS[a].product] || 0) > 0) pool.push({ k: ANIMALS[a].product, crop: false });
   return pool;
 }
 
