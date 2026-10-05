@@ -39,10 +39,15 @@ export const ASPECT: Record<string, number> = {
   'stall-boy': 0.969,
   'stall-girl': 0.934,
 };
+/** The main character's animation sheets (assets/elements/main character): 8 frames each, all on one canvas so they line up. */
+export const FARMER_FRAMES = 8;
+for (const anim of ['walk', 'pull', 'plant']) for (let i = 0; i < FARMER_FRAMES; i++) ASPECT[`farmer-${anim}-${i}`] = 0.813;
 
 const loader = new THREE.TextureLoader();
 const TEX: Record<string, THREE.Texture> = {};
 const tex = (name: string) => TEX[name] || (TEX[name] = loader.load(charUrl(name)));
+/** Load a set of frames up front so an animation never flashes an empty frame the first time it plays. */
+export const preloadFrames = (names: string[]) => names.forEach(tex);
 
 const shadowGeo = new THREE.CircleGeometry(1, 20);
 const shadowMat = new THREE.MeshBasicMaterial({ color: '#2f4a1a', transparent: true, opacity: 0.28, depthWrite: false });

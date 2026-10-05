@@ -1,5 +1,5 @@
 import { BX, BZ } from '../layout';
-import { billboard, removeBillboard, screenDir, setFrame, type Billboard } from './sprites';
+import { ASPECT, billboard, FARMER_FRAMES, preloadFrames, removeBillboard, screenDir, setFrame, type Billboard } from './sprites';
 
 export type CharKind = 'player' | 'hand' | 'seller';
 export interface Char {
@@ -28,9 +28,10 @@ export interface Char {
 const SELLERS = ['baker', 'grocer', 'grandma', 'oldfarmer', 'kid'];
 
 export function mkChar(kind: CharKind, i: number): Char {
-  const look = kind === 'player' ? 'boy' : kind === 'hand' ? 'girl' : SELLERS[i % SELLERS.length];
-  const animated = kind !== 'seller';
-  const v = billboard(animated ? look + '-idle' : look, kind === 'player' ? 1.75 : 1.6, 0.38);
+  const look = kind === 'player' ? 'farmer' : kind === 'hand' ? 'girl' : SELLERS[i % SELLERS.length];
+  const first = kind === 'player' ? 'farmer-pull-0' : kind === 'hand' ? 'girl-idle' : look;
+  if (kind === 'player') preloadFrames(Object.keys(ASPECT).filter(n => n.startsWith('farmer-')));
+  const v = billboard(first, kind === 'player' ? 1.95 : 1.6, 0.38);
   return {
     id: kind + i, kind, x: BX[0] + 0.6 + i * 0.3, z: BZ + 2.0, tx: 0, tz: 0, face: 0, phase: Math.random() * 6, state: 'idle',
     act: 0, actDur: 0.5, actType: null, task: null, done: false, idleT: Math.random(), wave: 0,
@@ -51,6 +52,7 @@ export function poseChar(c: Char, t: number) {
     setFrame(v, c.look, c.flip, 1 - br, 1 + br, hop);
     return;
   }
+  if (c.look === 'farmer') { poseFarmer(c, t); return; }
   if (c.state === 'walk') {
     const d = screenDir(c.tx - c.x, c.tz - c.z);
     if (Math.abs(d.x) > 0.05) c.flip = d.x < 0;
@@ -67,4 +69,29 @@ export function poseChar(c: Char, t: number) {
   }
   const br = Math.sin(t * 2.4 + c.phase) * 0.015;
   setFrame(v, c.look + (c.wave > 0 ? '-wave' : '-idle'), c.flip, 1 - br, 1 + br);
+}
+
+/**
+ * The main character plays real frame animations: an 8-frame walk cycle (two steps per cycle),
+ * digging and planting a seedling when planting, and pulling up a crop when harvesting.
+ */
+function poseFarmer(c: Char, t: number) {
+  const v = c.v;
+  const at = (p: number) => Math.min(FARMER_FRAMES - 1, Math.floor(p * FARMER_FRAMES));
+  if (c.state === 'walk') {
+    const d = screenDir(c.tx - c.x, c.tz - c.z);
+    if (Math.abs(d.x) > 0.05) c.flip = d.x < 0;
+    const cyc = c.phase / (Math.PI * 2);
+    const f = Math.floor((cyc - Math.floor(cyc)) * FARMER_FRAMES);
+    setFrame(v, `farmer-walk-${f}`, c.flip, 1, 1, Math.abs(Math.sin(c.phase)) * 0.03);
+    return;
+  }
+  if (c.state === 'work') {
+    const p = c.act / c.actDur;
+    setFrame(v, `farmer-${c.actType === 'plant' ? 'plant' : 'pull'}-${at(p)}`, c.flip);
+    return;
+  }
+  const br = Math.sin(t * 2.4 + c.phase) * 0.012;
+  const hop = c.wave > 0 ? Math.abs(Math.sin(t * 10)) * 0.12 : 0;
+  setFrame(v, 'farmer-pull-0', c.flip, 1 - br, 1 + br, hop);
 }

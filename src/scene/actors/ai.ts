@@ -53,7 +53,7 @@ function startWork(c: Char) {
   const type = !p ? null : !p.crop ? 'plant' : ripe(p) ? 'harvest' : null;
   if (!type) { finish(c); return; }
   c.state = 'work'; c.act = 0; c.done = false; c.actType = type; c.face = Math.PI / 4;
-  c.actDur = c.kind === 'player' ? (type === 'plant' ? 0.55 : 0.45) : (type === 'plant' ? 0.95 : 0.8);
+  c.actDur = c.kind === 'player' ? (type === 'plant' ? 0.8 : 0.7) : (type === 'plant' ? 0.95 : 0.8);
 }
 
 function finish(c: Char) {
