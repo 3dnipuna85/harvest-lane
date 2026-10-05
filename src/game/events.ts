@@ -31,6 +31,9 @@ export interface GameEvents {
   wagesPaid: Record<string, never>;
   staffEnded: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' };
   truckArrive: { who: string };
+  contractArrive: { who: string };
+  contractDone: { coins: number; gems: number };
+  contractMissed: { coins: number };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number; fee: number };
 }

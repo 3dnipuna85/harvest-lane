@@ -1,3 +1,4 @@
+import { deliverContract } from '../game/contracts';
 import { MACHINES, type MachineId } from '../data/machines';
 import * as eco from '../game/economy';
 import { deliver as deliverOrder, fillOrders, skip as skipOrder } from '../game/orders';
@@ -55,6 +56,14 @@ export function loadTruck(_x: number, _y: number) {
     return false;
   }
   toast(r.who + ' paid ' + fmt(r.coins + r.tip) + ' coins' + (r.tip ? ', including a ' + fmt(r.tip) + ' tip!' : ''));
+  return true;
+}
+
+export function loadContract() {
+  const c = S.contract;
+  if (!c) return false;
+  if (!deliverContract()) { toast('Not enough goods in the barn yet for the contract.'); return false; }
+  toast(`Contract done! ${fmt(c.coins)} coins and ${c.gems} diamond${c.gems > 1 ? 's' : ''}.`);
   return true;
 }
 

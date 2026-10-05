@@ -62,7 +62,7 @@ export function buyShop(): BuyResult {
 /** What the waiting truck and the next one want. Trucks come first, so the shop never sells these. */
 export function truckReserve(): Partial<Record<ItemId, number>> {
   const r: Partial<Record<ItemId, number>> = {};
-  for (const w of [S.truck?.items, S.nextWants]) if (w) for (const [k, q] of Object.entries(w) as [ItemId, number][]) r[k] = (r[k] || 0) + q;
+  for (const w of [S.truck?.items, S.nextWants, S.contract?.items]) if (w) for (const [k, q] of Object.entries(w) as [ItemId, number][]) r[k] = (r[k] || 0) + q;
   return r;
 }
 

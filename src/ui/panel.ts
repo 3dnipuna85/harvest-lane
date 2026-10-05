@@ -1,3 +1,4 @@
+import { canFillContract } from '../game/contracts';
 import { sellersIdle } from '../game/sim';
 import { farmAction, farmPanel, farmSignature } from './estate';
 import type { CropId } from '../data/crops';
@@ -48,7 +49,7 @@ export function panelSignature() {
   const parts: unknown[] = [S.tab, S.level];
   if (S.tab === 'farm') parts.push(farmSignature());
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
-  if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
+  if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, S.contract?.arrive ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
   if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','), sickCount());
   if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, sellersIdle(), resetArmed, S.staff.manager, S.staff.keeper, timeLeft('manager') > 0, timeLeft('keeper') > 0);
@@ -79,7 +80,7 @@ export function renderPanel() {
   const pl = officePlace();
   if (pl) { $('panel').innerHTML = townPanel(pl); return; }
   if (S.tab === 'orders') {
-    h = '<div class="list">' + truckCard() + S.orders.map((o, i) => `
+    h = '<div class="list">' + contractCard() + truckCard() + S.orders.map((o, i) => `
       <div class="card"><div class="top"><div class="big">${customerFace(o.who)}</div><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
         <div class="reward">${coinHTML}${fmt(o.coins)} <span class="small">+${o.xp} XP</span></div></div>
         <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>${hints(o)}
@@ -152,6 +153,17 @@ function truckCard() {
   </div>`;
 }
 
+function contractCard() {
+  const c = S.contract;
+  if (!c) return '';
+  const items = Object.entries(c.items) as [ItemId, number][];
+  return `<div class="card truckcard contractcard"><div class="top"><div class="big">📋</div><div class="grow"><div class="ttl">Contract: ${c.who}</div>
+    <div class="sub">A wholesale order for machine goods, waiting by the pen. <b data-cleft></b></div></div>
+    <div class="reward">${coinHTML}${fmt(c.coins)} <span class="small">+${c.gems} 💎</span></div></div>
+    <div class="needs">${items.map(([i, q]) => `<span class="need" data-need="${i}" data-q="${q}">${iconHTML(i, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>${hints({ id: 0, who: '', coins: 0, xp: 0, items: c.items })}
+    <div class="row"><button class="btn gold" data-act="contract" data-check="contract">Load the lorry</button></div></div>`;
+}
+
 function animalCard(k: AnimalId) {
   const a = ANIMALS[k], h = S.animals[k];
   const what = `Eats ${a.feedQty} ${iconHTML(a.feed, 'ic-inline')} → ${iconHTML(a.product, 'ic-inline')} ${ITEMS[a.product].name} every ${a.time}s · sells for ${ITEMS[a.product].sell}`;
@@ -193,6 +205,7 @@ export function updatePanel() {
     else if (kind === 'order') ok = !!S.orders[+arg] && canFill(S.orders[+arg]);
     else if (kind === 'skip') ok = canSkip();
     else if (kind === 'truck') ok = canFillTruck();
+    else if (kind === 'contract') ok = canFillContract();
     else if (kind === 'tend') ok = ANIMAL_IDS.some(k => animalUnlocked(k) && S.animals[k].ready.some((_, i) => { const st = animalState(k, i); return st === 'ready' || (st === 'hungry' && inv(ANIMALS[k].feed) >= ANIMALS[k].feedQty); }));
     b.disabled = !ok;
   });
@@ -210,6 +223,7 @@ export function updatePanel() {
   });
   const k = S.truck;
   const nextIn = Math.max(0, Math.ceil((S.nextTruck - t) / 1000));
+  document.querySelectorAll<HTMLElement>('[data-cleft]').forEach(e => { const c = S.contract; if (c) { const s = Math.max(0, Math.ceil((c.end - t) / 1000)); e.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' left'; } });
   document.querySelectorAll<HTMLElement>('[data-tnext]').forEach(e => {
     e.textContent = nextIn > 0 ? 'Next truck in ' + Math.floor(nextIn / 60) + ':' + String(nextIn % 60).padStart(2, '0') : 'A truck is pulling up';
   });
@@ -249,6 +263,7 @@ export function bindPanelInput() {
     else if (a === 'deliver') act.deliver(i, cx, cy);
     else if (a === 'skip') act.skip(i);
     else if (a === 'truck') act.loadTruck(cx, cy);
+    else if (a === 'contract') act.loadContract();
     else if (a === 'buyA') act.buyAnimal(k as AnimalId);
     else if (a === 'tend') act.tendAll();
     else if (a === 'buyM') act.buyMachine(k as MachineId);

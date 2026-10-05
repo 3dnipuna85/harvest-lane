@@ -576,3 +576,24 @@ describe('missed trucks', () => {
     expect(S.coins).toBe(1000 - Math.round(pay * 0.1));
   });
 });
+
+describe('contract lorries', () => {
+  it('come once you own a machine, ask only for its goods, and pay coins and diamonds', async () => {
+    const { contractTick, deliverContract } = await import('../src/game/contracts');
+    contractTick(t);
+    expect(S.nextContract).toBe(0);
+    S.machines.bakery.owned = true; S.level = 5;
+    contractTick(t);
+    t = S.nextContract + 1;
+    contractTick(t);
+    expect(S.contract).not.toBeNull();
+    expect(Object.keys(S.contract!.items)).toEqual(['bread']);
+    const need = S.contract!.items.bread!, pay = S.contract!.coins, gems = S.contract!.gems;
+    expect(deliverContract(t)).toBeNull();
+    S.inv.bread = need; S.coins = 0; S.gems = 0;
+    expect(deliverContract(t)).not.toBeNull();
+    expect(S.coins).toBe(pay);
+    expect(S.gems).toBeGreaterThanOrEqual(gems);
+    expect(pay).toBeGreaterThan(need * 30 * 3);
+  });
+});

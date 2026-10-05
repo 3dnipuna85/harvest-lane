@@ -54,6 +54,7 @@ export function neededCrop(): CropId | null {
   if (!onDuty('manager')) return null;
   const wants = { ...(S.nextWants || {}) } as Partial<Record<string, number>>;
   if (S.truck) for (const [k, q] of Object.entries(S.truck.items)) wants[k] = (wants[k] || 0) + (q || 0);
+  if (S.contract) for (const [k, q] of Object.entries(S.contract.items)) wants[k] = (wants[k] || 0) + (q || 0);
   // Goods from a machine you own need their crops planted too (the barn's stock of the good counts first).
   for (const m of MACHINE_IDS) {
     const out = MACHINES[m].out, q = (wants[out] || 0) - inv(out);

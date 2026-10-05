@@ -9,6 +9,7 @@ import { animalTick } from './animals';
 import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
+import { contractTick } from './contracts';
 import { fishTick } from './fishing';
 import { payWages, staffTick, unpaid } from './staff';
 
@@ -37,6 +38,7 @@ export function sellersIdle(): 'unpaid' | 'empty' | null {
 export function sim(dt: number) {
   const t = now();
   truckTick(t);
+  contractTick(t);
   fishTick(t);
   staffTick(t);
   animalTick(t);

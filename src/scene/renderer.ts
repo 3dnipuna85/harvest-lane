@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { on as onAny } from '../game/events';
 import { iconHTML } from '../ui/art';
 import { fmt } from '../ui/format';
-import { fx } from '../ui/toasts';
+import { fx, toast } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
 import { animalPos, initAnimals, updateAnimals } from './actors/animals';
 import { initDog, updateDog } from './actors/dog';
+import { LORRY_STOP, initLorry, updateLorry } from './actors/lorry';
 import { TRUCK_STOP, initTruck, truckAngry, truckLeaving, truckPos, truckSay, updateTruck } from './actors/truck';
 import { chaChing, honk } from '../ui/sound';
 import { computeFull, focusOn, inView, resize, updateCam } from './camera';
@@ -92,6 +93,7 @@ export function initScene() {
   initAnimals();
   initDog();
   initTruck();
+  initLorry();
   initFishing();
   initStaffActors();
   syncPlots();
@@ -115,6 +117,7 @@ export function renderScene(dt: number, t: number) {
   updateAnimals(dt, t);
   updateDog(dt, t);
   updateTruck(dt);
+  updateLorry(dt);
   updateDecor(dt, t);
   updateEstate(t);
   updatePlots(t, dt);
@@ -200,6 +203,19 @@ function bindSceneEvents() {
     honk();
     // On a small screen the truck can park out of view; glide over to it (but never yank the view off the river).
     if (!isFishing() && !walkingToFish() && !inView(TRUCK_STOP.x, TRUCK_STOP.z, 0.5)) focusOn(TRUCK_STOP.x - 1, TRUCK_STOP.z);
+  });
+  on('contractArrive', () => {
+    honk();
+    toast('📋 A contract lorry pulled in by the pen! It wants machine goods and pays big, with diamonds. You have 10 minutes.');
+  });
+  on('contractDone', ({ coins, gems }) => {
+    chaChing();
+    const [sx, sy] = toScreen(new THREE.Vector3(LORRY_STOP.x, 2, LORRY_STOP.z));
+    fx(sx, sy, '+' + fmt(coins) + ' coins +' + gems + ' 💎', 'gold');
+  });
+  on('contractMissed', () => {
+    honk(true);
+    toast('The contract lorry left without its goods. −1 ★');
   });
   on('truckDone', ({ coins, tip, items }) => {
     truckLeaving(true);
