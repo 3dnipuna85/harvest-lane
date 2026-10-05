@@ -79,3 +79,17 @@ export async function invitesFor(me: string): Promise<Invite[]> {
   return (await getDocs(collection(db, 'players', me, 'invites'))).docs.map(d => ({ from: d.id, name: String(d.data().name || 'A farmer'), photo: String(d.data().photo || '') }));
 }
 export const dropInvite = (me: string, from: string) => deleteDoc(doc(db, 'players', me, 'invites', from));
+
+/** An invite to an email that doesn't play yet. It waits until someone signs in with that address. */
+export const sendEmailInvite = (from: string, email: string, me: Profile) =>
+  setDoc(doc(db, 'emailInvites', email.trim().toLowerCase(), 'from', from), { name: me.name, photo: me.photo, at: serverTimestamp() });
+/** On sign-in: whoever invited this email becomes a friend (they joined because of it). Returns the inviters' names. */
+export async function claimEmailInvites(uid: string, email: string) {
+  const ds = (await getDocs(collection(db, 'emailInvites', email.trim().toLowerCase(), 'from'))).docs;
+  const names: string[] = [];
+  for (const d of ds) {
+    if (d.id !== uid) { await addFriend(uid, d.id); names.push(String(d.data().name || 'A farmer')); }
+    await deleteDoc(d.ref);
+  }
+  return names;
+}

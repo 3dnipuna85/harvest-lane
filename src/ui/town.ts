@@ -1,6 +1,7 @@
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { ITEMS } from '../data/goods';
 import { animalCost, animalUnlocked } from '../game/animals';
+import { unitPrice } from '../game/economy';
 import { now } from '../game/clock';
 import { on } from '../game/events';
 import { onDuty, timeLeft } from '../game/staff';
@@ -130,7 +131,7 @@ function shopPanel() {
       ${locked ? '' : `<div class="townintro">${S.coins >= SHOP_COST ? 'You have enough coins!' : `Save ${fmt(SHOP_COST - S.coins)} more coins.`}</div>`}</div>`;
   }
   const k = shopItem(), open = onDuty('shopkeeper');
-  const next = k ? `Next up: ${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} for ${coinHTML}${fmt(Math.round(ITEMS[k].sell * SHOP_MARKUP))}`
+  const next = k ? `Next up: ${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} for ${coinHTML}${fmt(Math.round(unitPrice(k) * SHOP_MARKUP))}`
     : 'The shelves are empty. Make goods in your machines or collect animal products.';
   return `<div class="list"><div class="card"><div class="top"><div class="big animal-ic">🏪</div><div class="grow"><div class="ttl">Your Shop <span class="small">${open ? 'Open' : 'Closed'}</span></div>
       <div class="sub">${open ? next : 'Hire a shopkeeper to open up.'}</div><div class="sub">Earned so far: ${coinHTML}<b data-shopearned>${fmt(S.stats.shop || 0)}</b></div></div></div></div>

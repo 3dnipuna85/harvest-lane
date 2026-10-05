@@ -10,7 +10,7 @@ const PAGES: { pic: string; title: string; body: string }[] = [
   { pic: uiImg('book'), title: 'Fill orders',
     body: 'Open <b>Orders</b> to see what people want. Deliver the crops to earn coins and XP. Don\'t like an order? Tap <b>Skip</b> for a new one.' },
   { pic: '<span class="g-emoji">🚚</span>', title: 'Truck buyers',
-    body: 'The 🚚 pill at the top shows when the next truck comes and what it wants, so you can grow it in time. When the truck parks, tap it to load. Load it fast for a <b>tip</b>. If you\'re too late the driver leaves angry and your ★ stars drop. More stars means trucks pay more.' },
+    body: 'Trucks are your best customers and come every few minutes. The 🚚 pill at the top shows when the next truck comes and what it wants, so you can grow it in time. When the truck parks, tap it to load. Load it fast for a <b>tip</b>. If you\'re too late the driver leaves angry and your ★ stars drop. More stars means trucks pay more.' },
   { pic: uiImg('cow'), title: 'Animals',
     body: '🐔 Hens eat wheat and lay 🥚 eggs. 🐄 Cows eat corn and give 🥛 milk. 🐖 Pigs eat carrots and dig up 🍄 truffles. 🐑 Sheep eat corn and grow 🧶 wool. Tap an animal to feed it, and tap again when its product is ready. Or use <b>Feed and collect all</b> in the Animals tab. Buy more animals at the market in town.' },
   { pic: '<span class="g-emoji">🎣</span>', title: 'Fishing',
@@ -22,7 +22,7 @@ const PAGES: { pic: string; title: string; body: string }[] = [
   { pic: uiImg('nav-map'), title: 'Market Town',
     body: 'Tap <b>Town</b> in the bar at the bottom, or the signpost by the road, to drive to Market Town. Buy new animals and bigger pens at the <b>Animal Market</b>, and fertilizer for faster crops at the <b>General Store</b>. From level 8 you can buy <b>your own shop</b> and hire a shopkeeper to sell your goods for more. Your farm keeps working while you\'re in town.' },
   { pic: uiImg('star'), title: 'Grow your farm',
-    body: 'Everything you do earns XP. Each new level pays bonus coins and unlocks seeds, machines and animals. Buy more land with <b>New plot</b>.<br><br>Tips: drag to look around, and use + and − to zoom. Tap ? any time to read this again.' },
+    body: 'Everything you do with your own hands earns XP (helpers earn coins, not XP). Selling lots of the same thing floods the market and its price drops for a while, so sell a mix. Each new level pays bonus coins and unlocks seeds, machines and animals. Buy more land with <b>New plot</b>.<br><br>Tips: drag to look around, and use + and − to zoom. Tap ? any time to read this again.' },
 ];
 
 let box: HTMLElement | null = null;

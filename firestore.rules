@@ -22,6 +22,12 @@ service cloud.firestore {
         allow create, update: if request.auth != null && request.auth.uid == from && from != uid;
       }
     }
+    // Invites to an email that doesn't play yet: anyone signed in may leave one under their own uid;
+    // whoever signs in with that email reads them (turning them into friend requests) and clears them.
+    match /emailInvites/{email}/from/{from} {
+      allow create, update: if request.auth != null && request.auth.uid == from;
+      allow read, delete: if request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == email;
+    }
     // Email to player lookup for "invite by email". Look up one address at a time (no listing);
     // only the signed-in owner of that address can point it at their own account.
     match /emails/{email} {

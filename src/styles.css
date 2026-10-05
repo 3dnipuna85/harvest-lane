@@ -497,3 +497,6 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .friendspill .badge{top:-5px;right:-5px}
 .lbl.townsign.small{padding:3px 8px}
 .lbl.townsign.small b{font-size:12.5px}
+.fr-mail{display:flex;justify-content:center;margin-top:8px}
+.fr-mail .btn{text-decoration:none;padding:8px 14px}
+.sub.glut{color:#b3261e}

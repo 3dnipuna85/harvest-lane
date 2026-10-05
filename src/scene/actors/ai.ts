@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { CROPS, type CropId } from '../../data/crops';
 import { MAX_QUEUE } from '../../data/limits';
-import { harvest, plant, ripe } from '../../game/economy';
+import { byStaff, harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
 import { S, visiting } from '../../game/state';
-import { neededCrop, onDuty, timeLeft, unpaid } from '../../game/staff';
+import { neededCrop, onDuty, timeLeft, unpaid, worthPlanting } from '../../game/staff';
 import { fx, shakeScene, toast } from '../../ui/toasts';
 import { CARTP, FISH_SPOT, PITCH, ROADZ, plotPos } from '../layout';
 import { cast, stopFishing } from '../../game/fishing';
@@ -46,7 +46,7 @@ function pickJob() {
   if (want >= 0 && onDuty('manager')) return want;
   let i = S.plots.findIndex((p, j) => ripe(p) && !isBusy(j));
   if (i >= 0) return i;
-  if (S.coins >= CROPS[handSeed()].seed) { i = S.plots.findIndex((p, j) => !p.crop && !isBusy(j)); if (i >= 0) return i; }
+  if (S.coins >= CROPS[handSeed()].seed && worthPlanting(handSeed())) { i = S.plots.findIndex((p, j) => !p.crop && !isBusy(j)); if (i >= 0) return i; }
   return -1;
 }
 /** The seed farmhands plant: the manager's pick for the next truck, otherwise the player's selected seed. */
@@ -124,7 +124,8 @@ function updateChar(c: Char, dt: number) {
       c.done = true;
       const { i, crop } = c.task!, p = S.plots[i];
       if (c.actType === 'plant' && p && !p.crop) { if (!plant(i, crop) && c.kind === 'player') seedDenied(crop); }
-      else if (c.actType === 'harvest' && p && ripe(p)) harvest(i);
+      // only the player's own harvests earn XP
+      else if (c.actType === 'harvest' && p && ripe(p)) { if (c.kind === 'player') harvest(i); else byStaff(() => harvest(i)); }
     }
     if (c.act >= c.actDur) finish(c);
   }

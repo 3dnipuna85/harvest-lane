@@ -394,3 +394,40 @@ describe('market town', () => {
     expect(sum.shop).toBeGreaterThan(0);
   });
 });
+
+describe('harder economy', () => {
+  it('levels past 5 need much more XP', () => {
+    expect(xpNeed(5)).toBe(Math.round(14 * Math.pow(5, 1.55)));
+    expect(xpNeed(20)).toBeGreaterThan(5 * Math.round(14 * Math.pow(20, 1.55)));
+  });
+
+  it('staff work earns coins but no XP; your own work does', async () => {
+    const eco = await import('../src/game/economy');
+    S.plots[0] = { crop: 'wheat', at: t - 60000 };
+    S.plots[1] = { crop: 'wheat', at: t - 60000 };
+    const xp = S.xp;
+    eco.byStaff(() => harvest(0, () => 0.9));
+    expect(S.xp).toBe(xp);
+    harvest(1, () => 0.9);
+    expect(S.xp).toBe(xp + 1);
+  });
+
+  it('flooding the market lowers the price, which recovers with time', async () => {
+    const eco = await import('../src/game/economy');
+    S.inv.egg = 200;
+    const first = eco.sell('egg', 1);
+    eco.sell('egg', 100);
+    expect(eco.unitPrice('egg')).toBeLessThan(first);
+    t += 2 * 60 * 60_000;
+    expect(eco.unitPrice('egg')).toBe(first);
+  });
+
+  it('a truck the manager loads pays no tip', async () => {
+    const eco = await import('../src/game/economy');
+    const tr = await import('../src/game/trucks');
+    S.truck = { ...tr.newTruck(t, () => 0.5), items: { wheat: 1 } };
+    S.inv.wheat = 5;
+    const r = eco.byStaff(() => tr.deliverTruck(t));
+    expect(r!.tip).toBe(0);
+  });
+});

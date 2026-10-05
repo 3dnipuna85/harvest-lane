@@ -2,7 +2,7 @@ import { CROPS, CROP_IDS, type CropId } from '../data/crops';
 import { ANIMAL_IDS } from '../data/animals';
 import { animalUnlocked, collectAnimal, feedAnimal } from './animals';
 import { clock, now } from './clock';
-import { harvest, inv, plant, ripe, sell } from './economy';
+import { byStaff, harvest, inv, plant, ripe, sell } from './economy';
 import { emit, muteEvents } from './events';
 import { landCatch } from './fishing';
 import { SHOP_EVERY_MS, shopSale } from './town';
@@ -78,7 +78,14 @@ export function hireStaff(k: StaffId, h: number, t = now()): HireResult {
 
 
 /** One round of staff work at time t. `patient` gives the player first go at ripe crops and trucks. */
+/** Helpers stop replanting a crop once the barn holds this many (unless a truck wants it): no point growing what won't sell. */
+export const BARN_ENOUGH = 60;
+export const worthPlanting = (c: CropId) => neededCrop() === c || inv(c) < BARN_ENOUGH;
+
 export function staffWork(t = now(), patient = true) {
+  return byStaff(() => work(t, patient));
+}
+function work(t: number, patient: boolean) {
   const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0, fish: 0, shop: 0 };
   if (onDuty('manager', t)) {
     // While the game is open the manager walks the field himself (scene/actors/ai.ts); this instant version is for
@@ -90,7 +97,7 @@ export function staffWork(t = now(), patient = true) {
         const crop = p.crop;
         done.crops += harvest(i);
         const next = neededCrop() ?? crop;
-        if (plant(i, next)) done.seeds += CROPS[next].seed;
+        if (worthPlanting(next) && plant(i, next)) done.seeds += CROPS[next].seed;
       }
     });
     // Empty plots get the crop a truck is waiting on.
@@ -171,8 +178,8 @@ export function payWages(dt: number) {
   if (S.coins < due && onDuty('manager')) {
     for (const c of CROP_IDS.slice().sort((a, b) => CROPS[a].sell - CROPS[b].sell)) {
       if (S.coins >= due) break;
-      const spare = inv(c) - 10;
-      if (spare > 0) sell(c, Math.min(spare, Math.ceil((due - S.coins) / CROPS[c].sell)));
+      // one at a time: prices drop as the market fills up
+      while (S.coins < due && inv(c) > 10) sell(c, 1);
     }
   }
   if (S.coins >= due) {

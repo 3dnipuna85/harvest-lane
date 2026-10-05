@@ -1,9 +1,10 @@
-import { CROPS, CROP_IDS } from '../data/crops';
-import { GOOD_IDS, ITEMS, PRODUCT_IDS, type ItemId } from '../data/goods';
+import { CROP_IDS } from '../data/crops';
+import { GOOD_IDS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, recipe } from '../data/machines';
 import { SELLER_INTERVAL_S } from '../data/limits';
 import { now } from './clock';
-import { add, gainXP, goodXP, inv, mTime, sell } from './economy';
+import { add, byStaff, gainXP, goodXP, inv, mTime, sell, unitPrice } from './economy';
+import { truckReserve } from './town';
 import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
@@ -16,9 +17,11 @@ export function resetSim() { sellAcc = 0; }
 
 /** The best thing a market seller can sell right now, or undefined. */
 export function nextSale(): ItemId | undefined {
-  const goods = [...GOOD_IDS, ...PRODUCT_IDS].filter(k => inv(k) > 0).sort((a, b) => ITEMS[b].sell - ITEMS[a].sell);
+  // The best price on the market right now, keeping back anything a truck is coming for.
+  const keep = truckReserve();
+  const goods = [...GOOD_IDS, ...PRODUCT_IDS].filter(k => inv(k) > (keep[k] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a));
   if (goods[0]) return goods[0];
-  if (S.sellCrops) return CROP_IDS.filter(c => inv(c) > 10).sort((a, b) => CROPS[b].sell - CROPS[a].sell)[0];
+  if (S.sellCrops) return CROP_IDS.filter(c => inv(c) > 10 + (keep[c] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a))[0];
   return undefined;
 }
 
@@ -47,6 +50,6 @@ export function sim(dt: number) {
   while (sellAcc >= 1) {
     sellAcc -= 1;
     const k = nextSale();
-    if (k) emit('sellerSale', { item: k, coins: sell(k, 1) });
+    if (k) emit('sellerSale', { item: k, coins: byStaff(() => sell(k, 1)) });
   }
 }

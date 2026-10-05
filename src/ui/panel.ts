@@ -3,7 +3,7 @@ import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
 import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines';
 import { now } from '../game/clock';
-import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../game/economy';
+import { farmhandCost, inv, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
@@ -32,7 +32,7 @@ export function renderTabs() {
 function itemRow(k: ItemId) {
   const it = ITEMS[k];
   return `<div class="card"><div class="top"><div class="big">${iconHTML(k)}</div>
-    <div class="grow"><div class="ttl">${it.name}</div><div class="sub">${it.sell} coins each</div></div>
+    <div class="grow"><div class="ttl">${it.name}</div><div class="sub" data-price="${k}">${it.sell} coins each</div></div>
     <div class="count" data-count="${k}">0</div>
     <button class="btn alt" data-act="sell" data-k="${k}" data-n="1" data-check="inv:${k}">Sell 1</button>
     <button class="btn gold" data-act="sell" data-k="${k}" data-n="all" data-check="inv:${k}">All</button></div></div>`;
@@ -104,6 +104,7 @@ export function renderPanel() {
         <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s. Wage: ${coinHTML}${fmt(wagePerHour())} an hour each.</div></div>
         ${slLock ? '<span class="small">Lv 3</span>' : S.sellers >= MAX_SELLERS ? '<span class="small">Full stall</span>' : `<button class="btn gold" data-act="hire" data-k="sl" data-check="cost:${sellerCost()}">Hire ${coinHTML}${fmt(sellerCost())}</button>`}</div>
         ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}</div>
+      <div class="townintro">Helpers earn you coins, but XP only comes from work you do yourself.</div>
       ${staffCards()}
       <div class="row" style="justify-content:flex-end;margin-top:4px"><button class="btn ${resetArmed ? 'red' : 'alt'}" data-act="reset">${resetArmed ? 'Tap again to wipe this farm' : 'Start a new farm'}</button></div>
     </div>`;
@@ -163,6 +164,11 @@ export function updatePanel() {
   const t = now();
   updateTownPanel();
   document.querySelectorAll<HTMLElement>('[data-staffleft]').forEach(e => { e.textContent = 'On duty · ' + hms(timeLeft(e.dataset.staffleft as StaffId, t)) + ' left'; });
+  document.querySelectorAll<HTMLElement>('[data-price]').forEach(e => {
+    const k = e.dataset.price as ItemId, f = priceFactor(k, t);
+    e.textContent = unitPrice(k, t) + ' coins each' + (f < 0.9 ? ' · market is full, price recovers over time' : '');
+    e.classList.toggle('glut', f < 0.9);
+  });
   document.querySelectorAll<HTMLElement>('[data-count]').forEach(e => { e.textContent = String(inv(e.dataset.count as ItemId)); });
   document.querySelectorAll<HTMLElement>('[data-need]').forEach(e => {
     const k = e.dataset.need as ItemId, q = +e.dataset.q!, have = Math.min(inv(k), q);

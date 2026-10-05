@@ -51,7 +51,12 @@ export async function friendsUser(u: { uid: string; name: string; photo: string;
   updatePill();
   if (!u || !fb) return;
   fb.publishCard(u.uid, { name: u.name, photo: u.photo }, JSON.stringify(S), S.level).catch(() => {});
-  if (u.email) fb.registerEmail(u.uid, u.email).catch(() => {});
+  if (u.email) {
+    fb.registerEmail(u.uid, u.email).catch(() => {});
+    fb.claimEmailInvites(u.uid, u.email).then(names => {
+      if (names.length) toast(`You and ${names.join(', ')} are now friends! Tap Friends to visit their farm.`);
+    }).catch(() => {});
+  }
   checkRequests(true);
   const inv = pendingInvite();
   if (!inv) return;
@@ -91,7 +96,15 @@ async function inviteByEmail(input: HTMLInputElement, note: HTMLElement) {
   say('Looking for your friend…', true);
   try {
     const uid = await fb.uidForEmail(email);
-    if (!uid) { say('Nobody plays with that email yet. Send them your invite link below instead.'); return; }
+    if (!uid) {
+      // Not playing yet: the invite waits for that address, and the player's own email app sends the link.
+      await fb.sendEmailInvite(me.uid, email, { name: me.name, photo: me.photo }).catch(() => {});
+      say('They don’t play yet. Your invite will wait for them: when they sign up with this email, you’ll be friends.', true);
+      const subject = encodeURIComponent(`${me.name} invited you to Harvest Lane`);
+      const body = encodeURIComponent(`Hi! Come farm with me on Harvest Lane. Open this link and sign up with this email, and we'll be friends in the game:\n\n${inviteLink(me.uid)}`);
+      note.insertAdjacentHTML('beforeend', `<span class="fr-mail"><a class="btn" href="mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}">✉️ Email them the link</a></span>`);
+      return;
+    }
     if ((await fb.friendIds(me.uid)).includes(uid)) { say('You’re already friends!', true); return; }
     await fb.sendInvite(me.uid, uid, { name: me.name, photo: me.photo });
     input.value = '';

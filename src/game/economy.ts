@@ -7,7 +7,31 @@ import { now } from './clock';
 import { emit } from './events';
 import { S, type Plot } from './state';
 
-export const xpNeed = (l: number) => Math.round(14 * Math.pow(l, 1.55));
+/** XP for the next level. The first five levels come quickly; after that each one takes much longer. */
+export const xpNeed = (l: number) => Math.round(14 * Math.pow(l, 1.55) * (1 + Math.pow(Math.max(0, l - 5), 1.3) / 6));
+
+/**
+ * Whose hands are doing the work. XP comes only from the player's own work: crops your staff pick, trucks your
+ * manager loads and fish your fisherman lands earn coins, never XP.
+ */
+export const hands = { staff: false };
+export function byStaff<T>(fn: () => T): T {
+  const was = hands.staff;
+  hands.staff = true;
+  try { return fn(); } finally { hands.staff = was; }
+}
+
+/**
+ * Market demand: selling lots of one item floods the market and its price drops, then recovers over time
+ * (half the glut clears every 15 minutes). Truck and order payments are contracts and don't change.
+ */
+const GLUT_HALF_MS = 15 * 60_000;
+const GLUT_SIZE = 30;
+const glut = (k: ItemId, t = now()) => { const m = S.market[k]; return m ? m.n * Math.pow(0.5, (t - m.t) / GLUT_HALF_MS) : 0; };
+export const priceFactor = (k: ItemId, t = now()) => Math.max(0.35, 1 / (1 + glut(k, t) / GLUT_SIZE));
+export const unitPrice = (k: ItemId, t = now()) => Math.max(1, Math.round(ITEMS[k].sell * priceFactor(k, t)));
+/** Record a sale in the market's memory. */
+export function flood(k: ItemId, n = 1, t = now()) { S.market[k] = { n: glut(k, t) + n, t }; }
 export const plotCost = () => Math.round(40 * Math.pow(1.5, S.plots.length - START_PLOTS));
 export const farmhandCost = () => Math.round(80 * Math.pow(1.8, S.farmhands));
 export const sellerCost = () => Math.round(150 * Math.pow(1.9, S.sellers));
@@ -22,6 +46,7 @@ export const ripe = (p: Plot) => !!p.crop && now() >= p.at + CROPS[p.crop].time 
 export const unlockedCrops = () => CROP_IDS.filter(k => CROPS[k].lvl <= S.level);
 
 export function gainXP(n: number) {
+  if (hands.staff) return;
   S.xp += n;
   while (S.xp >= xpNeed(S.level)) {
     S.xp -= xpNeed(S.level);
@@ -72,7 +97,8 @@ export function sell(k: ItemId, n: number): number {
   n = Math.min(n, inv(k));
   if (n <= 0) return 0;
   S.inv[k] = inv(k) - n;
-  const g = n * ITEMS[k].sell;
+  let g = 0;
+  for (let j = 0; j < n; j++) { g += unitPrice(k); flood(k); }
   earn(g);
   return g;
 }

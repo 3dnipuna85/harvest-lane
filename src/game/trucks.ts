@@ -2,7 +2,7 @@ import { CUSTOMERS } from '../data/customers';
 import { ITEMS } from '../data/goods';
 import { TRUCK_BASE_S, TRUCK_GAP_S, TRUCK_PER_ITEM_S, TRUCK_TIP } from '../data/limits';
 import { now } from './clock';
-import { earn, gainXP, inv } from './economy';
+import { earn, gainXP, hands, inv } from './economy';
 import { emit } from './events';
 import { canFill, newOrder, orderItems } from './orders';
 import { S, type Order, type Truck } from './state';
@@ -52,7 +52,8 @@ export const canFillTruck = () => !!S.truck && canFill(S.truck);
 export function deliverTruck(t = now(), rand = Math.random) {
   const k = S.truck;
   if (!k || !canFill(k)) return null;
-  const { coins, tip } = truckOffer(t);
+  // The tip is for loading it yourself, quickly; a truck your manager loads pays the base price.
+  const { coins } = truckOffer(t), tip = hands.staff ? 0 : truckOffer(t).tip;
   for (const [i, q] of orderItems(k)) S.inv[i] = inv(i) - q;
   earn(coins + tip);
   gainXP(k.xp);
