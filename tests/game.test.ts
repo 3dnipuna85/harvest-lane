@@ -563,3 +563,16 @@ describe('idle helpers', () => {
     expect(s.sellCrops).toBe(true);
   });
 });
+
+describe('missed trucks', () => {
+  it('charge a 10% cancellation fee when you were there to see it leave', async () => {
+    const { newTruck, truckTick } = await import('../src/game/trucks');
+    S.coins = 1000;
+    S.truck = newTruck(t, Math.random, { wheat: 10 });
+    const pay = S.truck.coins;
+    t = S.truck.end + 100;
+    truckTick(t);
+    expect(S.truck).toBeNull();
+    expect(S.coins).toBe(1000 - Math.round(pay * 0.1));
+  });
+});

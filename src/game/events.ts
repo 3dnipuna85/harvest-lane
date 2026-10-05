@@ -32,7 +32,7 @@ export interface GameEvents {
   staffEnded: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
-  truckMissed: { who: string; coins: number };
+  truckMissed: { who: string; coins: number; fee: number };
 }
 
 type Handler<K extends keyof GameEvents> = (e: GameEvents[K]) => void;

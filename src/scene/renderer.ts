@@ -211,12 +211,12 @@ function bindSceneEvents() {
     const [sx, sy] = toScreen(truckPos());
     fx(sx, sy, '+' + fmt(coins + tip) + ' coins' + (tip ? ' (tip!)' : ''), 'gold');
   });
-  on('truckMissed', ({ coins }) => {
+  on('truckMissed', ({ fee }) => {
     truckLeaving(false);
     truckAngry();
     truckSay('Too slow! I’m going somewhere else! 😠', 'angry', 3.5);
     honk(true);
     const [sx, sy] = toScreen(truckPos());
-    fx(sx, sy, 'Missed ' + fmt(coins) + ' coins · −1 ★', 'red');
+    fx(sx, sy, '−' + fmt(fee) + ' coins fee · −1 ★', 'red');
   });
 }

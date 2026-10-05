@@ -141,7 +141,7 @@ const stars = () => '★★★★★'.slice(0, Math.round(S.rep)) + '☆☆☆�
 function truckCard() {
   const k = S.truck;
   if (!k) return `<div class="card truckcard idle"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">Truck buyers</div>
-    <div class="sub"><b data-tnext>Next truck soon</b>. Trucks pay extra and tip you for fast loading, but they won't wait forever.</div></div>
+    <div class="sub"><b data-tnext>Next truck soon</b>. Trucks pay extra and tip you for fast loading, but they won't wait forever: a missed truck costs a star and a 10% cancellation fee.</div></div>
     <span class="rep" title="Buyer reputation">${stars()}</span></div></div>`;
   return `<div class="card truckcard"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">${k.who} <span class="small">is waiting at the gate</span></div>
       <div class="sub"><span class="rep">${stars()}</span> Load before the timer runs out or they leave.</div></div>

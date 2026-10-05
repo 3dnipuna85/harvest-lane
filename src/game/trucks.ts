@@ -10,6 +10,8 @@ import { S, type Order, type Truck } from './state';
 
 /** A missed truck only costs reputation if the player was here to see it leave (not while the game was closed). */
 const MISS_GRACE_MS = 5000;
+/** Share of a missed truck's payment you pay as a cancellation fee. */
+export const MISS_FEE = 0.1;
 
 /** Trucks pay 1.3x for raw crops but 2.6x for bread, juice, eggs and the like. */
 /** Chance of a diamond when you load a truck yourself in time for the tip. */
@@ -83,7 +85,10 @@ export function truckTick(t = now(), rand = Math.random) {
     if (t - k.end < MISS_GRACE_MS) {
       S.rep = Math.max(1, S.rep - 1);
       S.stats.missed++;
-      emit('truckMissed', { who: k.who, coins: k.coins });
+      // The buyer charges a cancellation fee for the wasted trip.
+      const fee = Math.min(S.coins, Math.round(k.coins * MISS_FEE));
+      S.coins -= fee;
+      emit('truckMissed', { who: k.who, coins: k.coins, fee });
     }
   } else if (!k && t >= S.nextTruck) {
     S.truck = newTruck(t, rand, S.nextWants ?? undefined);
