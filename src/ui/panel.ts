@@ -119,6 +119,7 @@ function whereFrom(k: ItemId) {
   if (a) return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} comes from the ${ANIMALS[a].name.toLowerCase()}: tap it on the farm to feed it ${ANIMALS[a].feedQty} ${iconHTML(ANIMALS[a].feed, 'ic-inline')}, then tap again to collect.`;
   if (k === 'fish' || k === 'crab' || k === 'goldfish') return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} is caught in the river: tap 🎣, wait for the splash, then tap fast.`;
   const m = MACHINE_IDS.find(id => MACHINES[id].out === k);
+  if (m && !S.machines[m].owned) return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} is made in a ${MACHINES[m].name}, and you don’t have one yet. Build it in the Machines tab for ${coinHTML}${fmt(MACHINES[m].cost)}.`;
   if (m) return `${iconHTML(k, 'ic-inline')} ${ITEMS[k].name} is made in the ${MACHINES[m].name}.`;
   return '';
 }

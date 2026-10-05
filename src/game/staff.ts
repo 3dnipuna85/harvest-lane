@@ -1,3 +1,4 @@
+import { MACHINES, MACHINE_IDS, recipe } from '../data/machines';
 import { CROPS, CROP_IDS, type CropId } from '../data/crops';
 import { ANIMAL_IDS } from '../data/animals';
 import { animalUnlocked, collectAnimal, feedAnimal } from './animals';
@@ -53,6 +54,12 @@ export function neededCrop(): CropId | null {
   if (!onDuty('manager')) return null;
   const wants = { ...(S.nextWants || {}) } as Partial<Record<string, number>>;
   if (S.truck) for (const [k, q] of Object.entries(S.truck.items)) wants[k] = (wants[k] || 0) + (q || 0);
+  // Goods from a machine you own need their crops planted too (the barn's stock of the good counts first).
+  for (const m of MACHINE_IDS) {
+    const out = MACHINES[m].out, q = (wants[out] || 0) - inv(out);
+    if (!S.machines[m].owned || q <= 0) continue;
+    for (const [i, n] of recipe(m)) wants[i] = (wants[i] || 0) + n * q;
+  }
   for (const [k, q] of Object.entries(wants)) {
     if (!(k in CROPS)) continue;
     const c = k as CropId;

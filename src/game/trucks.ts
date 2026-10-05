@@ -1,14 +1,16 @@
 import { CUSTOMERS } from '../data/customers';
-import { ITEMS } from '../data/goods';
 import { TRUCK_BASE_S, TRUCK_GAP_S, TRUCK_PER_ITEM_S, TRUCK_TIP } from '../data/limits';
 import { now } from './clock';
 import { earn, gainXP, hands, inv } from './economy';
 import { emit } from './events';
-import { canFill, newOrder, orderItems } from './orders';
+import { basketValue, canFill, newOrder, orderItems } from './orders';
 import { S, type Order, type Truck } from './state';
 
 /** A missed truck only costs reputation if the player was here to see it leave (not while the game was closed). */
 const MISS_GRACE_MS = 5000;
+
+/** Trucks pay 1.3x for raw crops but 2.6x for bread, juice, eggs and the like. */
+const TRUCK_CROP_PAY = 1.3, TRUCK_MADE_PAY = 2.6;
 
 const gap = (rand: () => number) => (TRUCK_GAP_S[0] + rand() * (TRUCK_GAP_S[1] - TRUCK_GAP_S[0])) * 1000;
 
@@ -26,12 +28,12 @@ export function newTruck(t = now(), rand = Math.random, wants = truckWants(rand)
   const o = newOrder(rand);
   o.items = { ...wants };
   const items = orderItems(o);
-  const value = items.reduce((v, [k, q]) => v + ITEMS[k].sell * q, 0);
+  const value = basketValue(o.items, 1, 1);
   const count = items.reduce((n, [, q]) => n + q, 0);
   return {
     ...o,
     who: CUSTOMERS[Math.floor(rand() * CUSTOMERS.length)],
-    coins: Math.round((value * 2.4 + 10) * repPay()),
+    coins: Math.round((basketValue(o.items, TRUCK_CROP_PAY, TRUCK_MADE_PAY) + 10) * repPay()),
     xp: Math.max(3, Math.round(value / 4)),
     arrive: t,
     end: t + (TRUCK_BASE_S + count * TRUCK_PER_ITEM_S) * 1000,

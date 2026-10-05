@@ -470,3 +470,37 @@ describe('rot and sickness', () => {
     expect(an.sickCount('hen')).toBe(0);
   });
 });
+
+describe('buyers want made goods', () => {
+  it('asks for goods from a machine a level after it unlocks, even if you have none', async () => {
+    const { newOrder } = await import('../src/game/orders');
+    S.level = 2;
+    for (let j = 0; j < 40; j++) expect(newOrder().items.bread).toBeUndefined();
+    S.level = 3;
+    let seen = false;
+    for (let j = 0; j < 80; j++) if (newOrder().items.bread) seen = true;
+    expect(seen).toBe(true);
+  });
+
+  it('from level 4 every order includes something made', async () => {
+    const { newOrder } = await import('../src/game/orders');
+    const { CROPS } = await import('../src/data/crops');
+    S.level = 6;
+    for (let j = 0; j < 60; j++) expect(Object.keys(newOrder().items).some(k => !(k in CROPS))).toBe(true);
+  });
+
+  it('trucks pay far more per coin of goods than of raw crops', async () => {
+    const { newTruck } = await import('../src/game/trucks');
+    const wheat = newTruck(t, Math.random, { wheat: 30 }), bread = newTruck(t, Math.random, { bread: 4 });
+    // 30 wheat and 4 bread are about the same farm-gate value, but the bread pays roughly double.
+    expect(bread.coins).toBeGreaterThan(wheat.coins * 1.6);
+  });
+
+  it('the manager plants wheat for bread a truck wants when you own a bakery', async () => {
+    const { neededCrop } = await import('../src/game/staff');
+    S.level = 5; S.coins = 1000; S.staff.manager = t + 3600_000;
+    S.machines.bakery.owned = true;
+    S.nextWants = { bread: 2 };
+    expect(neededCrop()).toBe('wheat');
+  });
+});

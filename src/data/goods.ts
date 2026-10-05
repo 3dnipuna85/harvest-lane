@@ -12,11 +12,11 @@ export interface Good {
 }
 
 export const GOODS: Record<GoodId, Good> = {
-  bread:   { name: 'Bread',           icon: '🍞', sell: 22 },
-  popcorn: { name: 'Popcorn',         icon: '🍿', sell: 38 },
-  juice:   { name: 'Carrot Juice',    icon: '🧃', sell: 72 },
-  sauce:   { name: 'Tomato Sauce',    icon: '🥫', sell: 120 },
-  cake:    { name: 'Strawberry Cake', icon: '🍰', sell: 260 },
+  bread:   { name: 'Bread',           icon: '🍞', sell: 30 },
+  popcorn: { name: 'Popcorn',         icon: '🍿', sell: 52 },
+  juice:   { name: 'Carrot Juice',    icon: '🧃', sell: 120 },
+  sauce:   { name: 'Tomato Sauce',    icon: '🥫', sell: 195 },
+  cake:    { name: 'Strawberry Cake', icon: '🍰', sell: 300 },
 };
 
 export const GOOD_IDS = Object.keys(GOODS) as GoodId[];
