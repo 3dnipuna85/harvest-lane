@@ -8,6 +8,7 @@ import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
 import { fishTick } from './fishing';
+import { payWages, staffTick, unpaid } from './staff';
 
 let sellAcc = 0;
 
@@ -26,6 +27,8 @@ export function sim(dt: number) {
   const t = now();
   truckTick(t);
   fishTick(t);
+  staffTick(t);
+  payWages(dt);
   for (const k of MACHINE_IDS) {
     const m = S.machines[k], d = MACHINES[k];
     if (!m.owned) continue;
@@ -40,7 +43,7 @@ export function sim(dt: number) {
       m.job = { start: t, end: t + mTime(k) * 1000 };
     }
   }
-  sellAcc += (dt * S.sellers) / SELLER_INTERVAL_S;
+  if (!unpaid) sellAcc += (dt * S.sellers) / SELLER_INTERVAL_S;
   while (sellAcc >= 1) {
     sellAcc -= 1;
     const k = nextSale();

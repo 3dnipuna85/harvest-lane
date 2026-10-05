@@ -21,6 +21,8 @@ import { bindPanelInput, panelSignature, renderPanel, renderTabs, updatePanel } 
 import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
 import { bindGuide } from './ui/guide';
+import { catchUp } from './game/staff';
+import { awayNote } from './ui/staff';
 
 let seedSig = '', panelSig = '', lastT = 0;
 
@@ -42,6 +44,7 @@ function frame(ts: number) {
 function start() {
   const local = load() as { saved?: number } | null;
   setState(migrate(local));
+  const staffAway = catchUp(S.saved || now());
   fillOrders();
   bindHud();
   bindPanelInput();
@@ -58,7 +61,8 @@ function start() {
   // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
   initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled && !('claude' in globalThis)) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
-  if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
+  if (staffAway.crops || staffAway.products) toast(awayNote(staffAway));
+  else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   setInterval(() => { save(); syncCloud(); }, 5000);
   addEventListener('visibilitychange', () => { if (document.hidden) { save(); syncCloud(true); } });
   addEventListener('pagehide', () => { save(); syncCloud(true); });

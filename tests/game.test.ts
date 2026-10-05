@@ -276,3 +276,30 @@ describe('land', () => {
     expect(migrate(JSON.parse(JSON.stringify(S))).land).toBe(2);
   });
 });
+
+describe('paid staff', () => {
+  it('charges up front, works ripe crops while away, and stops when the contract ends', async () => {
+    const st = await import('../src/game/staff');
+    S.level = 10; S.coins = 100;
+    expect(st.hireStaff('manager', 1)).toMatchObject({ ok: false, reason: 'coins' });
+    S.coins = 100000;
+    const before = S.coins;
+    expect(st.hireStaff('manager', 1, t).ok).toBe(true);
+    expect(S.coins).toBe(before - st.termCost('manager', 1));
+    S.plots.forEach(p => { p.crop = 'wheat'; p.at = t; });
+    const sum = st.catchUp(t, t + 3 * 3600_000);
+    // wheat grows in seconds, so an hour of manager work is many harvests, and nothing after the hour
+    expect(sum.crops).toBeGreaterThan(S.plots.length * 10);
+    const after = st.catchUp(t + 2 * 3600_000, t + 3 * 3600_000);
+    expect(after.crops).toBe(0);
+  });
+  it('helpers stop when wages cannot be paid', async () => {
+    const st = await import('../src/game/staff');
+    S.farmhands = 2; S.coins = 0;
+    st.payWages(3600);
+    expect(st.unpaid).toBe(true);
+    S.coins = 10000;
+    st.payWages(60);
+    expect(st.unpaid).toBe(false);
+  });
+});

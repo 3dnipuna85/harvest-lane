@@ -13,6 +13,8 @@ import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
 import { closeOffice, officeOpen, toggleOffice } from './office';
+import { hire as hireStaffUI, hms, staffCards } from './staff';
+import { timeLeft, wagePerHour, type StaffId } from '../game/staff';
 
 const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['animals', 'Animals', 'cow'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
 let resetArmed = false;
@@ -39,7 +41,7 @@ export function panelSignature() {
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
   if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','));
-  if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed);
+  if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed, S.staff.manager, S.staff.keeper, timeLeft('manager') > 0, timeLeft('keeper') > 0);
   return parts.join('|');
 }
 
@@ -87,12 +89,13 @@ export function renderPanel() {
     const fhLock = S.level < 2, slLock = S.level < 3;
     h = `<div class="list">
       <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('girl-head')}</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
-        <div class="sub">They walk the field on their own, harvesting ripe plots and replanting with your selected seed.</div></div>
+        <div class="sub">They walk the field on their own, harvesting ripe plots and replanting with your selected seed. Wage: ${coinHTML}${fmt(wagePerHour())} an hour each.</div></div>
         ${fhLock ? '<span class="small">Lv 2</span>' : S.farmhands >= MAX_FARMHANDS ? '<span class="small">Full crew</span>' : `<button class="btn gold" data-act="hire" data-k="fh" data-check="cost:${farmhandCost()}">Hire ${coinHTML}${fmt(farmhandCost())}</button>`}</div></div>
       <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('baker')}</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
-        <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s.</div></div>
+        <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s. Wage: ${coinHTML}${fmt(wagePerHour())} an hour each.</div></div>
         ${slLock ? '<span class="small">Lv 3</span>' : S.sellers >= MAX_SELLERS ? '<span class="small">Full stall</span>' : `<button class="btn gold" data-act="hire" data-k="sl" data-check="cost:${sellerCost()}">Hire ${coinHTML}${fmt(sellerCost())}</button>`}</div>
         ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}</div>
+      ${staffCards()}
       <div class="row" style="justify-content:flex-end;margin-top:4px"><button class="btn ${resetArmed ? 'red' : 'alt'}" data-act="reset">${resetArmed ? 'Tap again to wipe this farm' : 'Start a new farm'}</button></div>
     </div>`;
   }
@@ -151,6 +154,7 @@ function setBadge(k: Tab, n: number) {
 /** Per-frame value updates for whatever the panel currently shows. */
 export function updatePanel() {
   const t = now();
+  document.querySelectorAll<HTMLElement>('[data-staffleft]').forEach(e => { e.textContent = 'On duty · ' + hms(timeLeft(e.dataset.staffleft as StaffId, t)) + ' left'; });
   document.querySelectorAll<HTMLElement>('[data-count]').forEach(e => { e.textContent = String(inv(e.dataset.count as ItemId)); });
   document.querySelectorAll<HTMLElement>('[data-need]').forEach(e => {
     const k = e.dataset.need as ItemId, q = +e.dataset.q!, have = Math.min(inv(k), q);
@@ -225,6 +229,7 @@ export function bindPanelInput() {
     else if (a === 'upM') act.upgradeMachine(k as MachineId, cx, cy);
     else if (a === 'toggleM') { S.machines[k as MachineId].on = (b as HTMLInputElement).checked; save(); return; }
     else if (a === 'sellCrops') { S.sellCrops = (b as HTMLInputElement).checked; save(); return; }
+    else if (a === 'staff') hireStaffUI(k as StaffId, +(b.dataset.h || 1));
     else if (a === 'hire') act.hire(k === 'fh' ? 'farmhand' : 'seller');
     else if (a === 'reset') {
       if (!resetArmed) {

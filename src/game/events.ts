@@ -19,6 +19,10 @@ export interface GameEvents {
   /** The fish got away: reeled in too early, or too late after the bite. */
   fishMissed: { early: boolean };
   landBought: { k: number };
+  staffEnding: { k: 'manager' | 'keeper'; left: number };
+  wagesUnpaid: Record<string, never>;
+  wagesPaid: Record<string, never>;
+  staffEnded: { k: 'manager' | 'keeper' };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };
@@ -33,6 +37,11 @@ export function on<K extends keyof GameEvents>(type: K, fn: Handler<K>): () => v
   return () => { list.splice(list.indexOf(fn), 1); };
 }
 
+let muted = false;
+/** Silence events while replaying time away (catch-up), so nothing animates or celebrates for it. */
+export function muteEvents(on: boolean) { muted = on; }
+
 export function emit<K extends keyof GameEvents>(type: K, e: GameEvents[K]): void {
+  if (muted) return;
   for (const fn of (handlers[type] ?? []) as Handler<K>[]) fn(e);
 }

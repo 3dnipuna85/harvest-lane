@@ -12,6 +12,8 @@ import { migrate, setState, S, visiting } from './game/state';
 import { initScene } from './scene/renderer';
 import { markDirty } from './ui/dirty';
 import { toast } from './ui/toasts';
+import { catchUp } from './game/staff';
+import { awayNote } from './ui/staff';
 
 /** A place to keep one player's farm as a JSON string. */
 export interface Remote {
@@ -62,12 +64,13 @@ export async function connectRemote(r: Remote) {
     // A browser that had no farm of its own when the page opened always takes the cloud farm.
     if (cloud && (cloud.saved || 0) > (localSaved ? S.saved : 0)) {
       setState(migrate(cloud));
+      const done = catchUp(S.saved || Date.now());
       fillOrders();
       resetSim();
       if (has3D) initScene();
       markDirty();
       lastSent = key();
-      toast('Welcome back. Your farm is loaded.');
+      toast(done.crops || done.products ? awayNote(done) : 'Welcome back. Your farm is loaded.');
     } else await syncCloud(true);
   } catch { /* stay on the local save */ }
 }

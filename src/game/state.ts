@@ -54,6 +54,8 @@ export interface State {
   stats: { earned: number; harvested: number; orders: number; trucks: number; missed: number; fish: number };
   /** Lifetime count of each animal product collected. Buyers only ask for products the player has made before. */
   made: Partial<Record<ItemId, number>>;
+  /** When each paid staff contract ends (ms timestamp; 0 = not hired). */
+  staff: { manager: number; keeper: number };
   /** How many land parcels (data/land.ts, in order) the farm owns. */
   land: number;
   saved: number;
@@ -84,7 +86,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0 }, made: {}, land: 0, saved: t,
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0 }, made: {}, land: 0, staff: { manager: 0, keeper: 0 }, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -109,6 +111,7 @@ export function migrate(raw: unknown): State {
   while (v < SAVE_VERSION && MIGRATIONS[v]) { s = MIGRATIONS[v](s); v++; }
   const out: State = { ...base, ...s, version: SAVE_VERSION, inv: { ...(s.inv || {}) }, machines: { ...base.machines } } as State;
   out.stats = { ...base.stats, ...(s.stats || {}) };
+  out.staff = { manager: +s.staff?.manager || 0, keeper: +s.staff?.keeper || 0 };
   out.land = Math.max(0, Math.min(LAND.length, Math.floor(+s.land || 0)));
   out.made = { ...(s.made && typeof s.made === 'object' ? s.made : {}) };
   out.animals = freshHerds();

@@ -11,6 +11,7 @@ import { chaChing, honk } from '../ui/sound';
 import { computeFull, focusOn, inView, resize, updateCam } from './camera';
 import { buildRiver, updateRiver } from './world/river';
 import { initLand, updateLand } from './world/land';
+import { initStaffActors, updateStaffActors } from './actors/staff';
 import { LAND } from '../data/land';
 import { parcelBox } from './layout';
 import { bobberPos, initFishing, reelAnim, updateFishing } from './actors/fishing';
@@ -86,6 +87,7 @@ export function initScene() {
   initDog();
   initTruck();
   initFishing();
+  initStaffActors();
   syncPlots();
   syncBuildings();
 }
@@ -98,6 +100,7 @@ export function renderScene(dt: number, t: number) {
   updateCam(dt);
   updateActors(dt, t);
   updateFishing(dt, t);
+  updateStaffActors(t);
   updateRiver(dt, t);
   updateLand();
   updateAnimals(dt, t);
