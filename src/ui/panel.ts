@@ -1,3 +1,4 @@
+import { farmAction, farmPanel, farmSignature } from './estate';
 import type { CropId } from '../data/crops';
 import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
@@ -43,6 +44,7 @@ export function panelSignature() {
   const pl = officePlace();
   if (pl) return 'town|' + townSignature(pl);
   const parts: unknown[] = [S.tab, S.level];
+  if (S.tab === 'farm') parts.push(farmSignature());
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
@@ -88,6 +90,7 @@ export function renderPanel() {
     h = ks.length ? '<div class="list">' + ks.map(itemRow).join('') + '</div>'
       : '<div class="empty-note">The barn is empty. Harvest crops and they will show up here.</div>';
   }
+  if (S.tab === 'farm') h = farmPanel();
   if (S.tab === 'machines') h = '<div class="list">' + MACHINE_IDS.map(machineCard).join('') + '</div>';
   if (S.tab === 'animals') h = `<div class="list">
       <div class="row tend"><span class="small grow">Tap an animal on the farm to feed it, then tap again to collect.</span>
@@ -232,7 +235,7 @@ export function bindPanelInput() {
     if (!b || (b as HTMLButtonElement).disabled) return;
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
-    if (townAction(a!, k)) { save(); return; }
+    if (townAction(a!, k) || farmAction(a!)) { save(); return; }
     if (a === 'seed') S.sel = k as CropId;
     else if (a === 'expand') { if (S.plots.length >= MAX_PLOTS) act.buyLand(); else act.buyPlot(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);

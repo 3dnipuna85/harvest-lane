@@ -3,6 +3,7 @@ import { GOOD_IDS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { now } from './clock';
 import { earn, flood, inv, unitPrice, type BuyResult } from './economy';
 import { emit } from './events';
+import { gainGems } from './estate';
 import { S } from './state';
 
 /**
@@ -16,6 +17,9 @@ export const SHOP_LVL = 8;
 export const SHOP_MARKUP = 1.5;
 /** The shopkeeper sells one item this often. */
 export const SHOP_EVERY_MS = 4000;
+/** Chance of a diamond with each shop sale. */
+export const SHOP_GEM = 0.05;
+export const SHOP_GEM_GAP_MS = 10 * 60_000;
 
 /** Each pen upgrade lets you keep 2 more of every animal. */
 export const PEN_STEP = 2;
@@ -78,5 +82,7 @@ export function shopSale(): number {
   earn(coins);
   S.stats.shop = (S.stats.shop || 0) + coins;
   emit('shopSale', { item: k, coins });
+  // At most one shop diamond every 10 minutes, so a long night of selling doesn't shower them.
+  if (now() - (S.gemAt || 0) >= SHOP_GEM_GAP_MS && Math.random() < SHOP_GEM) { S.gemAt = now(); gainGems(1, 'shop'); }
   return coins;
 }

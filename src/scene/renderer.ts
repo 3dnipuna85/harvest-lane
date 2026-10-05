@@ -25,6 +25,7 @@ import { CARTP, barnDoor, plotPos } from './layout';
 import { buildBarn, updateBarn } from './world/barn';
 import { initPlots, syncPlots, updatePlots } from './world/plots';
 import { buildDecor, updateDecor } from './world/decor';
+import { buildEstate, updateEstate } from './world/estate';
 import { buildCart, buildTownSign, buildWorld, updateCart } from './world/props';
 import { applyTownCam, shopPos, town, updateTown } from './town/town';
 import { inTown } from './mode';
@@ -79,6 +80,7 @@ export function initScene() {
   scene.add(sun);
   buildWorld();
   buildDecor();
+  buildEstate();
   buildRiver();
   initLand();
   buildBarn();
@@ -114,6 +116,7 @@ export function renderScene(dt: number, t: number) {
   updateDog(dt, t);
   updateTruck(dt);
   updateDecor(dt, t);
+  updateEstate(t);
   updatePlots(t, dt);
   updateBuildings(dt);
   updateBarn();

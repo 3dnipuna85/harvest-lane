@@ -13,7 +13,7 @@ export const officeOpen = () => open;
 /** The town building the panel is showing, or null for a farm tab. */
 export const officePlace = () => (open ? place : null);
 
-const TITLES: Record<Tab, string> = { orders: 'Orders', barn: 'Barn', animals: 'Animals', machines: 'Machines', helpers: 'Helpers' };
+const TITLES: Record<Tab, string> = { orders: 'Orders', barn: 'Barn', animals: 'Animals', machines: 'Machines', helpers: 'Helpers', farm: 'Farm Upgrades' };
 const PLACES: Record<Place, string> = { market: 'Animal Market', store: 'General Store', shop: 'Your Shop', vet: 'Vet Clinic' };
 
 function apply() {

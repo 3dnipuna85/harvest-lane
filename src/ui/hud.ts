@@ -1,3 +1,4 @@
+import { updateGems } from './estate';
 import { MAX_PLOTS } from '../data/limits';
 import { on } from '../game/events';
 import { nextParcel, plotCost, xpNeed } from '../game/economy';
@@ -46,6 +47,7 @@ function updateTruckPill() {
 }
 
 export function updateHud() {
+  updateGems();
   updateTruckPill();
   $('coins').textContent = fmt(S.coins);
   $('lvl').textContent = String(S.level);

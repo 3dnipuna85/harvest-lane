@@ -448,7 +448,7 @@ body.office-open .zoom{display:none}
 .fr-id span{font-size:12px;color:#8a6a45}
 .fr-empty{margin:0;font-size:13.5px;color:#8a6a45;text-align:center;padding:10px}
 /* visiting a friend's farm: read-only, so the farming controls hide */
-body.visiting .dock,body.visiting #coinPill,body.visiting #truckPill,body.visiting .zoom .fishbtn,body.visiting .hud .friendspill,body.visiting .hud .account,body.visiting #hint{display:none!important}
+body.visiting .dock,body.visiting #coinPill,body.visiting #gemPill,body.visiting #truckPill,body.visiting .zoom .fishbtn,body.visiting .hud .friendspill,body.visiting .hud .account,body.visiting #hint{display:none!important}
 .visitbar{position:fixed;z-index:30;left:50%;bottom:calc(var(--safe-b, 0px) + 18px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-radius:16px;background:#fff6e2;border:3px solid #a86b36;box-shadow:0 4px 0 #6e4220;font-weight:800;color:var(--ink);white-space:nowrap;max-width:calc(100vw - 24px)}
 .visitbar .v-who{overflow:hidden;text-overflow:ellipsis}
 .visitbar b{font-family:var(--display);font-weight:400;font-size:17px;color:#7a3b10}
@@ -506,3 +506,21 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .lbl.asick{border:2px solid #b3261e;background:#ffe3df;color:#9b1c14;padding:2px 7px;font-size:11.5px}
 .lbl.afeed.urgent{border-color:#c9741e;background:#fff0d6}
 .lbl.afeed em{font-style:normal;color:#b3261e;margin-left:3px}
+
+/* Diamonds and farm upgrades */
+#gemPill{cursor:pointer;font:inherit;color:inherit}
+#gemPill .coins-val{min-width:1.5ch}
+.lvlpill{cursor:pointer}
+.lvlpill.capped .xpbar i{background:linear-gradient(90deg,#7fd3ff,#4f8cff)!important}
+.lvlpill.capped .lvlstar::after{content:'🔒';font-size:11px;margin-left:1px}
+.tiers{display:flex;gap:4px;overflow-x:auto;padding:2px 0}
+.tier{flex:1 0 82px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 4px;border-radius:10px;background:#f3e3c4;color:#8a6a44;font-size:11px;font-weight:800;text-align:center}
+.tier b{font-size:12px;color:#6b4a2a}
+.tier.done{background:#dff0c8}
+.tier.cur{background:#ffd76a;box-shadow:inset 0 0 0 2px #c48a1e}
+.upgradecard .costs{gap:10px;align-items:center;margin-top:4px}
+.upgradecard .cost{display:flex;align-items:center;gap:3px;font-weight:900;color:#a0522d}
+.upgradecard .cost.ok{color:var(--leaf)}
+.upgradecard .btn{margin-left:auto}
+.capnote{color:#b5452a}
+.gemfx{color:#3d7be0}

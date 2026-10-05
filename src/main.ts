@@ -22,6 +22,7 @@ import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
 import { officeOpen, officePlace } from './ui/office';
 import { inTown } from './scene/mode';
+import { bindEstate } from './ui/estate';
 import { bindGuide } from './ui/guide';
 import { catchUp } from './game/staff';
 import { awayNote, warnTrouble } from './ui/staff';
@@ -49,6 +50,7 @@ function start() {
   const staffAway = catchUp(S.saved || now());
   fillOrders();
   bindHud();
+  bindEstate();
   bindPanelInput();
   bindGuide(S.level <= 2 && S.stats.harvested < 5);
   // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.

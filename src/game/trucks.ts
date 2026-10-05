@@ -3,6 +3,8 @@ import { TRUCK_BASE_S, TRUCK_GAP_S, TRUCK_PER_ITEM_S, TRUCK_TIP } from '../data/
 import { now } from './clock';
 import { earn, gainXP, hands, inv } from './economy';
 import { emit } from './events';
+import { gemChance } from './estate';
+import { TIER_PAY } from '../data/tiers';
 import { basketValue, canFill, newOrder, orderItems } from './orders';
 import { S, type Order, type Truck } from './state';
 
@@ -10,12 +12,14 @@ import { S, type Order, type Truck } from './state';
 const MISS_GRACE_MS = 5000;
 
 /** Trucks pay 1.3x for raw crops but 2.6x for bread, juice, eggs and the like. */
+/** Chance of a diamond when you load a truck yourself in time for the tip. */
+const TIP_GEM = 0.3;
 const TRUCK_CROP_PAY = 1.3, TRUCK_MADE_PAY = 2.6;
 
 const gap = (rand: () => number) => (TRUCK_GAP_S[0] + rand() * (TRUCK_GAP_S[1] - TRUCK_GAP_S[0])) * 1000;
 
 /** Pay multiplier from reputation: 1 star 0.8x, 3 stars 1x, 5 stars 1.2x. */
-export const repPay = () => 0.7 + S.rep * 0.1;
+export const repPay = () => (0.7 + S.rep * 0.1) * (1 + TIER_PAY * S.tier);
 
 /** A bulk order for a truck: half again as much of each item as a board order. */
 export function truckWants(rand = Math.random): Order['items'] {
@@ -58,6 +62,7 @@ export function deliverTruck(t = now(), rand = Math.random) {
   const { coins } = truckOffer(t), tip = hands.staff ? 0 : truckOffer(t).tip;
   for (const [i, q] of orderItems(k)) S.inv[i] = inv(i) - q;
   earn(coins + tip);
+  if (tip) gemChance(TIP_GEM, 'truck', rand);
   gainXP(k.xp);
   S.stats.orders++;
   S.stats.trucks++;

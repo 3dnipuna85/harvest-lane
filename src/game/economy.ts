@@ -2,6 +2,7 @@ import { CROPS, CROP_IDS, DOUBLE_HARVEST_CHANCE, type CropId } from '../data/cro
 import { GOODS, ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS } from '../data/limits';
+import { TIERS } from '../data/tiers';
 import { LAND, PARCEL_PLOTS } from '../data/land';
 import { now } from './clock';
 import { emit } from './events';
@@ -53,7 +54,13 @@ export const unlockedCrops = () => CROP_IDS.filter(k => CROPS[k].lvl <= S.level)
 export function gainXP(n: number) {
   if (hands.staff) return;
   S.xp += n;
-  while (S.xp >= xpNeed(S.level)) {
+  const cap = TIERS[S.tier]?.cap ?? Infinity;
+  if (S.level >= cap) {
+    // The farm tier caps the level: the bar fills and waits for a farm upgrade.
+    if (S.xp >= xpNeed(S.level)) { S.xp = xpNeed(S.level); emit('levelCapped', { level: S.level }); }
+    return;
+  }
+  while (S.xp >= xpNeed(S.level) && S.level < cap) {
     S.xp -= xpNeed(S.level);
     S.level++;
     const unlocked: string[] = [];
@@ -61,8 +68,10 @@ export function gainXP(n: number) {
     for (const k of MACHINE_IDS) if (MACHINES[k].lvl === S.level) unlocked.push(MACHINES[k].name);
     if (S.level === 2) unlocked.push('Farmhands');
     if (S.level === 3) unlocked.push('Market sellers');
+    S.gems++;
     emit('levelUp', { level: S.level, unlocked });
   }
+  if (S.level >= cap && S.xp >= xpNeed(S.level)) { S.xp = xpNeed(S.level); emit('levelCapped', { level: S.level }); }
 }
 
 export function earn(n: number) {

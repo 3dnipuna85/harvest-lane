@@ -504,3 +504,39 @@ describe('buyers want made goods', () => {
     expect(neededCrop()).toBe('wheat');
   });
 });
+
+describe('farm tiers and diamonds', () => {
+  it('caps the level at the farm tier until the farm is upgraded', async () => {
+    const { upgradeFarm, capped } = await import('../src/game/estate');
+    S.level = 10; S.xp = 0;
+    gainXP(1e7);
+    expect(S.level).toBe(10);
+    expect(capped()).toBe(true);
+    expect(S.xp).toBe(xpNeed(10));
+    S.coins = 9000; S.gems = 8;
+    expect(upgradeFarm()).toEqual({ ok: true, tier: 1 });
+    expect(S.coins).toBe(1000);
+    // the XP saved at the cap levels up straight away, with its diamond
+    expect(S.level).toBe(11);
+    expect(S.gems).toBe(1);
+  });
+
+  it('refuses the upgrade without enough diamonds', async () => {
+    const { upgradeFarm } = await import('../src/game/estate');
+    S.coins = 1e6; S.gems = 3;
+    expect(upgradeFarm()).toEqual({ ok: false, reason: 'gems' });
+    expect(S.tier).toBe(0);
+  });
+
+  it('gives a diamond for each level-up', () => {
+    gainXP(xpNeed(1));
+    expect(S.level).toBe(2);
+    expect(S.gems).toBe(1);
+  });
+
+  it('keeps old farms above the cap at their level', () => {
+    const s = migrate({ ...JSON.parse(JSON.stringify(S)), level: 29, tier: undefined });
+    expect(s.level).toBe(29);
+    expect(s.tier).toBe(3);
+  });
+});

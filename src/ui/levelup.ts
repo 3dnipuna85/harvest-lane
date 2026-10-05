@@ -16,6 +16,7 @@ function unlocks(level: number) {
   for (const k of MACHINE_IDS) if (MACHINES[k].lvl === level) out.push(`<div class="lu-card">${iconHTML(MACHINES[k].out)}<b>${MACHINES[k].name}</b><span>New building</span></div>`);
   if (level === 2) out.push(`<div class="lu-card">${charImg('girl-head')}<b>Farmhands</b><span>Hire helpers</span></div>`);
   if (level === 3) out.push(`<div class="lu-card">${charImg('baker')}<b>Market sellers</b><span>Sell at the cart</span></div>`);
+  out.push(`<div class="lu-card">${uiImg('gem')}<b>1 diamond</b><span>For farm upgrades</span></div>`);
   return out;
 }
 
