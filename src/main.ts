@@ -5,6 +5,7 @@ import '@fontsource/nunito/latin-800.css';
 import '@fontsource/nunito/latin-900.css';
 import './styles.css';
 
+import { initCloud, syncCloud } from './cloud';
 import { now } from './game/clock';
 import { fillOrders } from './game/orders';
 import { sim } from './game/sim';
@@ -37,23 +38,26 @@ function frame(ts: number) {
 }
 
 function start() {
-  setState(migrate(load()));
+  const local = load() as { saved?: number } | null;
+  setState(migrate(local));
   fillOrders();
   bindHud();
   bindPanelInput();
   // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.
   const dock = document.querySelector<HTMLElement>('.dock')!;
   new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px')).observe(dock);
-  if (setup3D($('sceneWrap'), $('overlay'))) {
+  const has3D = setup3D($('sceneWrap'), $('overlay'));
+  if (has3D) {
     bindInput();
     initScene();
     resize();
   }
+  initCloud(local?.saved || 0, has3D);
   const away = (now() - (S.saved || now())) / 1000;
   if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
-  setInterval(save, 5000);
-  addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-  addEventListener('pagehide', save);
+  setInterval(() => { save(); syncCloud(); }, 5000);
+  addEventListener('visibilitychange', () => { if (document.hidden) { save(); syncCloud(true); } });
+  addEventListener('pagehide', () => { save(); syncCloud(true); });
   requestAnimationFrame(ts => { lastT = ts; frame(ts); });
 }
 
