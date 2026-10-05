@@ -54,7 +54,7 @@ function start() {
     resize();
   }
   // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
-  initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled) import('./online/login').then(m => m.initOnline()); });
+  initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled && !('claude' in globalThis)) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
   if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   setInterval(() => { save(); syncCloud(); }, 5000);
