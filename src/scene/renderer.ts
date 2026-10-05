@@ -217,6 +217,6 @@ function bindSceneEvents() {
     truckSay('Too slow! I’m going somewhere else! 😠', 'angry', 3.5);
     honk(true);
     const [sx, sy] = toScreen(truckPos());
-    fx(sx, sy, 'Lost ' + fmt(coins) + ' coins', 'red');
+    fx(sx, sy, 'Missed ' + fmt(coins) + ' coins · −1 ★', 'red');
   });
 }
