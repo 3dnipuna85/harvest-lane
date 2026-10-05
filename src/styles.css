@@ -157,7 +157,7 @@ img.coin-dot{background:none;box-shadow:none;object-fit:contain;border-radius:0}
 .pill{background:#fff6e2;border-color:#a86b36;box-shadow:inset 0 0 0 2px #f3dcae,0 3px 0 #6e4220}
 .coins-val{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.3px}
 .lvlpill{padding:3px 12px 3px 3px}
-.avatar{width:38px;height:38px;border-radius:50%;display:block;margin:-2px 0}
+.avatar{width:38px;height:38px;border-radius:50%;display:block;margin:-2px 0;object-fit:cover}
 .lvlstar{position:relative;width:34px;height:34px;margin-left:-14px;display:grid;place-items:center;flex:none}
 .lvlstar img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .lvlstar b{position:relative;font-family:var(--display);font-weight:400;font-size:14px;color:#fff;text-shadow:0 1px 0 #b07800,0 -1px 0 #b07800,1px 0 0 #b07800,-1px 0 0 #b07800;padding-top:2px}
@@ -275,7 +275,23 @@ body.office-open .zoom{display:none}
 .linkbtn{background:none;border:none;color:#8a5a2e;font-weight:800;font-size:13px;text-decoration:underline;padding:4px;align-self:center}
 .linkbtn.guest{color:#7b6a52;font-size:12.5px}
 .hud .account{white-space:nowrap;margin-left:auto;margin-right:0;padding:6px 14px;font-family:var(--display);font-weight:400;font-size:16px;color:#6b4423;letter-spacing:.3px}
-.hud .account.in{width:42px;height:42px;padding:0;justify-content:center;border-radius:50%;background:linear-gradient(#86d856,#3f9f2c);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.hud .account.in{display:flex;align-items:center;gap:8px;padding:4px 14px 4px 4px;font-size:16px}
+.face{position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:linear-gradient(#86d856,#3f9f2c);color:#fff;font-family:var(--display);text-shadow:0 1px 0 rgba(0,0,0,.3);box-shadow:0 0 0 2px #fff,0 2px 0 2px #c99a5b}
+.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.face.small{width:34px;height:34px;font-size:17px}
+.face.big{width:64px;height:64px;font-size:30px}
+.account-name{max-width:120px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){.account-name{display:none}.hud .account.in{padding:4px}}
+.profile{display:flex;align-items:center;gap:14px;padding:4px 4px 2px}
+.profile-id{display:flex;flex-direction:column;min-width:0;gap:2px}
+.profile-name{font-family:var(--display);font-weight:400;font-size:22px;color:#6b4423;overflow-wrap:anywhere}
+.profile-mail{color:#8a6a45;font-weight:700;font-size:13px;overflow-wrap:anywhere}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.profile-stats div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;background:#fff6e2;border:2px solid #ecd3a3;text-align:center}
+.profile-stats img{width:28px;height:28px;object-fit:contain}
+.profile-stats b{font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+.profile-stats span{font-size:11.5px;font-weight:800;color:#8a6a45;line-height:1.2}
+.login-lead.small{font-size:12.5px;font-weight:700}
 .hud .brand + .account{margin-left:0}
 .hud{justify-content:flex-end}
 .hud .lvlpill{margin-right:auto}

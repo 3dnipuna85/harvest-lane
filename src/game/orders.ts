@@ -45,6 +45,7 @@ export function deliver(i: number): Order | null {
   if (!o || !canFill(o)) return null;
   for (const [k, q] of orderItems(o)) S.inv[k] = inv(k) - q;
   earn(o.coins);
+  S.stats.orders++;
   gainXP(o.xp);
   S.orders.splice(i, 1);
   fillOrders();

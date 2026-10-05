@@ -4,12 +4,13 @@
  */
 import { connectRemote, disconnectRemote } from '../cloud';
 import { toast } from '../ui/toasts';
+import { S } from '../game/state';
 
 type Fb = typeof import('./firebase');
 let fb: Fb | null = null;
 let panel: HTMLElement;
 let account: HTMLButtonElement;
-let who: { uid: string; name: string } | null = null;
+let who: { uid: string; name: string; email: string; photo: string } | null = null;
 const GUEST_KEY = 'harvest-lane-guest';
 
 const MESSAGES: Record<string, string> = {
@@ -54,14 +55,45 @@ function welcome() {
     <button class="linkbtn guest" data-login="guest">Play without an account (saves on this device only)</button>`);
 }
 
+const n = (v: number) => Math.floor(v).toLocaleString();
+
+/** Round photo with the player's initial underneath, shown if the photo can't load. */
+function avatar(cls: string) {
+  const el = document.createElement('span');
+  el.className = 'face ' + cls;
+  el.textContent = (who?.name[0] || '?').toUpperCase();
+  if (who?.photo) {
+    const img = document.createElement('img');
+    img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = who.photo;
+    img.onerror = () => img.remove();
+    el.appendChild(img);
+  }
+  return el;
+}
+
 function accountPanel() {
   show(`
-    <p class="login-lead">Signed in as <b></b>. Your farm saves to your account automatically.</p>
+    <div class="profile">
+      <div class="profile-id"><b class="profile-name"></b><span class="profile-mail"></span></div>
+    </div>
+    <div class="profile-stats">
+      <div><img src="./ui/coin.webp" alt=""><b>${n(S.coins)}</b><span>Coins now</span></div>
+      <div><img src="./ui/trophy.webp" alt=""><b>${n(S.stats.earned)}</b><span>Total earned</span></div>
+      <div><img src="./ui/star.webp" alt=""><b>${S.level}</b><span>Level</span></div>
+      <div><img src="./ui/wheat.webp" alt=""><b>${n(S.stats.harvested)}</b><span>Crops harvested</span></div>
+      <div><img src="./ui/crate.webp" alt=""><b>${n(S.stats.orders)}</b><span>Orders delivered</span></div>
+      <div><img src="./ui/farmer.webp" alt=""><b>${S.plots.length}</b><span>Farm plots</span></div>
+    </div>
+    <p class="login-lead small">Your farm saves to your account automatically.</p>
     <div class="login-row">
       <button class="btn alt" data-login="close">Back to the farm</button>
       <button class="btn red" data-login="out">Sign out</button>
     </div>`);
-  panel.querySelector('.login-lead b')!.textContent = who?.name ?? '';
+  panel.querySelector('.profile')!.prepend(avatar('big'));
+  panel.querySelector('.profile-name')!.textContent = who?.name ?? '';
+  const mail = panel.querySelector<HTMLElement>('.profile-mail')!;
+  mail.textContent = who?.email ?? '';
+  mail.hidden = !who?.email || who.email === who.name;
 }
 
 async function act(kind: string) {
@@ -86,9 +118,23 @@ async function act(kind: string) {
 
 function updateAccount() {
   account.hidden = false;
-  account.textContent = who ? (who.name[0] || '?').toUpperCase() : 'Sign in';
   account.classList.toggle('in', !!who);
-  account.setAttribute('aria-label', who ? 'Account: ' + who.name : 'Sign in');
+  account.replaceChildren();
+  if (who) {
+    const name = document.createElement('span');
+    name.className = 'account-name';
+    name.textContent = who.name.split(/[\s@]/)[0];
+    account.append(avatar('small'), name);
+  } else account.textContent = 'Sign in';
+  account.setAttribute('aria-label', who ? 'Profile: ' + who.name : 'Sign in');
+  // The level badge on the left shows the player's own photo while signed in.
+  const badge = document.querySelector<HTMLImageElement>('.lvlpill .avatar');
+  if (badge) {
+    badge.dataset.art ??= badge.getAttribute('src') ?? '';
+    badge.referrerPolicy = 'no-referrer';
+    badge.onerror = () => { badge.src = badge.dataset.art!; };
+    badge.src = who?.photo || badge.dataset.art;
+  }
 }
 
 export async function initOnline() {
@@ -112,7 +158,7 @@ export async function initOnline() {
   fb = await import('./firebase');
   fb.watchUser(async u => {
     if (u) {
-      who = { uid: u.uid, name: u.displayName || u.email || 'Farmer' };
+      who = { uid: u.uid, name: u.displayName || u.email || 'Farmer', email: u.email || '', photo: u.photoURL || '' };
       setGuest(false); hide(); updateAccount();
       await connectRemote(fb!.farmStore(u.uid));
     } else {

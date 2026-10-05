@@ -139,3 +139,18 @@ describe('saves', () => {
     expect(migrate(null).plots).toHaveLength(6);
   });
 });
+
+describe('profile stats', () => {
+  it('counts lifetime coins, harvests and orders, and old saves start at zero', () => {
+    harvest(1, () => 0.01);
+    expect(S.stats.harvested).toBe(2);
+    fillOrders();
+    const o = S.orders[0];
+    for (const [k, q] of Object.entries(o.items)) S.inv[k as keyof typeof S.inv] = q;
+    deliver(0);
+    expect(S.stats.orders).toBe(1);
+    expect(S.stats.earned).toBe(o.coins);
+    const { stats: _drop, ...old } = S;
+    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0 });
+  });
+});

@@ -36,6 +36,8 @@ export interface State {
   orders: Order[];
   skipUntil: number;
   orderSeq: number;
+  /** Lifetime totals shown on the player's profile. */
+  stats: { earned: number; harvested: number; orders: number };
   saved: number;
 }
 
@@ -51,7 +53,7 @@ export function fresh(t = now()): State {
     coins: 30, xp: 0, level: 1, sel: 'wheat', tab: 'orders',
     plots: Array.from({ length: START_PLOTS }, () => ({ crop: null, at: 0 })),
     inv: { wheat: 2 }, machines, farmhands: 0, sellers: 0, sellCrops: false,
-    orders: [], skipUntil: 0, orderSeq: 0, saved: t,
+    orders: [], skipUntil: 0, orderSeq: 0, stats: { earned: 0, harvested: 0, orders: 0 }, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -75,6 +77,7 @@ export function migrate(raw: unknown): State {
   let v = typeof s.version === 'number' ? s.version : 0;
   while (v < SAVE_VERSION && MIGRATIONS[v]) { s = MIGRATIONS[v](s); v++; }
   const out: State = { ...base, ...s, version: SAVE_VERSION, inv: { ...(s.inv || {}) }, machines: { ...base.machines } } as State;
+  out.stats = { ...base.stats, ...(s.stats || {}) };
   for (const k of MACHINE_IDS) if (s.machines && s.machines[k]) out.machines[k] = { ...base.machines[k], ...s.machines[k] };
   out.plots = (s.plots as Raw[]).map(p => (p && p.crop in CROPS ? { crop: p.crop, at: +p.at || 0 } : { crop: null, at: 0 }));
   if (!(out.sel in CROPS)) out.sel = 'wheat';

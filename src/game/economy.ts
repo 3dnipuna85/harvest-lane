@@ -36,6 +36,7 @@ export function gainXP(n: number) {
 
 export function earn(n: number) {
   S.coins += n;
+  S.stats.earned += n;
   emit('earn', { amount: n });
 }
 
@@ -56,6 +57,7 @@ export function harvest(i: number, rand = Math.random): number {
   if (!p || !p.crop) return 0;
   const crop = p.crop, n = rand() < DOUBLE_HARVEST_CHANCE ? 2 : 1;
   add(crop, n);
+  S.stats.harvested += n;
   gainXP(CROPS[crop].xp * n);
   p.crop = null;
   p.at = 0;
