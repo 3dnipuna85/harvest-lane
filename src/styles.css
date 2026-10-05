@@ -1,4 +1,4 @@
-/* Layout: the isometric 3D farm (WebGL) on the left, the wooden barn ledger with tabs on the right; stacks on phones.
+/* Layout: the isometric 3D farm (WebGL) fills the window; HUD, dock and the Farm Office pop-up float over it (see the full-screen block at the end).
    Single daylight look by choice: every colour is set explicitly so it reads the same everywhere. */
 :root{
   --field:#bfe0a0;
@@ -15,6 +15,7 @@
   --display:'Lilita One','Arial Rounded MT Bold',system-ui,sans-serif;
   --body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
   color-scheme:light;
+  --dock-h:84px;
 }
 html,body{height:100%}
 body{
@@ -187,3 +188,71 @@ img.coin-dot{background:none;box-shadow:none;object-fit:contain;border-radius:0}
 .board h2.plank-title{color:#fff}
 .face{width:44px;height:44px;object-fit:contain;object-position:center top;display:block}
 .card .big:has(.face){width:46px}
+
+/* ---------- Full-screen game: the farm fills the window edge to edge, controls float over it ---------- */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{padding:0;margin:0;background:#74c043;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);user-select:none;-webkit-user-select:none}
+.game{position:fixed;inset:0;overflow:hidden;background:#74c043}
+.game canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:none}
+.game.shake{animation:shake .3s}
+
+.hud{position:fixed;z-index:20;top:calc(var(--safe-t) + 10px);left:calc(var(--safe-l) + 12px);right:calc(var(--safe-r) + 12px);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none;flex-wrap:nowrap}
+.hud > *{pointer-events:auto}
+.hud .brand{margin:0;font-size:clamp(24px,3.2vw,36px);color:#fff;pointer-events:none;
+  text-shadow:0 3px 0 #9c2f1e,2px 0 0 #9c2f1e,-2px 0 0 #9c2f1e,0 -2px 0 #9c2f1e,0 6px 0 rgba(60,30,10,.35)}
+@media (max-width:640px){.hud .brand{display:none}}
+
+.hint{position:fixed;z-index:20;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 66px);margin:0;max-width:calc(100vw - 32px);
+  background:rgba(255,246,226,.95);border:2px solid #a86b36;border-radius:999px;padding:6px 14px;color:#6b4423;font-size:13px;font-weight:800;
+  text-align:center;pointer-events:none;box-shadow:0 3px 0 rgba(110,66,32,.5);animation:hintout .6s 9s forwards;transition:opacity .4s}
+.hint.gone{opacity:0}
+@keyframes hintout{to{opacity:0}}
+
+.zoom{position:fixed;z-index:20;right:calc(var(--safe-r) + 12px);top:50%;transform:translateY(-50%);left:auto}
+.zoom button{width:42px;height:42px;font-size:24px;border-radius:12px}
+body.office-open .zoom{display:none}
+
+.dock{position:fixed;z-index:20;bottom:calc(var(--safe-b) + 10px);left:50%;transform:translateX(-50%);max-width:calc(100vw - 20px);
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:22px;border:3px solid #5e3516;
+  background:linear-gradient(#cf9354,#9b5f2c);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 5px 0 #4a2a10,0 8px 18px rgba(40,20,5,.25)}
+.dock .seeds{padding:0;gap:6px;min-width:0;flex:1 1 auto;scrollbar-width:none}
+.dock .seeds::-webkit-scrollbar{display:none}
+.dock .seed{min-width:58px;padding:4px 6px;background:#fff6e2;border-color:#e2c48f;font-size:11px}
+.dock .seed .ic{width:30px;height:30px}
+.dock .seed.sel{background:#eaf7dd;border-color:var(--leaf)}
+.dock .expand{margin:0;width:auto;flex:none;flex-direction:column;gap:1px;padding:5px 10px;border-radius:12px;border:2px dashed #fff0d0;
+  color:#fff;font-size:11px;font-weight:900;text-shadow:0 1px 0 rgba(0,0,0,.35);min-height:58px}
+.dock .expand b{font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.3px}
+.dock .expand span{display:flex;align-items:center;gap:3px}
+.dock .tabs{margin:0;flex:none;flex-wrap:nowrap;gap:6px}
+.dock .tab{width:60px;height:60px;padding:4px 2px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:linear-gradient(#fffaf0,#efd9ad);color:#6b4423;font-size:11.5px;box-shadow:inset 0 2px 0 #fff,0 3px 0 #5e3516;text-shadow:none}
+.dock .tab-ic{width:30px;height:30px;margin:0;vertical-align:0}
+.dock .tab.on{background:linear-gradient(#ffd75e,#f39a12);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3);box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 3px 0 #b96a00}
+.dock .tab .badge{top:-5px;right:-5px}
+
+/* Phones and narrow windows: seeds on one row, the four office buttons and the plot button below */
+@media (max-width:760px){
+  .dock{left:calc(var(--safe-l) + 8px);right:calc(var(--safe-r) + 8px);transform:none;max-width:none;flex-wrap:wrap;gap:8px;padding:8px}
+  .dock .seeds{flex:1 1 100%;order:1}
+  .dock .tabs{order:2;flex:1 1 auto;justify-content:space-between}
+  .dock .expand{order:3}
+  .dock .tab{flex:1;width:auto;max-width:76px}
+}
+
+.office{position:fixed;z-index:30;top:calc(var(--safe-t) + 70px);bottom:calc(var(--safe-b) + var(--dock-h) + 22px);right:calc(var(--safe-r) + 12px);
+  width:min(420px,calc(100vw - 24px));display:flex;flex-direction:column;animation:officein .2s ease-out}
+.office[hidden]{display:none!important}
+.office-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 4px;user-select:text;-webkit-user-select:text}
+.office .close{position:absolute;top:-40px;right:-6px;width:34px;height:34px;border-radius:50%;border:2px solid #9c2f1e;
+  background:linear-gradient(#ff6d5c,#d9342a);color:#fff;font-family:var(--display);font-size:22px;line-height:1;display:grid;place-items:center;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #9c2f1e;padding:0 0 2px}
+@keyframes officein{from{opacity:0;transform:translateY(10px)}}
+@media (max-width:760px){
+  .office{left:calc(var(--safe-l) + 8px);right:calc(var(--safe-r) + 8px);width:auto;top:auto;height:min(64vh,calc(100% - var(--dock-h) - var(--safe-t) - var(--safe-b) - 100px))}
+}
+
+.toasts{top:calc(var(--safe-t) + 66px)}
+@media (prefers-reduced-motion:reduce){.hint,.office,.game.shake{animation:none!important}}

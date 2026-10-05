@@ -9,6 +9,7 @@ import { save, S, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
+import { closeOffice, officeOpen, toggleOffice } from './office';
 
 const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
 let resetArmed = false;
@@ -16,7 +17,7 @@ let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function renderTabs() {
   $('tabs').innerHTML = TABS.map(([k, n, ic]) =>
-    `<button class="tab ${S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}">${uiImg(ic, 'tab-ic')}${n}<span class="badge" data-badge="${k}" hidden></span></button>`).join('');
+    `<button class="tab ${officeOpen() && S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}" aria-label="${n}">${uiImg(ic, 'tab-ic')}<span class="tab-name">${n}</span><span class="badge" data-badge="${k}" hidden></span></button>`).join('');
 }
 
 function itemRow(k: ItemId) {
@@ -141,7 +142,8 @@ export function bindPanelInput() {
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
     if (a === 'seed') S.sel = k as CropId;
     else if (a === 'expand') act.buyPlot();
-    else if (a === 'tab') S.tab = b.dataset.t as Tab;
+    else if (a === 'tab') toggleOffice(b.dataset.t as Tab);
+    else if (a === 'close') closeOffice();
     else if (a === 'sell') act.sell(k as ItemId, b.dataset.n === 'all' ? inv(k as ItemId) : 1, cx, cy);
     else if (a === 'deliver') act.deliver(i, cx, cy);
     else if (a === 'skip') act.skip(i);

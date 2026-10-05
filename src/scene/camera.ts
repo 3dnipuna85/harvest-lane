@@ -31,16 +31,14 @@ export function computeFull() {
   full = { cx: (a[0] + a[1]) / 2, cy: (a[2] + a[3]) / 2, sx: a[1] - a[0], sy: a[3] - a[2] };
 }
 
-/** Fit the canvas to its container. Phones get a taller, more zoomed-in view. */
+/** Fill the whole window, edge to edge. Phones start more zoomed in. */
 export function resize() {
   if (!ctx.ok3d) return;
   ctx.CW = Math.max(240, ctx.wrap.clientWidth);
+  ctx.CH = Math.max(240, ctx.wrap.clientHeight);
   const zoomed = ctx.CW < 560;
-  let h = zoomed ? ctx.CW * 1.1 : ctx.CW * 0.72;
-  h = Math.min(h, Math.max(340, innerHeight * 0.8));
-  ctx.CH = Math.round(h);
   ctx.renderer.setSize(ctx.CW, ctx.CH);
-  if (!Z) Z = zoomed ? 2.3 : 1.75;
+  if (!Z) Z = zoomed ? 2.3 : ctx.CW < ctx.CH ? 2.1 : 1.75;
   if (!panInit) {
     // Start centred near the field and barn.
     const v = new THREE.Vector3(-2.6, 0, -2.4).applyMatrix4(ctx.camera.matrixWorldInverse);

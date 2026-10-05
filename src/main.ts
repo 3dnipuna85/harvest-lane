@@ -41,6 +41,9 @@ function start() {
   fillOrders();
   bindHud();
   bindPanelInput();
+  // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.
+  const dock = document.querySelector<HTMLElement>('.dock')!;
+  new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px')).observe(dock);
   if (setup3D($('sceneWrap'), $('overlay'))) {
     bindInput();
     initScene();

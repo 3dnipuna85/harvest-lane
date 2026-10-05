@@ -15,32 +15,30 @@
   <title>Harvest Lane</title>
 </head>
 <body>
-  <div class="app">
-    <header class="hud">
-      <div class="brand">Harvest Lane</div>
-      <div class="pill lvlpill"><img class="avatar" src="/ui/avatar.webp" alt=""><span class="lvlstar" aria-label="Level"><img src="/ui/star.webp" alt=""><b id="lvl">1</b></span><span class="xpbar"><i id="xp"></i></span></div>
-      <div class="pill" id="coinPill"><img class="coin-dot" src="/ui/coin.webp" alt="Coins"><span class="coins-val" id="coins">0</span></div>
-    </header>
-
-    <main class="main">
-      <section class="board" aria-label="Farm">
-        <h2 class="plank-title">The Farm</h2>
-        <p class="hint" id="hint">Tap soil to plant and ripe crops to harvest; taps queue up. Drag to move around, and use + and − to zoom.</p>
-        <div class="seeds" id="seeds"></div>
-        <div class="scene-wrap" id="sceneWrap">
-          <div class="overlay" id="overlay"></div>
-          <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
-        </div>
-        <button class="expand" id="expand" data-act="expand"></button>
-      </section>
-
-      <section class="board" aria-label="Farm office">
-        <h2 class="plank-title">Farm Office</h2>
-        <div class="tabs" id="tabs"></div>
-        <div id="panel"></div>
-      </section>
-    </main>
+  <div class="game" id="sceneWrap">
+    <div class="overlay" id="overlay"></div>
   </div>
+
+  <header class="hud">
+    <div class="pill lvlpill"><img class="avatar" src="/ui/avatar.webp" alt=""><span class="lvlstar" aria-label="Level"><img src="/ui/star.webp" alt=""><b id="lvl">1</b></span><span class="xpbar"><i id="xp"></i></span></div>
+    <div class="brand">Harvest Lane</div>
+    <div class="pill" id="coinPill"><img class="coin-dot" src="/ui/coin.webp" alt="Coins"><span class="coins-val" id="coins">0</span></div>
+  </header>
+
+  <p class="hint" id="hint">Tap soil to plant and ripe crops to harvest. Drag to look around.</p>
+  <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
+
+  <nav class="dock" aria-label="Farm tools">
+    <div class="seeds" id="seeds"></div>
+    <button class="expand" id="expand" data-act="expand"></button>
+    <div class="tabs" id="tabs"></div>
+  </nav>
+
+  <section class="board office" id="office" aria-label="Farm office" hidden>
+    <h2 class="plank-title" id="officeTitle">Orders</h2>
+    <button class="close" data-act="close" aria-label="Close">×</button>
+    <div class="office-body" id="panel"></div>
+  </section>
   <div class="toasts" id="toasts"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

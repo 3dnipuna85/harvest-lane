@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { buyPlot } from '../ui/actions';
-import { save, S, type Tab } from '../game/state';
+import { save, type Tab } from '../game/state';
 import { tapPlot } from '../scene/actors/ai';
 import { applyCam, getZoom, pan, setZoom, view } from '../scene/camera';
 import { ctx } from '../scene/context';
-import { markDirty } from '../ui/dirty';
 import { $ } from '../ui/format';
+import { openOffice } from '../ui/office';
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
-function openTab(t: Tab) { S.tab = t; markDirty(); }
+function openTab(t: Tab) { openOffice(t); }
 
 /** Raycast a tap and route it to whatever was hit. */
 function pick(cx: number, cy: number) {
@@ -22,7 +22,7 @@ function pick(cx: number, cy: number) {
     while (o && !o.userData.type) o = o.parent;
     if (!o) continue;
     const u = o.userData;
-    if (u.type === 'plot') { tapPlot(u.i); save(); return; }
+    if (u.type === 'plot') { tapPlot(u.i); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'buy') { if (o.visible) { buyPlot(); save(); } return; }
     if (u.type === 'bld') { openTab(u.id === 'barn' ? 'barn' : 'machines'); return; }
     if (u.type === 'cart') { openTab('helpers'); return; }

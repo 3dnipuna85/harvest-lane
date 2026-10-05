@@ -11,6 +11,8 @@ export interface Char {
   state: 'idle' | 'walk' | 'work';
   act: number; actDur: number; actType: 'plant' | 'harvest' | null;
   task: { i: number } | null;
+  /** Remaining waypoints after (tx, tz), so walks follow the paths between plots. */
+  path: { x: number; z: number }[];
   done: boolean;
   idleT: number;
   wave: number;
@@ -34,7 +36,7 @@ export function mkChar(kind: CharKind, i: number): Char {
   const v = billboard(first, kind === 'player' ? 1.95 : 1.6, 0.38);
   return {
     id: kind + i, kind, x: BX[0] + 0.6 + i * 0.3, z: BZ + 2.0, tx: 0, tz: 0, face: 0, phase: Math.random() * 6, state: 'idle',
-    act: 0, actDur: 0.5, actType: null, task: null, done: false, idleT: Math.random(), wave: 0,
+    act: 0, actDur: 0.5, actType: null, task: null, path: [], done: false, idleT: Math.random(), wave: 0,
     speed: kind === 'player' ? 5.0 : 2.7, look, flip: i % 2 === 1, back: false, v,
   };
 }

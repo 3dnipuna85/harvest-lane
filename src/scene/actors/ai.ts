@@ -5,7 +5,7 @@ import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
 import { S } from '../../game/state';
 import { fx, shakeScene, toast } from '../../ui/toasts';
-import { CARTP, ROADZ, plotPos } from '../layout';
+import { CARTP, PITCH, ROADZ, plotPos } from '../layout';
 import { lbl, toScreen } from '../fx/labels';
 import { mkChar, poseChar, removeChar, type Char } from './person';
 
@@ -39,10 +39,20 @@ function pickJob() {
   return -1;
 }
 
+/** Column paths run between plot columns, row paths in front of each plot row. */
+const colGap = (x: number) => (Math.round(x / PITCH - 0.5) + 0.5) * PITCH;
+const onColGap = (x: number) => Math.abs(x - colGap(x)) < 0.2;
+
 function goTo(c: Char, i: number) {
-  const q = plotPos(i);
-  c.tx = q.x + (c.kind === 'hand' ? -0.4 : 0);
-  c.tz = q.z + 0.15;
+  // Work from the path beside the plot, never standing in the soil: the farmer at the front edge
+  // (down-screen), a farmhand on the right-hand edge. Walks stick to the paths between plots.
+  const q = plotPos(i), gx = q.x + (c.kind === 'hand' ? PITCH / 2 : -PITCH / 2), gz = q.z + PITCH / 2;
+  const end = c.kind === 'hand' ? { x: gx, z: q.z + 0.35 } : { x: q.x - 0.2, z: gz };
+  const pts = onColGap(c.x)
+    ? [{ x: c.x, z: gz }, { x: gx, z: gz }, end]
+    : [{ x: gx, z: c.z }, { x: gx, z: c.kind === 'hand' ? end.z : gz }, end];
+  const first = pts.shift()!;
+  c.tx = first.x; c.tz = first.z; c.path = pts;
   c.task = { i };
   c.state = 'walk';
   res.set(i, c.id);
@@ -53,6 +63,8 @@ function startWork(c: Char) {
   const type = !p ? null : !p.crop ? 'plant' : ripe(p) ? 'harvest' : null;
   if (!type) { finish(c); return; }
   c.state = 'work'; c.act = 0; c.done = false; c.actType = type; c.face = Math.PI / 4;
+  // Turn to face the plot: it is up-right of the farmer and up-left of a farmhand on screen.
+  c.flip = c.kind === 'hand';
   c.actDur = c.kind === 'player' ? (type === 'plant' ? 0.8 : 0.7) : (type === 'plant' ? 0.95 : 0.8);
 }
 
@@ -76,7 +88,11 @@ function updateChar(c: Char, dt: number) {
   if (c.state === 'walk') {
     const dx = c.tx - c.x, dz = c.tz - c.z, d = Math.hypot(dx, dz), step = c.speed * dt;
     if (d > 0.01) c.face = Math.atan2(dx, dz);
-    if (d <= step) { c.x = c.tx; c.z = c.tz; startWork(c); }
+    if (d <= step) {
+      c.x = c.tx; c.z = c.tz;
+      const nx = c.path.shift();
+      if (nx) { c.tx = nx.x; c.tz = nx.z; } else startWork(c);
+    }
     else { c.x += (dx / d) * step; c.z += (dz / d) * step; c.phase += dt * (c.kind === 'player' ? 15 : 11); }
   } else if (c.state === 'work') {
     c.act += dt;

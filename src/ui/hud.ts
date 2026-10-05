@@ -25,11 +25,11 @@ export function updateHud() {
   $('lvl').textContent = String(S.level);
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
   const ex = $('expand') as HTMLButtonElement;
-  if (S.plots.length >= MAX_PLOTS) { ex.disabled = true; ex.textContent = 'All land owned'; }
+  if (S.plots.length >= MAX_PLOTS) { ex.disabled = true; ex.textContent = 'All land'; }
   else {
     const c = plotCost();
     ex.disabled = S.coins < c;
-    const h = 'Buy another plot ' + coinHTML + fmt(c);
+    const h = '<b>New plot</b><span>' + coinHTML + fmt(c) + '</span>';
     if (ex.innerHTML !== h) ex.innerHTML = h;
   }
 }
