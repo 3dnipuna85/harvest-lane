@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { now } from '../../game/clock';
+import { sickCount } from '../../game/animals';
 import { onDuty } from '../../game/staff';
 import { S } from '../../game/state';
 import { SHOP_COST, boosted } from '../../game/town';
@@ -19,10 +20,12 @@ import { SERVICES, SERVICE_IDS, STALLS, buildServices, serviceDoor } from './ser
  * the General Store and the player's own shop (an empty lot with a "For sale" sign until it is bought).
  */
 
-export type Place = 'market' | 'store' | 'shop';
+/** Places with a panel. The vet is one of the side-street services (services.ts). */
+export type Place = Building | 'vet';
+type Building = 'market' | 'store' | 'shop';
 
 /** Building spots along the back of the square, all facing the camera. */
-const SPOT: Record<Place, { x: number; z: number }> = {
+const SPOT: Record<Building, { x: number; z: number }> = {
   market: { x: -6.6, z: -0.6 },
   store: { x: -3.6, z: -3.6 },
   shop: { x: -0.6, z: -6.6 },
@@ -30,7 +33,7 @@ const SPOT: Record<Place, { x: number; z: number }> = {
 const FACE = Math.PI / 4;
 const fwd = (p: { x: number; z: number }, d: number) => ({ x: p.x + d * Math.SQRT1_2, z: p.z + d * Math.SQRT1_2 });
 /** Where shoppers stand, in front of each door. */
-export const DOOR: Record<Place, { x: number; z: number }> = { market: fwd(SPOT.market, 2.2), store: fwd(SPOT.store, 2.2), shop: fwd(SPOT.shop, 2.4) };
+export const DOOR: Record<Building, { x: number; z: number }> = { market: fwd(SPOT.market, 2.2), store: fwd(SPOT.store, 2.2), shop: fwd(SPOT.shop, 2.4) };
 const PLAZA = { x: 0.6, z: 0.6, r: 4.4 };
 const TW = 60;
 
@@ -263,7 +266,7 @@ function pickSpot(w: Walker) {
 // ---------- build ----------
 
 let shopRoot: THREE.Group, shopState: boolean | null = null, shopPop = 0;
-const roots: Partial<Record<Place, THREE.Group>> = {};
+const roots: Partial<Record<Building, THREE.Group>> = {};
 
 function lights(scene: THREE.Scene) {
   scene.add(new THREE.HemisphereLight('#ffffff', '#8fbf5f', 0.62));
@@ -289,7 +292,7 @@ export function buildTown() {
   const far = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), T('#74c043'));
   far.rotation.x = -Math.PI / 2; far.position.y = -0.02; scene.add(far);
   const g = new THREE.Group(); scene.add(g);
-  for (const k of Object.keys(SPOT) as Place[]) {
+  for (const k of Object.keys(SPOT) as Building[]) {
     const r = new THREE.Group();
     r.position.set(SPOT[k].x, 0, SPOT[k].z); r.rotation.y = FACE;
     r.userData = { type: 'place', k };
@@ -430,7 +433,7 @@ export function updateTown(dt: number, t: number) {
     keeper.head.rotation.set(0, Math.sin(t * 0.6) * 0.3, 0);
   }
   // signs over each place
-  const at = (k: Place, h: number) => { const p = SPOT[k]; return tmp.set(p.x + 0.6, h, p.z + 0.6); };
+  const at = (k: Building, h: number) => { const p = SPOT[k]; return tmp.set(p.x + 0.6, h, p.z + 0.6); };
   lbl('town-market', '<b>Animal Market</b><span>Animals · bigger pens</span>', at('market', 3.1), 'townsign p-market');
   lbl('town-store', `<b>General Store</b><span>${boosted() ? '🌱 Fertilizer on · ' + Math.ceil((S.boost - now()) / 60000) + 'm' : 'Fertilizer'}</span>`, at('store', 3.0), 'townsign p-store');
   lbl('town-shop', S.town.shop
@@ -438,7 +441,10 @@ export function updateTown(dt: number, t: number) {
     : `<b>Shop for sale</b><span class="r">${coinHTML}${fmt(SHOP_COST)}</span>`, at('shop', S.town.shop ? 3.0 : 2.0), 'townsign p-shop' + (S.town.shop ? '' : ' forsale'));
   for (const id of SERVICE_IDS) {
     const v = SERVICES[id], d = serviceDoor(v, 0.4);
-    lbl('town-' + id, `<b>${v.name}</b>`, tmp.set(d.x, id === 'hall' ? 4.9 : 2.95, d.z), 'townsign small p-info-' + id);
+    if (id === 'vet') {
+      const n = sickCount();
+      lbl('town-vet', `<b>Vet Clinic</b>${n ? `<span>🤒 ${n} sick animal${n > 1 ? 's' : ''}</span>` : ''}`, tmp.set(d.x, 2.95, d.z), 'townsign p-vet' + (n ? ' forsale' : ''));
+    } else lbl('town-' + id, `<b>${v.name}</b>`, tmp.set(d.x, id === 'hall' ? 4.9 : 2.95, d.z), 'townsign small p-info-' + id);
   }
   lbl('town-home', '<b>← Farm</b>', tmp.set(-3.25, 1.6, 9.2), 'townsign home p-farm');
 }

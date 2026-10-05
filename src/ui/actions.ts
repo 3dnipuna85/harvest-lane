@@ -62,6 +62,7 @@ export function tapAnimal(k: AnimalId, i: number) {
   const r = tapA(k, i), a = ANIMALS[k];
   if (r === 'nofeed') toast(`${a.plural} eat ${a.feedQty} ${CROPS[a.feed].name.toLowerCase()}. Grow some first!`);
   else if (r === 'locked') toast(`${a.plural} unlock at level ${a.lvl}`);
+  else if (r === 'sick') toast(`This ${a.name.toLowerCase()} is sick from going hungry too long. Take it to the Vet Clinic in town.`);
 }
 
 export function buyAnimal(k: AnimalId) {

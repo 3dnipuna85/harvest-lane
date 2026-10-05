@@ -6,6 +6,8 @@ import type { AnimalId } from '../data/animals';
 /** Everything the game logic announces. The scene and UI listen; game/ never touches them directly. */
 export interface GameEvents {
   levelUp: { level: number; unlocked: string[] };
+  animalSick: { kind: AnimalId; i: number };
+  cropRotted: { i: number; crop: CropId };
   earn: { amount: number };
   plant: { i: number; crop: CropId };
   harvest: { i: number; crop: CropId; n: number };

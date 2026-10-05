@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CROPS } from '../../data/crops';
 import { MAX_PLOTS } from '../../data/limits';
-import { growProgress, plotCost } from '../../game/economy';
+import { growProgress, plotCost, rotIn } from '../../game/economy';
 import { S } from '../../game/state';
 import { coinHTML, fmt } from '../../ui/format';
 import { isQueued } from '../actors/ai';
@@ -84,7 +84,8 @@ export function updatePlots(t: number, dt: number) {
     const P = P3[i], p = S.plots[i], q = plotPos(i);
     let stage: Stage | 'none' = 'none';
     const pr = growProgress(p);
-    if (p.crop) stage = pr >= 1 ? 'ripe' : pr < 0.3 ? 'sprout' : 'grow';
+    const rl = rotIn(p);
+    if (p.crop) stage = rl <= 0 ? 'rotten' : pr >= 1 ? 'ripe' : pr < 0.3 ? 'sprout' : 'grow';
     const key = (p.crop || '') + stage;
     if (P.key !== key) {
       if (P.crops) P.g.remove(P.crops);
@@ -107,6 +108,8 @@ export function updatePlots(t: number, dt: number) {
       }
     }
     P.ripeF.visible = stage === 'ripe';
+    if (stage === 'ripe' && rl < 120_000) lbl('t' + i, `🥀 ${Math.ceil(rl / 1000)}s`, tmp.set(q.x, 0.5, q.z + 1.05), 'timer rotsoon');
+    if (stage === 'rotten') lbl('t' + i, 'Rotten', tmp.set(q.x, 0.5, q.z + 1.05), 'timer rotten');
     P.queueF.visible = isQueued(i);
     if (P.queueF.visible) P.queueF.position.y = Math.sin(t * 6) * 0.04;
     if (stage === 'sprout' || stage === 'grow') {

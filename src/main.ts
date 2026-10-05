@@ -24,7 +24,7 @@ import { officeOpen, officePlace } from './ui/office';
 import { inTown } from './scene/mode';
 import { bindGuide } from './ui/guide';
 import { catchUp } from './game/staff';
-import { awayNote } from './ui/staff';
+import { awayNote, warnTrouble } from './ui/staff';
 
 let seedSig = '', panelSig = '', lastT = 0;
 
@@ -66,15 +66,17 @@ function start() {
   const away = (now() - (S.saved || now())) / 1000;
   if (staffAway.crops || staffAway.products || staffAway.fish || staffAway.shop) toast(awayNote(staffAway));
   else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
+  if (away > 60) warnTrouble();
   setInterval(() => { save(); syncCloud(); }, 5000);
   // A hidden tab stops drawing frames, so replay the staff's work for that time when it comes back.
   let hiddenAt = 0;
   addEventListener('visibilitychange', () => {
     if (document.hidden) { hiddenAt = now(); save(); syncCloud(true); return; }
     if (hiddenAt && !visiting) {
-      const d = catchUp(hiddenAt);
+      const hiddenAt0 = hiddenAt, d = catchUp(hiddenAt);
       hiddenAt = 0;
       if (d.crops || d.products || d.fish || d.shop) toast(awayNote(d));
+      if (now() - hiddenAt0 > 5 * 60_000) warnTrouble();
     }
   });
   addEventListener('pagehide', () => { save(); syncCloud(true); });

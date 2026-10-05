@@ -151,7 +151,7 @@ describe('profile stats', () => {
     expect(S.stats.orders).toBe(1);
     expect(S.stats.earned).toBe(o.coins);
     const { stats: _drop, ...old } = S;
-    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0 });
+    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 });
   });
 });
 
@@ -429,5 +429,44 @@ describe('harder economy', () => {
     S.inv.wheat = 5;
     const r = eco.byStaff(() => tr.deliverTruck(t));
     expect(r!.tip).toBe(0);
+  });
+});
+
+describe('rot and sickness', () => {
+  it('a ripe crop left too long rots and yields nothing', async () => {
+    const eco = await import('../src/game/economy');
+    S.plots[3] = { crop: 'wheat', at: t };
+    t += 6000 + eco.rotMs('wheat') - 1000;
+    expect(eco.rotten(S.plots[3])).toBe(false);
+    t += 2000;
+    expect(eco.rotten(S.plots[3])).toBe(true);
+    const before = inv('wheat');
+    expect(harvest(3)).toBe(0);
+    expect(inv('wheat')).toBe(before);
+    expect(S.plots[3].crop).toBeNull();
+    expect(S.stats.rotted).toBe(1);
+  });
+
+  it('an animal left hungry falls sick, refuses food, and the vet heals it', async () => {
+    const an = await import('../src/game/animals');
+    S.inv.wheat = 10; S.coins = 1000;
+    expect(an.animalState('hen', 0)).toBe('hungry');
+    t += an.SICK_AFTER_MS + 1;
+    expect(an.animalState('hen', 0)).toBe('sick');
+    expect(an.feedAnimal('hen', 0)).toBe('sick');
+    expect(an.sickCount()).toBe(3);
+    const r = an.healAll();
+    expect(r.healed).toBe(3);
+    expect(an.feedAnimal('hen', 0)).toBe('fed');
+  });
+
+  it('an animal keeper keeps them fed so none fall sick', async () => {
+    const st = await import('../src/game/staff');
+    const an = await import('../src/game/animals');
+    S.level = 5; S.coins = 100000; S.inv.wheat = 500;
+    st.hireStaff('keeper', 1, t);
+    st.catchUp(t, t + 50 * 60_000);
+    t += 50 * 60_000;
+    expect(an.sickCount('hen')).toBe(0);
   });
 });

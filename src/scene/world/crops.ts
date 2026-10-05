@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import type { CropId } from '../../data/crops';
 import { Cap, Sph, part } from '../geometry';
+import { T } from '../materials';
 
-export type Stage = 'sprout' | 'grow' | 'ripe';
+export type Stage = 'sprout' | 'grow' | 'ripe' | 'rotten';
 
 /** Four plants per plot. */
 const CROP_SPOTS = [[-0.52, -0.5], [0.52, -0.5], [-0.52, 0.5], [0.52, 0.5]];
@@ -44,7 +45,17 @@ export function buildCrop(type: CropId, stage: Stage) {
       part(Sph(0.08), '#7dd35a', c, -0.06, 0.1, 0, { s: [1.3, 0.5, 0.8], r: [0, 0, 0.5], ol: 0.015, shadow: false });
       part(Sph(0.08), '#8ee06a', c, 0.06, 0.12, 0, { s: [1.3, 0.5, 0.8], r: [0, 0, -0.5], ol: 0.015, shadow: false });
       part(Cap(0.02, 0.1), '#6cc04a', c, 0, 0.05, 0, { ol: false, shadow: false });
-    } else cropModel(type, stage === 'ripe', c);
+    } else cropModel(type, stage !== 'grow', c);
   });
+  if (stage === 'rotten') {
+    // wilted and brown, slumped over
+    const browns = ['#8a6a3a', '#6b5530', '#7a5a2e', '#5e4a2a'];
+    let k = 0;
+    g.traverse(o => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && !(m.material as THREE.Material & { side?: number }).side) m.material = T(browns[k++ % browns.length]);
+    });
+    g.children.forEach((c, j) => { c.rotation.z = (j % 2 ? 1 : -1) * 0.5; c.scale.y = 0.6; });
+  }
   return g;
 }

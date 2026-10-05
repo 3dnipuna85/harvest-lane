@@ -500,3 +500,9 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .fr-mail{display:flex;justify-content:center;margin-top:8px}
 .fr-mail .btn{text-decoration:none;padding:8px 14px}
 .sub.glut{color:#b3261e}
+/* rot and sickness */
+.lbl.timer.rotsoon{background:#fff0d6;border-color:#c9741e;color:#9a4a10;animation:fishPulse .5s ease-in-out infinite alternate}
+.lbl.timer.rotten{background:#e9dccb;border-color:#6b5530;color:#5e4a2a}
+.lbl.asick{border:2px solid #b3261e;background:#ffe3df;color:#9b1c14;padding:2px 7px;font-size:11.5px}
+.lbl.afeed.urgent{border-color:#c9741e;background:#fff0d6}
+.lbl.afeed em{font-style:normal;color:#b3261e;margin-left:3px}

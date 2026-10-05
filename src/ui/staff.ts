@@ -1,6 +1,8 @@
 import { on } from '../game/events';
 import { hireStaff, STAFF, STAFF_IDS, TERMS, termCost, timeLeft, type StaffId } from '../game/staff';
 import { S } from '../game/state';
+import { rotten } from '../game/economy';
+import { animalTick, sickCount } from '../game/animals';
 import { charImg } from './art';
 import { markDirty } from './dirty';
 import { coinHTML, fmt } from './format';
@@ -22,6 +24,16 @@ export function awayNote(d: { crops: number; products: number; seeds: number; fi
   if (d.crops) bits.push(`harvested ${fmt(d.crops)} crops`);
   if (d.products) bits.push(`collected ${fmt(d.products)} animal goods`);
   return 'Welcome back! While you were away your staff ' + bits.join(', ') + '.' + (d.seeds ? ` Replanting cost ${fmt(d.seeds)} coins.` : '');
+}
+
+/** After time away: say what went wrong (rotten crops, sick animals), if anything. */
+export function warnTrouble() {
+  animalTick();
+  const rot = S.plots.filter(p => rotten(p)).length, sick = sickCount();
+  const bits: string[] = [];
+  if (rot) bits.push(`${rot} plot${rot > 1 ? 's' : ''} of crops rotted (tap to clear)`);
+  if (sick) bits.push(`${sick} animal${sick > 1 ? 's' : ''} fell sick from hunger (the vet in town can help)`);
+  if (bits.length) setTimeout(() => toast('While you were away, ' + bits.join(' and ') + '.'), 1500);
 }
 
 export function staffCard(k: StaffId) {

@@ -146,6 +146,12 @@ function bindSceneEvents() {
     const [sx, sy] = toScreen(new THREE.Vector3(q.x, 1.4, q.z));
     fx(sx, sy, '+' + n + ' ' + iconHTML(crop, 'ic-fx') + (n > 1 ? ' bonus!' : ''), 'green');
   });
+  on('cropRotted', ({ i }) => {
+    const q = plotPos(i);
+    for (let k = 0; k < 6; k++) dust3(q.x + (Math.random() - 0.5) * 1.4, q.z + (Math.random() - 0.5) * 1.2);
+    const [sx, sy] = toScreen(new THREE.Vector3(q.x, 1.2, q.z));
+    fx(sx, sy, 'Rotten! Nothing to harvest', 'red');
+  });
   on('machineDone', ({ id, out }) => spawnFly(out, workshopDoor(id), barnDoor(), 0));
   on('sellerSale', ({ coins }) => {
     sellerWave();

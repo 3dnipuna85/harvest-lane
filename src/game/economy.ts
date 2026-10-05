@@ -43,6 +43,11 @@ export const add = (k: ItemId, n: number) => { S.inv[k] = inv(k) + n; };
 export const totalItems = () => (Object.keys(ITEMS) as ItemId[]).reduce((a, k) => a + inv(k), 0);
 export const growProgress = (p: Plot) => (p.crop ? Math.min(1, (now() - p.at) / (CROPS[p.crop].time * 1000)) : 0);
 export const ripe = (p: Plot) => !!p.crop && now() >= p.at + CROPS[p.crop].time * 1000;
+/** A ripe crop left on the plant rots after this long (8 minutes, plus a little more for slow crops). */
+export const rotMs = (c: CropId) => (8 * 60 + CROPS[c].time * 10) * 1000;
+/** Time until a ripe crop rots (negative once it has). */
+export const rotIn = (p: Plot, t = now()) => (p.crop ? p.at + CROPS[p.crop].time * 1000 + rotMs(p.crop) - t : Infinity);
+export const rotten = (p: Plot, t = now()) => !!p.crop && rotIn(p, t) <= 0;
 export const unlockedCrops = () => CROP_IDS.filter(k => CROPS[k].lvl <= S.level);
 
 export function gainXP(n: number) {
@@ -82,7 +87,15 @@ export function plant(i: number, crop: CropId = S.sel): boolean {
 export function harvest(i: number, rand = Math.random): number {
   const p = S.plots[i];
   if (!p || !p.crop) return 0;
-  const crop = p.crop, n = rand() < DOUBLE_HARVEST_CHANCE ? 2 : 1;
+  const crop = p.crop;
+  // A rotten crop is only good for the compost heap: clearing it frees the plot but yields nothing.
+  if (rotten(p)) {
+    p.crop = null; p.at = 0;
+    S.stats.rotted = (S.stats.rotted || 0) + 1;
+    emit('cropRotted', { i, crop });
+    return 0;
+  }
+  const n = rand() < DOUBLE_HARVEST_CHANCE ? 2 : 1;
   add(crop, n);
   S.stats.harvested += n;
   gainXP(CROPS[crop].xp * n);

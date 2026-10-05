@@ -144,7 +144,7 @@ export function buildServices(g: THREE.Object3D, pickables: THREE.Object3D[]) {
   for (const id of SERVICE_IDS) {
     const s = SERVICES[id], r = new THREE.Group();
     r.position.set(s.x, 0, s.z); r.rotation.y = s.ry;
-    r.userData = { type: 'info', k: id };
+    r.userData = id === 'vet' ? { type: 'place', k: 'vet' } : { type: 'info', k: id };
     BUILD[id](r);
     if (r.userData.flag) flags.push(r.userData.flag);
     g.add(r); pickables.push(r);

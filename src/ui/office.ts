@@ -14,7 +14,7 @@ export const officeOpen = () => open;
 export const officePlace = () => (open ? place : null);
 
 const TITLES: Record<Tab, string> = { orders: 'Orders', barn: 'Barn', animals: 'Animals', machines: 'Machines', helpers: 'Helpers' };
-const PLACES: Record<Place, string> = { market: 'Animal Market', store: 'General Store', shop: 'Your Shop' };
+const PLACES: Record<Place, string> = { market: 'Animal Market', store: 'General Store', shop: 'Your Shop', vet: 'Vet Clinic' };
 
 function apply() {
   $('office').hidden = !open;

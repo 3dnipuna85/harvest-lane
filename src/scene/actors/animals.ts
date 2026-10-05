@@ -3,7 +3,7 @@ import { ctx } from '../context';
 import { Cap, Cone, Cyl, Sph, part } from './smooth';
 import { PEN, ROADZ } from '../layout';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../../data/animals';
-import { animalProgress, animalState, animalUnlocked } from '../../game/animals';
+import { animalProgress, animalState, animalUnlocked, sickIn } from '../../game/animals';
 import { inv } from '../../game/economy';
 import { S } from '../../game/state';
 import { iconHTML } from '../../ui/art';
@@ -219,9 +219,15 @@ function animalLabel(kind: AnimalId, i: number, g: THREE.Group, h: number) {
   tmp.set(g.position.x, h, g.position.z);
   if (!animalUnlocked(kind)) { if (i === 0) lbl(key, '🔒 Lv ' + a.lvl, tmp, 'lock'); return; }
   const st = animalState(kind, i);
+  if (st === 'sick') { lbl(key, '🤒 Sick', tmp, 'asick'); return; }
   if (st === 'ready') lbl(key, iconHTML(a.product, 'ic-need'), tmp, 'aready');
   else if (st === 'busy') lbl(key, `<b><i style="width:${(animalProgress(kind, i) * 100).toFixed(0)}%"></i></b>`, tmp, 'abusy');
-  else lbl(key, `${iconHTML(a.feed, 'ic-need')}<span>${a.feedQty}</span>`, tmp, 'afeed' + (inv(a.feed) >= a.feedQty ? '' : ' short'));
+  else {
+    // hungry: after a while it gets urgent, then the animal falls sick
+    const left = sickIn(kind, i);
+    lbl(key, `${iconHTML(a.feed, 'ic-need')}<span>${a.feedQty}</span>${left < 10 * 60_000 ? `<em>${Math.ceil(left / 60000)}m</em>` : ''}`, tmp,
+      'afeed' + (inv(a.feed) >= a.feedQty ? '' : ' short') + (left < 10 * 60_000 ? ' urgent' : ''));
+  }
 }
 
 export function updateAnimals(dt: number, t: number) {

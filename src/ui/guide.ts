@@ -6,13 +6,13 @@ const SEEN_KEY = 'harvest-lane-guide';
 /** One page per part of the game, in the order a new player meets them. */
 const PAGES: { pic: string; title: string; body: string }[] = [
   { pic: iconHTML('wheat'), title: 'Plant and harvest',
-    body: 'Pick a seed in the bar at the bottom, then tap empty soil to plant it. When the crop is ripe, tap it to harvest. Everything you pick goes into your <b>Barn</b>.' },
+    body: 'Pick a seed in the bar at the bottom, then tap empty soil to plant it. When the crop is ripe, tap it to harvest. Everything you pick goes into your <b>Barn</b>. Don\'t leave ripe crops too long: after about 8 minutes they rot and give nothing.' },
   { pic: uiImg('book'), title: 'Fill orders',
     body: 'Open <b>Orders</b> to see what people want. Deliver the crops to earn coins and XP. Don\'t like an order? Tap <b>Skip</b> for a new one.' },
   { pic: '<span class="g-emoji">🚚</span>', title: 'Truck buyers',
     body: 'Trucks are your best customers and come every few minutes. The 🚚 pill at the top shows when the next truck comes and what it wants, so you can grow it in time. When the truck parks, tap it to load. Load it fast for a <b>tip</b>. If you\'re too late the driver leaves angry and your ★ stars drop. More stars means trucks pay more.' },
   { pic: uiImg('cow'), title: 'Animals',
-    body: '🐔 Hens eat wheat and lay 🥚 eggs. 🐄 Cows eat corn and give 🥛 milk. 🐖 Pigs eat carrots and dig up 🍄 truffles. 🐑 Sheep eat corn and grow 🧶 wool. Tap an animal to feed it, and tap again when its product is ready. Or use <b>Feed and collect all</b> in the Animals tab. Buy more animals at the market in town.' },
+    body: '🐔 Hens eat wheat and lay 🥚 eggs. 🐄 Cows eat corn and give 🥛 milk. 🐖 Pigs eat carrots and dig up 🍄 truffles. 🐑 Sheep eat corn and grow 🧶 wool. Tap an animal to feed it, and tap again when its product is ready. Or use <b>Feed and collect all</b> in the Animals tab. Buy more animals at the market in town. An animal left hungry for 30 minutes falls sick and stops producing until the <b>Vet Clinic</b> in town treats it.' },
   { pic: '<span class="g-emoji">🎣</span>', title: 'Fishing',
     body: 'Tap the river, or the 🎣 button, and your farmer walks down to the dock and casts. Watch the bobber. When it splashes and says <b>Tap now!</b>, tap quickly to reel in a 🐟 fish, a 🦀 crab, or if you\'re lucky a rare 🐠 golden fish. Tap too early and it swims away.' },
   { pic: uiImg('hammer'), title: 'Machines',

@@ -1,6 +1,6 @@
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { ITEMS } from '../data/goods';
-import { animalCost, animalUnlocked } from '../game/animals';
+import { SICK_AFTER_MS, animalCost, animalUnlocked, healAll, sickCount, vetCost } from '../game/animals';
 import { unitPrice } from '../game/economy';
 import { now } from '../game/clock';
 import { on } from '../game/events';
@@ -55,7 +55,7 @@ export function serviceInfo(k: string) {
 /** Tapping a building in town. */
 export function visitPlace(p: Place) { openPlace(p); }
 
-const DOCK: [Place | 'farm', string, string][] = [['farm', 'Farm', 'nav-plant'], ['market', 'Market', 'paw'], ['store', 'Store', 'gift'], ['shop', 'My shop', 'coin']];
+const DOCK: [Place | 'farm', string, string][] = [['farm', 'Farm', 'nav-plant'], ['market', 'Market', 'paw'], ['store', 'Store', 'gift'], ['vet', 'Vet', 'heart'], ['shop', 'My shop', 'coin']];
 export function renderTownDock() {
   const cur = officePlace();
   $('townDock').innerHTML = DOCK.map(([k, n, ic]) =>
@@ -68,6 +68,13 @@ export function townAction(a: string, k: string) {
   if (a === 'farm') { goFarm(); return true; }
   if (a === 'town') { goTown(); return true; }
   if (a === 'goMarket') { goTown('market'); return true; }
+  if (a === 'goVet') { goTown('vet'); return true; }
+  if (a === 'heal') {
+    const r = healAll();
+    if (r.healed) toast(`The vet treated ${r.healed} animal${r.healed > 1 ? 's' : ''} for ${fmt(r.paid)} coins. Keep them fed!`);
+    else { toast('Not enough coins for the vet yet.'); shakeScene(); }
+    return true;
+  }
   if (a === 'buyPen') {
     const r = buyPen();
     if (r.ok) toast(`Bigger pens built! Room for ${PEN_STEP} more of every animal.`);
@@ -92,7 +99,7 @@ export function townAction(a: string, k: string) {
 
 /** Changes whenever a town panel's structure needs rebuilding. */
 export function townSignature(p: Place) {
-  return [p, S.level, ANIMAL_IDS.map(k => S.animals[k].n).join(','), S.town.pen, S.town.shop, boosted(), timeLeft('shopkeeper') > 0, shopItem() ?? ''].join('|');
+  return [p, S.level, sickCount(), ANIMAL_IDS.map(k => S.animals[k].n).join(','), S.town.pen, S.town.shop, boosted(), timeLeft('shopkeeper') > 0, shopItem() ?? ''].join('|');
 }
 
 function marketCard(k: AnimalId) {
@@ -138,8 +145,18 @@ function shopPanel() {
     ${staffCard('shopkeeper')}</div>`;
 }
 
+function vetPanel() {
+  const sick = ANIMAL_IDS.filter(k => sickCount(k) > 0);
+  const total = sick.reduce((c, k) => c + sickCount(k) * vetCost(k), 0);
+  const rows = sick.map(k => `<div class="card"><div class="top"><div class="big animal-ic">${ANIMALS[k].icon}</div><div class="grow"><div class="ttl">${sickCount(k)} sick ${(sickCount(k) > 1 ? ANIMALS[k].plural : ANIMALS[k].name).toLowerCase()}</div>
+      <div class="sub">${coinHTML}${fmt(vetCost(k))} each to treat</div></div></div></div>`).join('');
+  return `<div class="list"><div class="townintro">Animals left hungry for ${SICK_AFTER_MS / 60000} minutes fall sick. Sick animals stop producing and won’t eat until the vet treats them. An animal keeper keeps them fed while you’re away.</div>
+    ${sick.length ? rows + `<div class="row" style="justify-content:flex-end"><button class="btn gold" data-act="heal" data-check="cost:${Math.min(...sick.map(vetCost))}">Treat all ${coinHTML}${fmt(total)}</button></div>`
+      : '<div class="empty-note">All your animals are healthy. 🐄</div>'}</div>`;
+}
+
 export function townPanel(p: Place) {
-  return p === 'market' ? marketPanel() : p === 'store' ? storePanel() : shopPanel();
+  return p === 'market' ? marketPanel() : p === 'store' ? storePanel() : p === 'vet' ? vetPanel() : shopPanel();
 }
 
 export function updateTownPanel() {

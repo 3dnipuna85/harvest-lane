@@ -5,6 +5,7 @@ import { SELLER_INTERVAL_S } from '../data/limits';
 import { now } from './clock';
 import { add, byStaff, gainXP, goodXP, inv, mTime, sell, unitPrice } from './economy';
 import { truckReserve } from './town';
+import { animalTick } from './animals';
 import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
@@ -31,6 +32,7 @@ export function sim(dt: number) {
   truckTick(t);
   fishTick(t);
   staffTick(t);
+  animalTick(t);
   payWages(dt);
   for (const k of MACHINE_IDS) {
     const m = S.machines[k], d = MACHINES[k];

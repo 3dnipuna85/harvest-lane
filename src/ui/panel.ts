@@ -7,7 +7,7 @@ import { farmhandCost, inv, mTime, mUpCost, priceFactor, sellerCost, totalItems,
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
-import { animalState, animalUnlocked } from '../game/animals';
+import { animalState, animalUnlocked, sickCount } from '../game/animals';
 import { save, S, type Order, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
@@ -46,7 +46,7 @@ export function panelSignature() {
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
-  if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','));
+  if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','), sickCount());
   if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed, S.staff.manager, S.staff.keeper, timeLeft('manager') > 0, timeLeft('keeper') > 0);
   return parts.join('|');
 }
@@ -92,6 +92,7 @@ export function renderPanel() {
   if (S.tab === 'animals') h = `<div class="list">
       <div class="row tend"><span class="small grow">Tap an animal on the farm to feed it, then tap again to collect.</span>
       <button class="btn gold" data-act="tend" data-check="tend">Feed and collect all</button></div>
+      ${sickCount() ? `<div class="row sicknote"><span class="small grow">🤒 ${sickCount()} of your animals ${sickCount() > 1 ? 'are' : 'is'} sick from going hungry. The vet in town can treat them.</span><button class="btn red" data-act="goVet">Go to the Vet</button></div>` : ''}
       ${ANIMAL_IDS.map(animalCard).join('')}
       <div class="row"><span class="small grow">Want more animals or bigger pens? They’re sold at the Animal Market in town.</span><button class="btn alt" data-act="goMarket">${uiImg('nav-map', 'ic-inline')} Go to the Market</button></div></div>`;
   if (S.tab === 'helpers') {
@@ -213,8 +214,9 @@ export function updatePanel() {
   document.querySelectorAll<HTMLElement>('[data-astat]').forEach(e => {
     const k = e.dataset.astat as AnimalId, n = S.animals[k].n;
     let ready = 0, busy = 0;
-    for (let i = 0; i < n; i++) { const st = animalState(k, i); if (st === 'ready') ready++; else if (st === 'busy') busy++; }
-    e.textContent = n ? `${ready} ready · ${busy} working · ${n - ready - busy} hungry` : 'None yet';
+    let sick = 0;
+    for (let i = 0; i < n; i++) { const st = animalState(k, i); if (st === 'ready') ready++; else if (st === 'busy') busy++; else if (st === 'sick') sick++; }
+    e.textContent = n ? `${ready} ready · ${busy} working · ${n - ready - busy - sick} hungry` + (sick ? ` · ${sick} sick` : '') : 'None yet';
   });
   setBadge('animals', ANIMAL_IDS.reduce((a, k) => a + (animalUnlocked(k) ? S.animals[k].ready.filter((_, i) => animalState(k, i) === 'ready').length : 0), 0));
   setBadge('orders', S.orders.filter(canFill).length + (canFillTruck() ? 1 : 0));
