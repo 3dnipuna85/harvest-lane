@@ -1,6 +1,7 @@
 import { CROPS, type CropId } from '../data/crops';
 import type { ItemId } from '../data/goods';
 import { MACHINE_IDS, type MachineId } from '../data/machines';
+import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { START_PLOTS } from '../data/limits';
 import { now } from './clock';
 
@@ -11,6 +12,8 @@ export const SAVE_VERSION = 1;
 export interface Plot { crop: CropId | null; at: number }
 export interface Job { start: number; end: number }
 export interface MachineState { owned: boolean; lvl: number; job: Job | null; on: boolean }
+/** One kind of animal: how many, and each one's meal (when its product is ready; null while hungry). */
+export interface Herd { n: number; ready: (number | null)[] }
 export interface Order {
   id: number;
   who: string;
@@ -20,7 +23,7 @@ export interface Order {
 }
 /** A buyer waiting at the gate in a truck. Pays more than a board order, but only until `end`. */
 export interface Truck extends Order { arrive: number; end: number }
-export type Tab = 'orders' | 'barn' | 'machines' | 'helpers';
+export type Tab = 'orders' | 'barn' | 'animals' | 'machines' | 'helpers';
 
 export interface State {
   version: number;
@@ -38,9 +41,12 @@ export interface State {
   orders: Order[];
   skipUntil: number;
   orderSeq: number;
+  animals: Record<AnimalId, Herd>;
   truck: Truck | null;
   /** When the next truck pulls up (ms timestamp). */
   nextTruck: number;
+  /** What the next truck will ask for, shown ahead of time so the player can prepare. */
+  nextWants: Order['items'] | null;
   /** Buyer reputation, 1 to 5 stars. On-time trucks raise it and pay more; missed trucks lower it. */
   rep: number;
   /** Lifetime totals shown on the player's profile. */
@@ -52,6 +58,12 @@ export interface State {
 export let S: State;
 export function setState(s: State) { S = s; }
 
+function freshHerds() {
+  const h = {} as Record<AnimalId, Herd>;
+  for (const k of ANIMAL_IDS) h[k] = { n: ANIMALS[k].start, ready: Array(ANIMALS[k].start).fill(null) };
+  return h;
+}
+
 export function fresh(t = now()): State {
   const machines = {} as Record<MachineId, MachineState>;
   for (const k of MACHINE_IDS) machines[k] = { owned: false, lvl: 1, job: null, on: true };
@@ -61,7 +73,8 @@ export function fresh(t = now()): State {
     plots: Array.from({ length: START_PLOTS }, () => ({ crop: null, at: 0 })),
     inv: { wheat: 2 }, machines, farmhands: 0, sellers: 0, sellCrops: false,
     orders: [], skipUntil: 0, orderSeq: 0,
-    truck: null, nextTruck: t + 25000, rep: 3,
+    animals: freshHerds(),
+    truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
     stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 }, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
@@ -87,6 +100,13 @@ export function migrate(raw: unknown): State {
   while (v < SAVE_VERSION && MIGRATIONS[v]) { s = MIGRATIONS[v](s); v++; }
   const out: State = { ...base, ...s, version: SAVE_VERSION, inv: { ...(s.inv || {}) }, machines: { ...base.machines } } as State;
   out.stats = { ...base.stats, ...(s.stats || {}) };
+  out.animals = freshHerds();
+  for (const k of ANIMAL_IDS) {
+    const h = s.animals?.[k];
+    if (!h || typeof h.n !== 'number') continue;
+    const n = Math.max(0, Math.min(ANIMALS[k].max, Math.floor(h.n)));
+    out.animals[k] = { n, ready: Array.from({ length: n }, (_, i) => (typeof h.ready?.[i] === 'number' ? h.ready[i] : null)) };
+  }
   for (const k of MACHINE_IDS) if (s.machines && s.machines[k]) out.machines[k] = { ...base.machines[k], ...s.machines[k] };
   out.plots = (s.plots as Raw[]).map(p => (p && p.crop in CROPS ? { crop: p.crop, at: +p.at || 0 } : { crop: null, at: 0 }));
   if (!(out.sel in CROPS)) out.sel = 'wheat';

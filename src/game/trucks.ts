@@ -5,7 +5,7 @@ import { now } from './clock';
 import { earn, gainXP, inv } from './economy';
 import { emit } from './events';
 import { canFill, newOrder, orderItems } from './orders';
-import { S, type Truck } from './state';
+import { S, type Order, type Truck } from './state';
 
 /** A missed truck only costs reputation if the player was here to see it leave (not while the game was closed). */
 const MISS_GRACE_MS = 5000;
@@ -15,10 +15,16 @@ const gap = (rand: () => number) => (TRUCK_GAP_S[0] + rand() * (TRUCK_GAP_S[1] -
 /** Pay multiplier from reputation: 1 star 0.8x, 3 stars 1x, 5 stars 1.2x. */
 export const repPay = () => 0.7 + S.rep * 0.1;
 
-export function newTruck(t = now(), rand = Math.random): Truck {
+/** A bulk order for a truck: half again as much of each item as a board order. */
+export function truckWants(rand = Math.random): Order['items'] {
   const o = newOrder(rand);
-  // Trucks buy in bulk: half again as much of each item.
   for (const [k, q] of orderItems(o)) o.items[k] = Math.ceil(q * 1.5);
+  return o.items;
+}
+
+export function newTruck(t = now(), rand = Math.random, wants = truckWants(rand)): Truck {
+  const o = newOrder(rand);
+  o.items = { ...wants };
   const items = orderItems(o);
   const value = items.reduce((v, [k, q]) => v + ITEMS[k].sell * q, 0);
   const count = items.reduce((n, [, q]) => n + q, 0);
@@ -55,13 +61,14 @@ export function deliverTruck(t = now(), rand = Math.random) {
   S.rep = Math.min(5, S.rep + (tip ? 0.5 : 0.25));
   S.truck = null;
   S.nextTruck = t + gap(rand);
-  emit('truckDone', { who: k.who, coins, tip });
+  emit('truckDone', { who: k.who, coins, tip, items: orderItems(k).flatMap(([i, q]) => Array(Math.min(q, 4)).fill(i)) });
   return { who: k.who, coins, tip };
 }
 
 /** Send trucks in and out on schedule. Called from sim(). */
 export function truckTick(t = now(), rand = Math.random) {
   const k = S.truck;
+  if (!k && !S.nextWants) S.nextWants = truckWants(rand);
   if (k && t >= k.end) {
     S.truck = null;
     S.nextTruck = t + gap(rand);
@@ -71,7 +78,8 @@ export function truckTick(t = now(), rand = Math.random) {
       emit('truckMissed', { who: k.who, coins: k.coins });
     }
   } else if (!k && t >= S.nextTruck) {
-    S.truck = newTruck(t, rand);
+    S.truck = newTruck(t, rand, S.nextWants ?? undefined);
+    S.nextWants = null;
     emit('truckArrive', { who: S.truck.who });
   }
 }

@@ -6,13 +6,15 @@ import { now } from '../game/clock';
 import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../game/economy';
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
+import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
+import { animalCost, animalState, animalUnlocked } from '../game/animals';
 import { save, S, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
 import { closeOffice, officeOpen, toggleOffice } from './office';
 
-const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
+const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['animals', 'Animals', 'cow'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
 let resetArmed = false;
 let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -36,6 +38,7 @@ export function panelSignature() {
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
+  if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','));
   if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed);
   return parts.join('|');
 }
@@ -76,6 +79,10 @@ export function renderPanel() {
       : '<div class="empty-note">The barn is empty. Harvest crops and they will show up here.</div>';
   }
   if (S.tab === 'machines') h = '<div class="list">' + MACHINE_IDS.map(machineCard).join('') + '</div>';
+  if (S.tab === 'animals') h = `<div class="list">
+      <div class="row tend"><span class="small grow">Tap an animal on the farm to feed it, then tap again to collect.</span>
+      <button class="btn gold" data-act="tend" data-check="tend">Feed and collect all</button></div>
+      ${ANIMAL_IDS.map(animalCard).join('')}</div>`;
   if (S.tab === 'helpers') {
     const fhLock = S.level < 2, slLock = S.level < 3;
     h = `<div class="list">
@@ -97,7 +104,7 @@ const stars = () => '★★★★★'.slice(0, Math.round(S.rep)) + '☆☆☆�
 function truckCard() {
   const k = S.truck;
   if (!k) return `<div class="card truckcard idle"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">Truck buyers</div>
-    <div class="sub">The next truck is on its way. Trucks pay extra and tip you for fast loading, but they won't wait forever.</div></div>
+    <div class="sub"><b data-tnext>Next truck soon</b>. Trucks pay extra and tip you for fast loading, but they won't wait forever.</div></div>
     <span class="rep" title="Buyer reputation">${stars()}</span></div></div>`;
   return `<div class="card truckcard"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">${k.who} <span class="small">is waiting at the gate</span></div>
       <div class="sub"><span class="rep">${stars()}</span> Load before the timer runs out or they leave.</div></div>
@@ -106,6 +113,18 @@ function truckCard() {
     <div class="needs">${orderItems(k).map(([i, q]) => `<span class="need" data-need="${i}" data-q="${q}">${iconHTML(i, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
     <div class="row"><button class="btn gold" data-act="truck" data-check="truck">Load truck</button><span class="small grow" data-tnote></span></div>
   </div>`;
+}
+
+function animalCard(k: AnimalId) {
+  const a = ANIMALS[k], h = S.animals[k];
+  const what = `Eats ${a.feedQty} ${iconHTML(a.feed, 'ic-inline')} → ${iconHTML(a.product, 'ic-inline')} ${ITEMS[a.product].name} every ${a.time}s · sells for ${ITEMS[a.product].sell}`;
+  if (!animalUnlocked(k)) {
+    return `<div class="card lockedcard"><div class="top"><div class="big animal-ic">${a.icon}</div><div class="grow"><div class="ttl">${a.plural}</div><div class="sub">${what}</div></div><span class="small">Unlocks at Lv ${a.lvl}</span></div></div>`;
+  }
+  const buy = h.n >= a.max ? '<span class="small">Full</span>'
+    : `<button class="btn gold" data-act="buyA" data-k="${k}" data-check="cost:${animalCost(k)}">Buy ${coinHTML}${fmt(animalCost(k))}</button>`;
+  return `<div class="card"><div class="top"><div class="big animal-ic">${a.icon}</div><div class="grow"><div class="ttl">${a.plural} <span class="small">${h.n}/${a.max}</span></div>
+    <div class="sub">${what}</div><div class="sub" data-astat="${k}"></div></div>${buy}</div></div>`;
 }
 
 function setBadge(k: Tab, n: number) {
@@ -132,6 +151,7 @@ export function updatePanel() {
     else if (kind === 'order') ok = !!S.orders[+arg] && canFill(S.orders[+arg]);
     else if (kind === 'skip') ok = canSkip();
     else if (kind === 'truck') ok = canFillTruck();
+    else if (kind === 'tend') ok = ANIMAL_IDS.some(k => animalUnlocked(k) && S.animals[k].ready.some((_, i) => { const st = animalState(k, i); return st === 'ready' || (st === 'hungry' && inv(ANIMALS[k].feed) >= ANIMALS[k].feedQty); }));
     b.disabled = !ok;
   });
   const sn = t < S.skipUntil ? 'Next skip in ' + Math.ceil((S.skipUntil - t) / 1000) + 's' : '';
@@ -147,6 +167,10 @@ export function updatePanel() {
       : 'Waiting for ' + recipe(k).filter(([i, q]) => inv(i) < q).map(([i]) => ITEMS[i].name.toLowerCase()).join(' and ');
   });
   const k = S.truck;
+  const nextIn = Math.max(0, Math.ceil((S.nextTruck - t) / 1000));
+  document.querySelectorAll<HTMLElement>('[data-tnext]').forEach(e => {
+    e.textContent = nextIn > 0 ? 'Next truck in ' + Math.floor(nextIn / 60) + ':' + String(nextIn % 60).padStart(2, '0') : 'A truck is pulling up';
+  });
   if (k) {
     const left = Math.max(0, k.end - t), frac = left / (k.end - k.arrive), { tip } = truckOffer(t);
     document.querySelectorAll<HTMLElement>('[data-tbar]').forEach(e => { e.style.width = (frac * 100).toFixed(1) + '%'; e.parentElement!.classList.toggle('low', frac < 0.25); });
@@ -154,6 +178,13 @@ export function updatePanel() {
       e.textContent = Math.ceil(left / 1000) + 's left' + (tip ? ' · +' + fmt(tip) + ' tip if you load now' : '');
     });
   }
+  document.querySelectorAll<HTMLElement>('[data-astat]').forEach(e => {
+    const k = e.dataset.astat as AnimalId, n = S.animals[k].n;
+    let ready = 0, busy = 0;
+    for (let i = 0; i < n; i++) { const st = animalState(k, i); if (st === 'ready') ready++; else if (st === 'busy') busy++; }
+    e.textContent = n ? `${ready} ready · ${busy} working · ${n - ready - busy} hungry` : 'None yet';
+  });
+  setBadge('animals', ANIMAL_IDS.reduce((a, k) => a + (animalUnlocked(k) ? S.animals[k].ready.filter((_, i) => animalState(k, i) === 'ready').length : 0), 0));
   setBadge('orders', S.orders.filter(canFill).length + (canFillTruck() ? 1 : 0));
   setBadge('barn', totalItems());
   setBadge('machines', MACHINE_IDS.filter(k => S.machines[k].owned && S.machines[k].job).length);
@@ -174,6 +205,8 @@ export function bindPanelInput() {
     else if (a === 'deliver') act.deliver(i, cx, cy);
     else if (a === 'skip') act.skip(i);
     else if (a === 'truck') act.loadTruck(cx, cy);
+    else if (a === 'buyA') act.buyAnimal(k as AnimalId);
+    else if (a === 'tend') act.tendAll();
     else if (a === 'buyM') act.buyMachine(k as MachineId);
     else if (a === 'upM') act.upgradeMachine(k as MachineId, cx, cy);
     else if (a === 'toggleM') { S.machines[k as MachineId].on = (b as HTMLInputElement).checked; save(); return; }

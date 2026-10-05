@@ -1,6 +1,7 @@
 import { CUSTOMERS } from '../data/customers';
 import { ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS } from '../data/machines';
+import { ANIMALS, ANIMAL_IDS } from '../data/animals';
 import { ORDER_COUNT, SKIP_COOLDOWN_MS } from '../data/limits';
 import { now } from './clock';
 import { earn, gainXP, inv, unlockedCrops } from './economy';
@@ -9,6 +10,7 @@ import { S, type Order } from './state';
 function orderPool() {
   const pool: { k: ItemId; crop: boolean }[] = unlockedCrops().map(k => ({ k, crop: true }));
   for (const m of MACHINE_IDS) if (S.machines[m].owned) pool.push({ k: MACHINES[m].out, crop: false });
+  for (const a of ANIMAL_IDS) if (S.level >= ANIMALS[a].lvl && S.animals[a].n > 0) pool.push({ k: ANIMALS[a].product, crop: false });
   return pool;
 }
 

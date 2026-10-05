@@ -9,7 +9,8 @@ export const plotPos = (i: number) => ({ x: ((i % 5) - 2) * PITCH, z: -0.5 + Mat
 export const BX = [-7.8, -4.2, -1.2, 1.8, 4.8, 7.8];
 export const BZ = -6.6;
 export const ROADZ = -3.5;
-export const CARTP = { x: 9.6, z: -3.2 };
+/** The market cart stands on the grass north of the road, so trucks can pass. */
+export const CARTP = { x: 10.6, z: -5.3 };
 export const PEN = { x0: -11.2, x1: -7.8, z0: 0.2, z1: 4.6 };
 /** Ground texture size in world units. */
 export const GW = 48;

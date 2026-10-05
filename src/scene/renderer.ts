@@ -4,7 +4,7 @@ import { iconHTML } from '../ui/art';
 import { fmt } from '../ui/format';
 import { fx } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
-import { initAnimals, updateAnimals } from './actors/animals';
+import { animalPos, initAnimals, updateAnimals } from './actors/animals';
 import { initDog, updateDog } from './actors/dog';
 import { initTruck, truckAngry, truckLeaving, truckPos, truckSay, updateTruck } from './actors/truck';
 import { chaChing, honk } from '../ui/sound';
@@ -118,13 +118,26 @@ function bindSceneEvents() {
     const [sx, sy] = toScreen(new THREE.Vector3(CARTP.x, 2.2, CARTP.z));
     fx(sx, sy, '+' + fmt(coins), 'gold');
   });
+  on('animalFed', ({ kind, i }) => {
+    const q = animalPos(kind, i);
+    for (let k = 0; k < 4; k++) dust3(q.x + (Math.random() - 0.5) * 0.6, q.z + (Math.random() - 0.5) * 0.6);
+  });
+  on('animalCollect', ({ kind, i, product }) => {
+    const q = animalPos(kind, i);
+    spawnFly(product, q.clone().setY(1.2), barnDoor(), 0);
+    const [sx, sy] = toScreen(q.clone().setY(1.6));
+    fx(sx, sy, '+1 ' + iconHTML(product, 'ic-fx'), 'green');
+  });
   on('truckArrive', ({ who }) => {
     truckLeaving(false);
     truckSay('Beep beep! Order for ' + who + '!');
     honk();
   });
-  on('truckDone', ({ coins, tip }) => {
+  on('truckDone', ({ coins, tip, items }) => {
     truckLeaving(true);
+    // crates fly from the barn into the truck bed
+    const bed = truckPos().setY(1.1).add(new THREE.Vector3(-0.55, 0, 0));
+    items.forEach((it, j) => spawnFly(it, barnDoor(), bed, j * 0.18));
     truckSay(tip ? 'Wow, that was fast! Here’s a tip!' : 'Thanks, see you next time!', 'happy');
     chaChing();
     const [sx, sy] = toScreen(truckPos());

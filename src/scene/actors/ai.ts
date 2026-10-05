@@ -120,7 +120,7 @@ export function syncCrew() {
   }
   while (sellers.length < S.sellers) sellers.push(mkChar('seller', sellers.length));
   while (sellers.length > S.sellers) removeChar(sellers.pop()!);
-  sellers.forEach((s, j) => { s.x = CARTP.x - 1.35 - j * 0.6; s.z = CARTP.z + 0.5 + (j % 2) * 0.3; s.face = Math.PI / 4; });
+  sellers.forEach((s, j) => { s.x = CARTP.x - 1.35 - j * 0.6; s.z = CARTP.z + 0.3 + (j % 2) * 0.3; s.face = Math.PI / 6; });
 }
 
 /** The next seller in turn waves when a sale happens. */

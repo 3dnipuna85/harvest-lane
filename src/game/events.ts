@@ -1,6 +1,7 @@
 import type { CropId } from '../data/crops';
-import type { GoodId, ItemId } from '../data/goods';
+import type { GoodId, ItemId, ProductId } from '../data/goods';
 import type { MachineId } from '../data/machines';
+import type { AnimalId } from '../data/animals';
 
 /** Everything the game logic announces. The scene and UI listen; game/ never touches them directly. */
 export interface GameEvents {
@@ -10,8 +11,10 @@ export interface GameEvents {
   harvest: { i: number; crop: CropId; n: number };
   machineDone: { id: MachineId; out: GoodId };
   sellerSale: { item: ItemId; coins: number };
+  animalFed: { kind: AnimalId; i: number };
+  animalCollect: { kind: AnimalId; i: number; product: ProductId };
   truckArrive: { who: string };
-  truckDone: { who: string; coins: number; tip: number };
+  truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };
 }
 

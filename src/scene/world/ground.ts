@@ -52,11 +52,12 @@ export function groundTexture() {
   // tilled field area
   rr(-7.2, -2.1, 7.2, 8.9, 1.1, '#7f9a3c', '#5f7a2a');
   rr(-6.9, -1.8, 6.9, 8.6, 0.9, '#8fb04a', null);
-  path([[-14, ROADZ], [14, ROADZ]], 1.7);
+  // the country road runs off both edges of the map; trucks drive in on it
+  path([[-GW / 2, ROADZ], [GW / 2, ROADZ]], 1.7);
   path([[BX[0], BZ + 1], [BX[0], ROADZ]], 1.2);
   for (let j = 1; j < 6; j++) path([[BX[j], BZ + 1], [BX[j], ROADZ]], 0.8);
   path([[0, ROADZ], [0, -2]], 1.2);
-  path([[CARTP.x, ROADZ], [CARTP.x + 3, ROADZ]], 1.7);
+  path([[CARTP.x, ROADZ], [CARTP.x, CARTP.z]], 1.3);
   // pen ground
   rr(PEN.x0, PEN.z0, PEN.x1, PEN.z1, 0.8, '#b9a55c', '#957f40');
   // grass tufts and tiny flowers

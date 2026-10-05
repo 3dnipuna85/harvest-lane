@@ -2,13 +2,28 @@ import * as THREE from 'three';
 import { ctx } from '../context';
 import { Cap, Cone, Cyl, Sph, part } from './smooth';
 import { PEN, ROADZ } from '../layout';
+import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../../data/animals';
+import { animalProgress, animalState, animalUnlocked } from '../../game/animals';
+import { inv } from '../../game/economy';
+import { S } from '../../game/state';
+import { iconHTML } from '../../ui/art';
+import { lbl } from '../fx/labels';
 
-interface Wanderer<V> { x: number; z: number; tx: number; tz: number; face: number; t: number; phase: number; v: V }
+interface Wanderer<V> { x: number; z: number; tx: number; tz: number; face: number; t: number; phase: number; v: V; kind: AnimalId; i: number }
 interface ChickenView { g: THREE.Group; head: THREE.Group; legs: THREE.Group[] }
 interface CowView { g: THREE.Group; head: THREE.Group; legs: THREE.Group[]; tail: THREE.Mesh }
 
 let chickens: Wanderer<ChickenView>[] = [];
+/** Cows, pigs and sheep: four-legged animals that share the same walk. */
 let cows: Wanderer<CowView>[] = [];
+const tmp = new THREE.Vector3();
+
+/** Make an animal tappable: the pointer code finds userData.type on the group. */
+function tag<V extends { g: THREE.Group }>(w: Wanderer<V>) {
+  w.v.g.userData = { type: 'animal', kind: w.kind, i: w.i };
+  ctx.pickables.push(w.v.g);
+  return w;
+}
 
 function buildChicken(): ChickenView {
   const g = new THREE.Group();
@@ -115,6 +130,35 @@ function buildPig(): CowView {
   return { g, head, legs, tail };
 }
 
+/** A fluffy sheep: a cloud of wool puffs with a dark face and legs. */
+function buildSheep(): CowView {
+  const g = new THREE.Group(), wool = '#fbf8f1', dark = '#3b3330';
+  const body = new THREE.Group(); body.position.y = 0.55; g.add(body);
+  for (const [x, y, z, r] of [[0, 0, 0, 0.36], [0.2, 0.1, 0.2, 0.22], [-0.2, 0.1, 0.2, 0.22], [0.2, 0.1, -0.22, 0.22], [-0.2, 0.1, -0.22, 0.22], [0, 0.22, 0, 0.24], [0, 0.05, 0.32, 0.2], [0, 0.05, -0.34, 0.2]]) {
+    part(Sph(r), wool, body, x, y, z, { ol: 0.016 });
+  }
+  const legs: THREE.Group[] = [];
+  for (const [x, z] of [[-0.15, 0.22], [0.15, 0.22], [-0.15, -0.22], [0.15, -0.22]]) {
+    const p = new THREE.Group();
+    p.position.set(x, 0.32, z); g.add(p);
+    part(Cap(0.05, 0.18), dark, p, 0, -0.16, 0, { ol: 0.01 });
+    legs.push(p);
+  }
+  const head = new THREE.Group();
+  head.position.set(0, 0.72, 0.42); g.add(head);
+  part(Sph(0.17), dark, head, 0, 0, 0.04, { s: [0.9, 1, 1.15], ol: 0.016 });
+  part(Sph(0.15), wool, head, 0, 0.13, -0.02, { ol: 0.012 });
+  for (const sd of [-1, 1]) {
+    part(Sph(0.07), dark, head, 0.17 * sd, 0.02, -0.02, { s: [1.4, 0.6, 0.8], ol: false });
+    part(Sph(0.032), '#ffffff', head, 0.08 * sd, 0.05, 0.17, { ol: false, shadow: false });
+    part(Sph(0.018), '#111', head, 0.08 * sd, 0.05, 0.195, { ol: false, shadow: false });
+  }
+  const tail = part(Sph(0.09), wool, g, 0, 0.62, -0.5, { ol: 0.01 });
+  g.scale.setScalar(1.05);
+  ctx.scene.add(g);
+  return { g, head, legs, tail };
+}
+
 /** Cows (and the pig) amble around the pen and graze when they stop. */
 function updateCow(c: Wanderer<CowView>, dt: number, t: number) {
   c.t -= dt;
@@ -126,8 +170,11 @@ function updateCow(c: Wanderer<CowView>, dt: number, t: number) {
   }
   if (c.t <= 0) {
     c.t = 3 + Math.random() * 4;
-    c.tx = PEN.x0 + 0.8 + Math.random() * (PEN.x1 - PEN.x0 - 1.6);
-    c.tz = PEN.z0 + 0.9 + Math.random() * (PEN.z1 - PEN.z0 - 1.8);
+    if (c.kind === 'sheep') { c.tx = 8.6 + Math.random() * 3; c.tz = 5.6 + Math.random() * 2.8; }
+    else {
+      c.tx = PEN.x0 + 0.8 + Math.random() * (PEN.x1 - PEN.x0 - 1.6);
+      c.tz = PEN.z0 + 0.9 + Math.random() * (PEN.z1 - PEN.z0 - 1.8);
+    }
   }
   c.v.g.position.set(c.x, 0, c.z);
   let dr = c.face - c.v.g.rotation.y;
@@ -139,16 +186,52 @@ function updateCow(c: Wanderer<CowView>, dt: number, t: number) {
   c.v.tail.rotation.z = Math.sin(t * 3) * 0.4;
 }
 
+const BUILD: Record<Exclude<AnimalId, 'hen'>, () => CowView> = { cow: buildCow, pig: buildPig, sheep: buildSheep };
+
+function addHen(i: number) {
+  const x = -5 + i * 3;
+  chickens.push(tag({ x, z: ROADZ + ((i % 3) - 1) * 0.3, tx: x, tz: ROADZ, face: 0, t: Math.random() * 3, phase: 0, v: buildChicken(), kind: 'hen', i }));
+}
+
+function addBeast(kind: Exclude<AnimalId, 'hen'>, i: number) {
+  const x = kind === 'sheep' ? 9.2 + i * 0.7 : PEN.x0 + 1 + ((i * 1.3 + (kind === 'pig' ? 1.9 : 0)) % 2.4);
+  const z = kind === 'sheep' ? 6.2 + (i % 2) : PEN.z0 + 1.2 + ((i * 1.6 + (kind === 'pig' ? 1 : 0)) % 2.6);
+  cows.push(tag({ x, z, tx: x, tz: z, face: i * 1.7, t: i, phase: 0, v: BUILD[kind](), kind, i }));
+}
+
+/** Add views for animals bought since the scene was built. */
+function syncHerds() {
+  for (const k of ANIMAL_IDS) {
+    const have = k === 'hen' ? chickens.length : cows.filter(c => c.kind === k).length;
+    for (let i = have; i < S.animals[k].n; i++) k === 'hen' ? addHen(i) : addBeast(k, i);
+  }
+}
+
 export function initAnimals() {
-  chickens = [0, 1, 2].map(i => ({ x: -5 + i * 4, z: ROADZ + (i - 1) * 0.3, tx: -5 + i * 4, tz: ROADZ, face: 0, t: Math.random() * 3, phase: 0, v: buildChicken() }));
-  cows = [0, 1].map(i => ({
-    x: PEN.x0 + 1.2 + i * 1.3, z: PEN.z0 + 1.3 + i * 1.6, tx: PEN.x0 + 1.2 + i * 1.3, tz: PEN.z0 + 1.3 + i * 1.6,
-    face: i ? 2 : 0.6, t: i * 2, phase: 0, v: buildCow(),
-  }));
-  cows.push({ x: PEN.x1 - 1, z: PEN.z1 - 1, tx: PEN.x1 - 1, tz: PEN.z1 - 1, face: -2.4, t: 1, phase: 0, v: buildPig() });
+  chickens = [];
+  cows = [];
+  syncHerds();
+}
+
+/** Bubble over an animal: what it needs, how long it has left, or the product waiting to be collected. */
+function animalLabel(kind: AnimalId, i: number, g: THREE.Group, h: number) {
+  const a = ANIMALS[kind], key = 'an-' + kind + i;
+  tmp.set(g.position.x, h, g.position.z);
+  if (!animalUnlocked(kind)) { if (i === 0) lbl(key, '🔒 Lv ' + a.lvl, tmp, 'lock'); return; }
+  const st = animalState(kind, i);
+  if (st === 'ready') lbl(key, iconHTML(a.product, 'ic-need'), tmp, 'aready');
+  else if (st === 'busy') lbl(key, `<b><i style="width:${(animalProgress(kind, i) * 100).toFixed(0)}%"></i></b>`, tmp, 'abusy');
+  else lbl(key, `${iconHTML(a.feed, 'ic-need')}<span>${a.feedQty}</span>`, tmp, 'afeed' + (inv(a.feed) >= a.feedQty ? '' : ' short'));
 }
 
 export function updateAnimals(dt: number, t: number) {
-  chickens.forEach(h => updateChicken(h, dt));
-  cows.forEach(c => updateCow(c, dt, t));
+  syncHerds();
+  chickens.forEach(h => { updateChicken(h, dt); animalLabel('hen', h.i, h.v.g, 1.05); });
+  cows.forEach(c => { updateCow(c, dt, t); animalLabel(c.kind, c.i, c.v.g, c.kind === 'cow' ? 1.75 : 1.35); });
+}
+
+/** World position of an animal, for effects like a product flying to the barn. */
+export function animalPos(kind: AnimalId, i: number) {
+  const w = kind === 'hen' ? chickens[i] : cows.find(c => c.kind === kind && c.i === i);
+  return w ? new THREE.Vector3(w.v.g.position.x, 0.9, w.v.g.position.z) : new THREE.Vector3();
 }

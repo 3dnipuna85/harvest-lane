@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buyPlot, loadTruck } from '../ui/actions';
+import { buyPlot, loadTruck, tapAnimal } from '../ui/actions';
 import { save, type Tab } from '../game/state';
 import { tapPlot } from '../scene/actors/ai';
 import { applyCam, getZoom, pan, setZoom, view } from '../scene/camera';
@@ -26,6 +26,7 @@ function pick(cx: number, cy: number) {
     if (u.type === 'buy') { if (o.visible) { buyPlot(); save(); } return; }
     if (u.type === 'bld') { openTab(u.id === 'barn' ? 'barn' : 'machines'); return; }
     if (u.type === 'cart') { openTab('helpers'); return; }
+    if (u.type === 'animal') { tapAnimal(u.kind, u.i); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'truck') { if (!loadTruck(cx, cy)) openTab('orders'); save(); return; }
   }
 }

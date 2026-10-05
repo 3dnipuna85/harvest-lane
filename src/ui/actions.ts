@@ -4,6 +4,9 @@ import { deliver as deliverOrder, fillOrders, skip as skipOrder } from '../game/
 import { resetSim } from '../game/sim';
 import { fresh, setState, S } from '../game/state';
 import { deliverTruck } from '../game/trucks';
+import { ANIMALS, type AnimalId } from '../data/animals';
+import { buyAnimal as buyA, tapAnimal as tapA, tendAll as tendA } from '../game/animals';
+import { CROPS } from '../data/crops';
 import { initScene } from '../scene/renderer';
 import { markDirty } from './dirty';
 import { fmt } from './format';
@@ -38,6 +41,23 @@ export function loadTruck(_x: number, _y: number) {
   }
   toast(r.who + ' paid ' + fmt(r.coins + r.tip) + ' coins' + (r.tip ? ', including a ' + fmt(r.tip) + ' tip!' : ''));
   return true;
+}
+
+export function tapAnimal(k: AnimalId, i: number) {
+  const r = tapA(k, i), a = ANIMALS[k];
+  if (r === 'nofeed') toast(`${a.plural} eat ${a.feedQty} ${CROPS[a.feed].name.toLowerCase()}. Grow some first!`);
+  else if (r === 'locked') toast(`${a.plural} unlock at level ${a.lvl}`);
+}
+
+export function buyAnimal(k: AnimalId) {
+  const r = buyA(k);
+  if (r.ok) toast(`New ${ANIMALS[k].name.toLowerCase()} on the farm!`);
+  else if (r.reason === 'coins') { toast('Not enough coins yet'); shakeScene(); }
+}
+
+export function tendAll() {
+  const { got, fed } = tendA();
+  toast(got || fed ? `Collected ${got}, fed ${fed}` : 'Nothing to do right now. Grow more feed!');
 }
 
 export const skip = (i: number) => skipOrder(i);

@@ -191,3 +191,29 @@ describe('truck buyers', () => {
     off();
   });
 });
+
+describe('animals', () => {
+  it('eat feed, make their product over time, and old saves get starter herds', async () => {
+    const A = await import('../src/game/animals');
+    S.inv.wheat = 0;
+    expect(A.feedAnimal('hen', 0, t)).toBe('nofeed');
+    S.inv.wheat = 5;
+    expect(A.feedAnimal('hen', 0, t)).toBe('fed');
+    expect(S.inv.wheat).toBe(4);
+    expect(A.collectAnimal('hen', 0, t + 1000)).toBe(false);
+    expect(A.collectAnimal('hen', 0, t + 20_000)).toBe(true);
+    expect(S.inv.egg).toBe(1);
+    expect(A.feedAnimal('cow', 0, t)).toBe('locked');
+    const { animals: _a, ...old } = S;
+    expect(migrate(JSON.parse(JSON.stringify(old))).animals.hen.n).toBe(3);
+  });
+
+  it('shows the next truck order ahead of time and the truck brings exactly that', async () => {
+    const { truckTick } = await import('../src/game/trucks');
+    truckTick(t);
+    const wants = { ...S.nextWants };
+    expect(Object.keys(wants).length).toBeGreaterThan(0);
+    t = S.nextTruck; truckTick(t);
+    expect(S.truck!.items).toEqual(wants);
+  });
+});

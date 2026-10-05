@@ -7,7 +7,7 @@ import { BX, BZ } from '../layout';
 const SKIN = S('#ffd2b0', { emissive: '#ff9c7a', emissiveIntensity: 0.15 });
 const SHIRTS = ['#4aa3e8', '#9b6be8', '#3cc08f', '#ff9a3c', '#f06aa8', '#7bbf3a'];
 
-interface Outfit { shirt: string; pants: string; hat: string; band: string; hair: string; hands?: string; boots?: string }
+export interface Outfit { shirt: string; pants: string; hat: string; band: string; hair: string; hands?: string; boots?: string }
 export interface PersonView {
   root: THREE.Group;
   legs: THREE.Group[];
@@ -39,7 +39,7 @@ export interface Char {
 }
 
 /** Chibi farmer: big round head, overalls, straw hat tilted back. Smooth geometry and soft shading (see smooth.ts). */
-function buildPerson(o: Outfit): PersonView {
+export function buildPerson(o: Outfit): PersonView {
   const root = new THREE.Group(), legs: THREE.Group[] = [], arms: THREE.Group[] = [];
   for (const s of [-1, 1]) {
     const piv = new THREE.Group();

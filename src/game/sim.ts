@@ -1,5 +1,5 @@
 import { CROPS, CROP_IDS } from '../data/crops';
-import { GOODS, GOOD_IDS, type ItemId } from '../data/goods';
+import { GOOD_IDS, ITEMS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, recipe } from '../data/machines';
 import { SELLER_INTERVAL_S } from '../data/limits';
 import { now } from './clock';
@@ -14,7 +14,7 @@ export function resetSim() { sellAcc = 0; }
 
 /** The best thing a market seller can sell right now, or undefined. */
 export function nextSale(): ItemId | undefined {
-  const goods = GOOD_IDS.filter(k => inv(k) > 0).sort((a, b) => GOODS[b].sell - GOODS[a].sell);
+  const goods = [...GOOD_IDS, ...PRODUCT_IDS].filter(k => inv(k) > 0).sort((a, b) => ITEMS[b].sell - ITEMS[a].sell);
   if (goods[0]) return goods[0];
   if (S.sellCrops) return CROP_IDS.filter(c => inv(c) > 10).sort((a, b) => CROPS[b].sell - CROPS[a].sell)[0];
   return undefined;

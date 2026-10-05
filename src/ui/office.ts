@@ -6,7 +6,7 @@ import { $ } from './format';
 let open = false;
 export const officeOpen = () => open;
 
-const TITLES: Record<Tab, string> = { orders: 'Orders', barn: 'Barn', machines: 'Machines', helpers: 'Helpers' };
+const TITLES: Record<Tab, string> = { orders: 'Orders', barn: 'Barn', animals: 'Animals', machines: 'Machines', helpers: 'Helpers' };
 
 function apply() {
   $('office').hidden = !open;

@@ -1,7 +1,9 @@
 import { CROPS, type CropId } from './crops';
 
 export type GoodId = 'bread' | 'popcorn' | 'juice' | 'sauce' | 'cake';
-export type ItemId = CropId | GoodId;
+/** Things animals give: collected from the pen and the yard, not made in a workshop. */
+export type ProductId = 'egg' | 'milk' | 'truffle' | 'wool';
+export type ItemId = CropId | GoodId | ProductId;
 
 export interface Good {
   name: string;
@@ -19,6 +21,14 @@ export const GOODS: Record<GoodId, Good> = {
 
 export const GOOD_IDS = Object.keys(GOODS) as GoodId[];
 
-/** Every item that can sit in the barn: crops first, then goods. */
-export const ITEMS: Record<ItemId, Good> = { ...CROPS, ...GOODS };
+export const PRODUCTS: Record<ProductId, Good> = {
+  egg:     { name: 'Egg',     icon: '🥚', sell: 8 },
+  milk:    { name: 'Milk',    icon: '🥛', sell: 26 },
+  truffle: { name: 'Truffle', icon: '🍄', sell: 55 },
+  wool:    { name: 'Wool',    icon: '🧶', sell: 48 },
+};
+export const PRODUCT_IDS = Object.keys(PRODUCTS) as ProductId[];
+
+/** Every item that can sit in the barn: crops, then animal products, then goods. */
+export const ITEMS: Record<ItemId, Good> = { ...CROPS, ...PRODUCTS, ...GOODS };
 export const ITEM_IDS = Object.keys(ITEMS) as ItemId[];

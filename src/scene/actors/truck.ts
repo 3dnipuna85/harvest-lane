@@ -11,13 +11,16 @@ import { lbl } from '../fx/labels';
 import { dust3 } from '../fx/particles';
 import { ROADZ } from '../layout';
 import { Cap, Cyl, part, RB, Sph } from './smooth';
+import { buildPerson, type PersonView } from './person';
 
 /** Where the buyer's truck parks on the road, and where it enters and leaves the map. */
 export const TRUCK_STOP = { x: 6.3, z: ROADZ };
-const X_IN = -18, X_OUT = 19, DRIVE_IN_S = 3.2;
+const X_IN = -24, X_OUT = 24, DRIVE_IN_S = 5;
 
 type Mode = 'gone' | 'in' | 'wait' | 'out';
-let g: THREE.Group, body: THREE.Group, wheels: THREE.Mesh[] = [], crates: THREE.Group;
+let g: THREE.Group, body: THREE.Group, wheels: THREE.Mesh[] = [], crates: THREE.Group, cabDriver: THREE.Group, driver: PersonView;
+/** Seconds the driver spends cheering (loaded) or stomping (missed) before driving off. */
+let leaveDelay = 0, cheering = false;
 let mode: Mode = 'gone', speed = 0, shake = 0, smoke = 0;
 let bubble = '', bubbleUntil = 0, bubbleCls = '';
 
@@ -37,10 +40,11 @@ function build() {
   part(RB(0.84, 0.08, 1.14, 0.04), '#c2362b', body, 0.78, 1.69, 0);
   for (const z of [-0.4, 0.4]) part(Sph(0.09), '#fff3b0', body, 1.33, 0.86, z, { ol: 0.01 });
   part(RB(0.06, 0.18, 0.6, 0.03), '#9a9a9a', body, 1.34, 0.66, 0, { ol: false });
-  // driver: face in the window with a cap
-  part(Sph(0.2), '#f2c49b', body, 0.74, 1.42, 0);
-  part(Sph(0.21), '#2f6fd6', body, 0.72, 1.53, 0, { s: [1, 0.55, 1] });
-  part(RB(0.16, 0.04, 0.3, 0.02), '#2f6fd6', body, 0.92, 1.5, 0, { ol: false });
+  // driver: face in the window with a cap (shown while driving)
+  cabDriver = new THREE.Group(); body.add(cabDriver);
+  part(Sph(0.2), '#f2c49b', cabDriver, 0.74, 1.42, 0);
+  part(Sph(0.21), '#2f6fd6', cabDriver, 0.72, 1.53, 0, { s: [1, 0.55, 1] });
+  part(RB(0.16, 0.04, 0.3, 0.02), '#2f6fd6', cabDriver, 0.92, 1.5, 0, { ol: false });
   // cargo bed with wooden slat sides
   part(RB(1.65, 0.12, 1.16, 0.04), '#b9773f', body, -0.55, 0.6, 0);
   for (const z of [-0.56, 0.56]) {
@@ -66,6 +70,10 @@ function build() {
   part(Cap(0.04, 0.2), '#777', body, -1.45, 0.42, 0.45, { r: [0, 0, Math.PI / 2], ol: false });
   g.position.set(X_IN, 0, TRUCK_STOP.z);
   g.visible = false;
+  // the driver who climbs out and waits beside the truck
+  driver = buildPerson({ shirt: '#2f6fd6', pants: '#4b4b58', hat: '#2f6fd6', band: '#ffffff', hair: '#2e2018', boots: '#3a2a22' });
+  driver.root.scale.setScalar(1.05);
+  driver.root.visible = false;
   g.userData.type = 'truck';
   ctx.scene.add(g);
   ctx.pickables.push(g);
@@ -85,6 +93,8 @@ export function truckSay(text: string, cls = '', secs = 2.8) {
 /** The driver lost patience: rattle the truck before it leaves. */
 export function truckAngry() { shake = 1.1; }
 
+const DRIVER_OFF = { x: 0.9, z: 1.05 };
+
 export function truckPos() { return new THREE.Vector3(g.position.x, 1.6, g.position.z); }
 
 const mmss = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -99,7 +109,10 @@ export function updateTruck(dt: number) {
     g.visible = true;
     crates.visible = false;
   }
-  if (!k && (mode === 'in' || mode === 'wait') && shake <= 0) { mode = 'out'; speed = 0; }
+  if (!k && (mode === 'in' || mode === 'wait')) {
+    leaveDelay -= dt;
+    if (leaveDelay <= 0) { mode = 'out'; speed = 0; }
+  }
 
   const x0 = g.position.x;
   if (mode === 'in' && k) {
@@ -125,7 +138,8 @@ export function updateTruck(dt: number) {
     smoke = mode === 'wait' ? 0.9 : 0.12;
     dust3(g.position.x - 1.55, g.position.z + 0.45);
   }
-  crates.visible = mode === 'out' && !!lastLoaded;
+  crates.visible = (mode === 'out' || (!k && mode === 'wait')) && lastLoaded;
+  poseDriver(tt, k ? (k.end - t) / (k.end - k.arrive) : 1);
 
   if (!g.visible) return;
   const above = new THREE.Vector3(g.position.x + 0.2, 2.5, g.position.z);
@@ -145,6 +159,47 @@ export function updateTruck(dt: number) {
   }
 }
 
-/** Remember whether the truck leaving was loaded, so it drives off full or empty. */
+/** Remember whether the truck leaving was loaded, so it drives off full or empty, and let the driver react first. */
 let lastLoaded = false;
-export function truckLeaving(loaded: boolean) { lastLoaded = loaded; }
+export function truckLeaving(loaded: boolean) {
+  lastLoaded = loaded;
+  cheering = loaded;
+  leaveDelay = mode === 'wait' ? (loaded ? 1.9 : 1.4) : 0;
+}
+
+/** The driver stands by the cab while parked: tapping a foot, checking the watch when time is short, cheering or stomping at the end. */
+function poseDriver(tt: number, frac: number) {
+  const out = mode === 'wait';
+  driver.root.visible = out && g.visible;
+  cabDriver.visible = !out;
+  if (!out) return;
+  const v = driver, leaving = !S.truck;
+  v.root.position.set(g.position.x + DRIVER_OFF.x, 0, g.position.z + DRIVER_OFF.z);
+  v.root.rotation.y = Math.PI / 5;
+  v.legs[0].rotation.x = v.legs[1].rotation.x = 0;
+  v.arms[0].rotation.set(0, 0, 0.12); v.arms[1].rotation.set(0, 0, -0.12);
+  v.upper.rotation.set(0, 0, 0); v.head.rotation.set(0, 0, 0);
+  if (leaving && cheering) {
+    // jump with both arms up
+    v.root.position.y = Math.abs(Math.sin(tt * 9)) * 0.25;
+    v.arms[0].rotation.set(-2.9, 0, 0.4 + Math.sin(tt * 18) * 0.2);
+    v.arms[1].rotation.set(-2.9, 0, -0.4 - Math.sin(tt * 18) * 0.2);
+  } else if (leaving) {
+    // stomp and shake fists
+    v.root.position.y = Math.abs(Math.sin(tt * 14)) * 0.05;
+    v.legs[0].rotation.x = Math.sin(tt * 14) * 0.5; v.legs[1].rotation.x = -Math.sin(tt * 14) * 0.5;
+    v.arms[0].rotation.set(-1.6 + Math.sin(tt * 20) * 0.5, 0, 0.5);
+    v.arms[1].rotation.set(-1.6 - Math.sin(tt * 20) * 0.5, 0, -0.5);
+    v.head.rotation.set(0, Math.sin(tt * 10) * 0.4, 0);
+  } else if (frac < 0.3) {
+    // impatient: look at the watch and tap a foot fast
+    v.arms[1].rotation.set(-1.5, 0.6, -0.2);
+    v.head.rotation.set(0.35, -0.3, 0);
+    v.legs[0].rotation.x = -Math.abs(Math.sin(tt * 10)) * 0.35;
+  } else {
+    // relaxed wait: hands on hips, slow foot tap, looking around
+    v.arms[0].rotation.set(0.2, 0, 0.7); v.arms[1].rotation.set(0.2, 0, -0.7);
+    v.legs[0].rotation.x = -Math.max(0, Math.sin(tt * 4)) * 0.25;
+    v.head.rotation.set(0, Math.sin(tt * 0.8) * 0.5, 0);
+  }
+}
