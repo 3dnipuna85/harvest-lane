@@ -56,9 +56,8 @@ Saves live in `localStorage` under `harvest-lane-3d-v1` with a `version` field. 
 
 `assets/concept/` is the target look and `assets/elements/` holds the painted UI sheets. The sprites the game uses are cut from those sheets into `public/ui/*.webp` (crops, coin, star, avatar, portraits, tab icons, plus spare ones like gem, energy, milk and wood for later features). `src/ui/art.ts` maps items to sprites; anything without art (the workshop goods) still shows its emoji.
 
-Characters and animals come from the two character sheets (`Chibi Farm Characters and Props Sprite Sheet.png`, `Colorful Farming Game Sprite Sheet.png`) and live in `public/chars/*.webp`. The world stays 3D, and they stand in it as camera-facing billboards (`src/scene/actors/sprites.ts`): the farmer boy is the player, the girl is the farmhand, and hens, chicks, cows, a pig and the dog wander the farm. Townsfolk from the sheets are the customer portraits on order cards. The wooden panels sheet gives `public/ui/board-frame.webp`, drawn around each board with CSS `border-image`.
+The farmer, helpers and animals are 3D models built from smooth, high-detail shapes with soft shading and thin outlines (`src/scene/actors/smooth.ts`), so they read as rounded toys like the concept instead of low-poly shapes. Townsfolk from the character sheets are the customer portraits on order cards (`public/chars/`). The wooden panels sheet gives `public/ui/board-frame.webp`, drawn around the Farm Office panel with CSS `border-image`.
 
-The player is the farmer from `assets/elements/main character/` (pull up a crop, dig and plant) and `assets/elements/walking main character/` (walking front, back, left and right), all 8-frame sheets cut into `public/chars/farmer-*.webp` at one character scale. `poseFarmer` in `src/scene/actors/person.ts` plays them.
 
 ## Saving
 

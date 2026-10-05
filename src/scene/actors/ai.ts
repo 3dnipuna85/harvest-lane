@@ -63,9 +63,10 @@ function startWork(c: Char) {
   const p = S.plots[c.task!.i];
   const type = !p ? null : !p.crop ? 'plant' : ripe(p) ? 'harvest' : null;
   if (!type) { finish(c); return; }
-  c.state = 'work'; c.act = 0; c.done = false; c.actType = type; c.face = Math.PI / 4;
-  // Turn to face the plot: it is up-right of the farmer and up-left of a farmhand on screen.
-  c.flip = c.kind === 'hand';
+  c.state = 'work'; c.act = 0; c.done = false; c.actType = type;
+  // Turn to face the plot from the path.
+  const q = plotPos(c.task!.i);
+  c.face = Math.atan2(q.x - c.x, q.z - c.z);
   c.actDur = c.kind === 'player' ? (type === 'plant' ? 0.8 : 0.7) : (type === 'plant' ? 0.95 : 0.8);
 }
 
