@@ -1,3 +1,4 @@
+import type { CropId } from '../../data/crops';
 import { BX, BZ } from '../layout';
 import { ASPECT, billboard, FARMER_FRAMES, preloadFrames, removeBillboard, screenDir, setFrame, type Billboard } from './sprites';
 
@@ -10,7 +11,8 @@ export interface Char {
   phase: number;
   state: 'idle' | 'walk' | 'work';
   act: number; actDur: number; actType: 'plant' | 'harvest' | null;
-  task: { i: number } | null;
+  /** The plot being worked, and the seed chosen for it when it was tapped. */
+  task: { i: number; crop: CropId } | null;
   /** Remaining waypoints after (tx, tz), so walks follow the paths between plots. */
   path: { x: number; z: number }[];
   done: boolean;

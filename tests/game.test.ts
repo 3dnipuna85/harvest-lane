@@ -31,6 +31,13 @@ describe('planting and harvesting', () => {
     expect(ripe(S.plots[3])).toBe(true);
   });
 
+  it('plants the seed chosen at tap time, even after the selection changes', () => {
+    S.coins = 100;
+    S.sel = 'carrot';
+    expect(plant(3, 'corn')).toBe(true);
+    expect(S.plots[3].crop).toBe('corn');
+  });
+
   it('refuses to plant without enough coins', () => {
     S.coins = 1;
     expect(plant(3)).toBe(false);

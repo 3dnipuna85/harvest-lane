@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CROPS } from '../../data/crops';
+import { CROPS, type CropId } from '../../data/crops';
 import { MAX_QUEUE } from '../../data/limits';
 import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
@@ -10,7 +10,7 @@ import { lbl, toScreen } from '../fx/labels';
 import { mkChar, poseChar, removeChar, type Char } from './person';
 
 /** Plots the player tapped, in order. The farmer works through them one by one. */
-let queue: number[] = [];
+let queue: { i: number; crop: CropId }[] = [];
 /** Plot index -> id of the character walking to or working on it. */
 const res = new Map<number, string>();
 let player: Char;
@@ -27,9 +27,10 @@ export function initActors() {
   player.x = 0; player.z = ROADZ; player.face = Math.PI / 4;
 }
 
-const isBusy = (i: number) => res.has(i) || queue.includes(i);
+const inQueue = (i: number) => queue.some(q => q.i === i);
+const isBusy = (i: number) => res.has(i) || inQueue(i);
 /** True when the player has this plot queued or is walking to it (drawn as a white frame). */
-export const isQueued = (i: number) => queue.includes(i) || !!(player.task && player.task.i === i && player.state === 'walk');
+export const isQueued = (i: number) => inQueue(i) || !!(player.task && player.task.i === i && player.state === 'walk');
 
 /** A farmhand's next job: a ripe plot first, otherwise an empty plot if the selected seed is affordable. */
 function pickJob() {
@@ -43,7 +44,7 @@ function pickJob() {
 const colGap = (x: number) => (Math.round(x / PITCH - 0.5) + 0.5) * PITCH;
 const onColGap = (x: number) => Math.abs(x - colGap(x)) < 0.2;
 
-function goTo(c: Char, i: number) {
+function goTo(c: Char, i: number, crop: CropId = S.sel) {
   // Work from the path beside the plot, never standing in the soil: the farmer at the front edge
   // (down-screen), a farmhand on the right-hand edge. Walks stick to the paths between plots.
   const q = plotPos(i), gx = q.x + (c.kind === 'hand' ? PITCH / 2 : -PITCH / 2), gz = q.z + PITCH / 2;
@@ -53,7 +54,7 @@ function goTo(c: Char, i: number) {
     : [{ x: gx, z: c.z }, { x: gx, z: c.kind === 'hand' ? end.z : gz }, end];
   const first = pts.shift()!;
   c.tx = first.x; c.tz = first.z; c.path = pts;
-  c.task = { i };
+  c.task = { i, crop };
   c.state = 'walk';
   res.set(i, c.id);
 }
@@ -74,15 +75,15 @@ function finish(c: Char) {
   if (c.kind !== 'seller') c.face = Math.PI / 4;
 }
 
-function seedDenied() {
-  const c = CROPS[S.sel];
+function seedDenied(crop: CropId = S.sel) {
+  const c = CROPS[crop];
   toast('You need ' + c.seed + ' coins for ' + c.name + ' seeds');
   shakeScene();
 }
 
 function updateChar(c: Char, dt: number) {
   if (c.state === 'idle') {
-    if (c.kind === 'player') { const i = queue.shift(); if (i != null && S.plots[i]) goTo(c, i); }
+    if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) goTo(c, q.i, q.crop); }
     else if (c.kind === 'hand') { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i); else c.idleT = 0.6; } }
   }
   if (c.state === 'walk') {
@@ -99,8 +100,8 @@ function updateChar(c: Char, dt: number) {
     // The plant or harvest happens partway through the swing.
     if (!c.done && c.act >= c.actDur * 0.6) {
       c.done = true;
-      const i = c.task!.i, p = S.plots[i];
-      if (c.actType === 'plant' && p && !p.crop) { if (!plant(i) && c.kind === 'player') seedDenied(); }
+      const { i, crop } = c.task!, p = S.plots[i];
+      if (c.actType === 'plant' && p && !p.crop) { if (!plant(i, crop) && c.kind === 'player') seedDenied(crop); }
       else if (c.actType === 'harvest' && p && ripe(p)) harvest(i);
     }
     if (c.act >= c.actDur) finish(c);
@@ -146,8 +147,9 @@ export function tapPlot(i: number) {
     fx(sx, sy, Math.ceil(CROPS[p.crop].time - (now() - p.at) / 1000) + 's left', '');
     return;
   }
-  if (queue.includes(i) || (player.task && player.task.i === i)) return;
+  if (inQueue(i) || (player.task && player.task.i === i)) return;
   if (!p.crop && S.coins < CROPS[S.sel].seed) { seedDenied(); return; }
   if (queue.length >= MAX_QUEUE) return;
-  queue.push(i);
+  // Remember the seed selected right now, so changing the selection later never changes this plot.
+  queue.push({ i, crop: S.sel });
 }

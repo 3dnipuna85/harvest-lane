@@ -40,8 +40,9 @@ export function earn(n: number) {
 }
 
 /** Plant the selected seed on plot i. Returns false if the player cannot afford it. */
-export function plant(i: number): boolean {
-  const p = S.plots[i], crop: CropId = S.sel, c = CROPS[crop];
+/** Plant `crop` (the seed selected when the plot was tapped; defaults to the current selection). */
+export function plant(i: number, crop: CropId = S.sel): boolean {
+  const p = S.plots[i], c = CROPS[crop];
   if (!p || S.coins < c.seed) return false;
   S.coins -= c.seed;
   p.crop = crop;
