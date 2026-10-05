@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#74c043">
+  <meta name="description" content="Harvest Lane: plant, harvest, bake and sell on your own cartoon farm.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Harvest Lane">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <title>Harvest Lane</title>
+</head>
+<body>
+  <div class="app">
+    <header class="hud">
+      <div class="brand">Harvest Lane</div>
+      <div class="pill" id="coinPill"><span class="coin-dot"></span><span class="coins-val" id="coins">0</span></div>
+      <div class="pill"><span class="lvl" id="lvl">Lv 1</span><span class="xpbar"><i id="xp"></i></span></div>
+    </header>
+
+    <main class="main">
+      <section class="board" aria-label="Farm">
+        <div class="row"><h2>The Farm</h2></div>
+        <p class="hint" id="hint">Tap soil to plant and ripe crops to harvest; taps queue up. Drag to move around, and use + and − to zoom.</p>
+        <div class="seeds" id="seeds"></div>
+        <div class="scene-wrap" id="sceneWrap">
+          <div class="overlay" id="overlay"></div>
+          <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
+        </div>
+        <button class="expand" id="expand" data-act="expand"></button>
+      </section>
+
+      <section class="board" aria-label="Barn">
+        <div class="tabs" id="tabs"></div>
+        <div id="panel"></div>
+      </section>
+    </main>
+  </div>
+  <div class="toasts" id="toasts"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

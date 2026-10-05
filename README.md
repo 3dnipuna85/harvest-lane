@@ -1,0 +1,53 @@
+# Harvest Lane
+
+A cute cartoon farm tycoon game for the web. Plant and harvest crops, fill delivery orders, build workshops that turn crops into goods, and hire helpers who work on their own.
+
+Built with Vite, TypeScript and three.js (pinned at 0.149.0, the version the prototype used). The original single-file prototype is kept untouched in `assets/harvest-lane-prototype.html` as the reference; the project brief is `assets/CLAUDE.md`.
+
+## Run it
+
+You need Node.js 18 or newer.
+
+```bash
+npm install
+npm run dev
+```
+
+Open the "Local" address it prints. To play on a phone or iPad, connect it to the same Wi-Fi and open the "Network" address (for example `http://192.168.1.20:5173`). On Windows, allow Node through the firewall the first time it asks.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload, reachable on your local network |
+| `npm run build` | Type-checks and builds the game into `dist/` |
+| `npm run preview` | Serves the built `dist/` on your network, with offline support switched on |
+| `npm test` | Runs the game-logic tests |
+| `npm run typecheck` | Type-checks without building |
+
+## Install to the home screen and play offline
+
+The production build is a PWA. Run `npm run build` then `npm run preview`, open it, and use "Add to Home Screen" (iOS Safari) or "Install app" (Chrome, Edge, Android). After the first visit it works with no connection. The service worker is only registered in production builds, so `npm run dev` always serves fresh code.
+
+Phones only allow installing and offline mode over HTTPS or on `localhost`. Testing over local Wi-Fi with a plain `http://192.168...` address plays fine but will not install; host `dist/` on any static HTTPS host to try that part on a phone.
+
+Fonts (Lilita One and Nunito) are bundled from npm (`@fontsource`), so nothing loads from Google Fonts or a CDN.
+
+## Code layout
+
+```
+src/
+  main.ts            boot and game loop
+  data/              crops, goods, machines, customers, limits (pure data)
+  game/              state (save/load, versioned migrations), economy, orders, sim, events, clock
+  scene/             renderer, camera, materials (toon + outline), geometry (roundedBox, part)
+  scene/world/       ground, barn, workshops, plots, crops, props (trees, fences, pond, cart)
+  scene/actors/      person (chibi rig + poses), ai (tap queue, farmhands, sellers), animals
+  scene/fx/          particles, flyers, labels (HTML overlay)
+  ui/                hud, seeds, panel (orders, barn, machines, helpers), actions, toasts
+  input/             pointer (tap vs drag, pinch, wheel, raycast picking)
+sw/sw.js             service worker template; the build fills in the file list
+tests/               game-logic tests (Vitest)
+```
+
+`game/` never imports three.js or touches the DOM. It announces what happened through `game/events.ts` (`plant`, `harvest`, `machineDone`, `sellerSale`, `levelUp`, `earn`) and the scene and UI react, so the rules can be unit tested and later run on a server.
+
+Saves live in `localStorage` under `harvest-lane-3d-v1` with a `version` field. To change the save shape, bump `SAVE_VERSION` in `src/game/state.ts` and add a step to `MIGRATIONS`.
