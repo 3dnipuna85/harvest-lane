@@ -15,14 +15,14 @@ export interface GameEvents {
   animalCollect: { kind: AnimalId; i: number; product: ProductId };
   fishCast: Record<string, never>;
   fishBite: Record<string, never>;
-  fishCaught: { kind: ProductId };
+  fishCaught: { kind: ProductId; byPlayer: boolean };
   /** The fish got away: reeled in too early, or too late after the bite. */
   fishMissed: { early: boolean };
   landBought: { k: number };
-  staffEnding: { k: 'manager' | 'keeper'; left: number };
+  staffEnding: { k: 'manager' | 'keeper' | 'fisher'; left: number };
   wagesUnpaid: Record<string, never>;
   wagesPaid: Record<string, never>;
-  staffEnded: { k: 'manager' | 'keeper' };
+  staffEnded: { k: 'manager' | 'keeper' | 'fisher' };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };

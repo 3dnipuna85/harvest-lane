@@ -49,13 +49,18 @@ export function reel(t = now(), rand = Math.random): ProductId | null {
     return null;
   }
   line.state = 'idle';
+  return landCatch(rand, true);
+}
+
+/** Roll a catch and put it in the barn. `byPlayer` is false for the hired fisherman. */
+export function landCatch(rand = Math.random, byPlayer = false): ProductId {
   let r = rand(), pick = CATCH[0];
   for (const c of CATCH) { if (r < c.p) { pick = c; break; } r -= c.p; }
   add(pick.kind, 1);
   S.made[pick.kind] = (S.made[pick.kind] || 0) + 1;
   S.stats.fish++;
   gainXP(pick.xp);
-  emit('fishCaught', { kind: pick.kind });
+  emit('fishCaught', { kind: pick.kind, byPlayer });
   return pick.kind;
 }
 

@@ -8,18 +8,19 @@ import { shakeScene, toast } from './toasts';
 
 /** Helpers-tab cards and messages for the paid farm manager and animal keeper. */
 
-const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma' };
+const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma', fisher: 'boy-head' };
 
 export const hms = (ms: number) => {
   const m = Math.ceil(ms / 60000), h = Math.floor(m / 60);
   return h ? `${h}h ${m % 60}m` : `${m}m`;
 };
 
-export function awayNote(d: { crops: number; products: number; seeds: number }) {
+export function awayNote(d: { crops: number; products: number; seeds: number; fish?: number }) {
   const bits = [];
+  if (d.fish) bits.push(`caught ${fmt(d.fish)} fish`);
   if (d.crops) bits.push(`harvested ${fmt(d.crops)} crops`);
   if (d.products) bits.push(`collected ${fmt(d.products)} animal goods`);
-  return 'Welcome back! While you were away your staff ' + bits.join(' and ') + '.' + (d.seeds ? ` Replanting cost ${fmt(d.seeds)} coins.` : '');
+  return 'Welcome back! While you were away your staff ' + bits.join(', ') + '.' + (d.seeds ? ` Replanting cost ${fmt(d.seeds)} coins.` : '');
 }
 
 export function staffCard(k: StaffId) {

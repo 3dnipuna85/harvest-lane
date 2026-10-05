@@ -61,10 +61,19 @@ function start() {
   // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
   initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled && !('claude' in globalThis)) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
-  if (staffAway.crops || staffAway.products) toast(awayNote(staffAway));
+  if (staffAway.crops || staffAway.products || staffAway.fish) toast(awayNote(staffAway));
   else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   setInterval(() => { save(); syncCloud(); }, 5000);
-  addEventListener('visibilitychange', () => { if (document.hidden) { save(); syncCloud(true); } });
+  // A hidden tab stops drawing frames, so replay the staff's work for that time when it comes back.
+  let hiddenAt = 0;
+  addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = now(); save(); syncCloud(true); return; }
+    if (hiddenAt && !visiting) {
+      const d = catchUp(hiddenAt);
+      hiddenAt = 0;
+      if (d.crops || d.products || d.fish) toast(awayNote(d));
+    }
+  });
   addEventListener('pagehide', () => { save(); syncCloud(true); });
   requestAnimationFrame(ts => { lastT = ts; frame(ts); });
 }

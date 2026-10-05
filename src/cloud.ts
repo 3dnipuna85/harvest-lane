@@ -70,7 +70,7 @@ export async function connectRemote(r: Remote) {
       if (has3D) initScene();
       markDirty();
       lastSent = key();
-      toast(done.crops || done.products ? awayNote(done) : 'Welcome back. Your farm is loaded.');
+      toast(done.crops || done.products || done.fish ? awayNote(done) : 'Welcome back. Your farm is loaded.');
     } else await syncCloud(true);
   } catch { /* stay on the local save */ }
 }

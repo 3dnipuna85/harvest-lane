@@ -11,7 +11,7 @@ import { chaChing, honk } from '../ui/sound';
 import { computeFull, focusOn, inView, resize, updateCam } from './camera';
 import { buildRiver, updateRiver } from './world/river';
 import { initLand, updateLand } from './world/land';
-import { initStaffActors, updateStaffActors } from './actors/staff';
+import { fisherPos, initStaffActors, updateStaffActors } from './actors/staff';
 import { LAND } from '../data/land';
 import { parcelBox } from './layout';
 import { bobberPos, initFishing, reelAnim, updateFishing } from './actors/fishing';
@@ -154,9 +154,9 @@ function bindSceneEvents() {
   });
   on('fishCast', () => { const b = bobberPos(); splash3(b.x, b.z, 5); });
   on('fishBite', () => { const b = bobberPos(); splash3(b.x, b.z, 8); });
-  on('fishCaught', ({ kind }) => {
-    reelAnim();
-    const b = bobberPos();
+  on('fishCaught', ({ kind, byPlayer }) => {
+    if (byPlayer) reelAnim();
+    const b = byPlayer ? bobberPos() : fisherPos();
     splash3(b.x, b.z, 10);
     spawnFly(kind, b.clone().setY(0.6), barnDoor(), 0.1);
     const [sx, sy] = toScreen(b.clone().setY(1.6));

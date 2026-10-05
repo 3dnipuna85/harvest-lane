@@ -18,7 +18,7 @@ export interface PersonView {
   basket: THREE.Group;
 }
 
-export type CharKind = 'player' | 'hand' | 'seller';
+export type CharKind = 'player' | 'hand' | 'seller' | 'manager';
 export interface Char {
   id: string;
   kind: CharKind;
@@ -99,12 +99,13 @@ export function buildPerson(o: Outfit): PersonView {
 export function mkChar(kind: CharKind, i: number): Char {
   // The player matches the main character art: red shirt, blue overalls, straw hat with a brown band, brown gloves and boots.
   const o: Outfit = kind === 'player' ? { shirt: '#e8473a', pants: '#3f72d6', hat: '#e9b864', band: '#6b3d1e', hair: '#6b3d22', hands: '#8a5530', boots: '#7a4a26' }
+    : kind === 'manager' ? { shirt: '#ffffff', pants: '#34466e', hat: '#34466e', band: '#c2412f', hair: '#2e2018', boots: '#2b2b2b' }
     : kind === 'seller' ? { shirt: SHIRTS[(i + 3) % 6], pants: '#6d5844', hat: '#fff4e0', band: '#4aa3e8', hair: '#2e2018' }
     : { shirt: SHIRTS[i % 6], pants: '#8a5a36', hat: '#e7bd6c', band: '#8a5a36', hair: ['#3b2416', '#c27a3a', '#1f1a17', '#e0b060'][i % 4] };
   return {
     id: kind + i, kind, x: BX[0] + 0.6 + i * 0.3, z: BZ + 2.0, tx: 0, tz: 0, face: 0, phase: Math.random() * 6, state: 'idle',
     act: 0, actDur: 0.5, actType: null, task: null, path: [], done: false, idleT: Math.random(), wave: 0,
-    speed: kind === 'player' ? 5.0 : 2.7, v: buildPerson(o),
+    speed: kind === 'player' ? 5.0 : kind === 'manager' ? 3.6 : 2.7, v: buildPerson(o),
   };
 }
 

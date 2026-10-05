@@ -4,7 +4,7 @@ import { MAX_QUEUE } from '../../data/limits';
 import { harvest, plant, ripe } from '../../game/economy';
 import { now } from '../../game/clock';
 import { S, visiting } from '../../game/state';
-import { neededCrop, onDuty, unpaid } from '../../game/staff';
+import { neededCrop, onDuty, timeLeft, unpaid } from '../../game/staff';
 import { fx, shakeScene, toast } from '../../ui/toasts';
 import { CARTP, FISH_SPOT, PITCH, ROADZ, plotPos } from '../layout';
 import { cast, stopFishing } from '../../game/fishing';
@@ -18,6 +18,8 @@ const res = new Map<number, string>();
 let player: Char;
 let hands: Char[] = [];
 let sellers: Char[] = [];
+/** The paid farm manager, walking the field while on duty. */
+let manager: Char | null = null;
 let saleTurn = 0;
 /** True while the farmer stands at the end of the dock with a rod. */
 let fishing = false;
@@ -27,7 +29,7 @@ export const isFishing = () => fishing;
 export const getPlayer = () => player;
 
 export function initActors() {
-  queue = []; res.clear(); hands = []; sellers = []; saleTurn = 0; fishing = false; stopFishing();
+  queue = []; res.clear(); hands = []; sellers = []; manager = null; saleTurn = 0; fishing = false; stopFishing();
   player = mkChar('player', 0);
   player.x = 0; player.z = ROADZ; player.face = Math.PI / 4;
 }
@@ -102,7 +104,7 @@ function seedDenied(crop: CropId = S.sel) {
 function updateChar(c: Char, dt: number) {
   if (c.state === 'idle') {
     if (c.kind === 'player') { const q = queue.shift(); if (q && S.plots[q.i]) { leaveWater(); goTo(c, q.i, q.crop); } }
-    else if (c.kind === 'hand' && !visiting && !unpaid) { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i, handSeed()); else c.idleT = 0.6; } }
+    else if ((c.kind === 'manager' || (c.kind === 'hand' && !unpaid)) && !visiting) { c.idleT -= dt; if (c.idleT <= 0) { const i = pickJob(); if (i >= 0) goTo(c, i, handSeed()); else c.idleT = 0.6; } }
   }
   if (c.state === 'walk') {
     const dx = c.tx - c.x, dz = c.tz - c.z, d = Math.hypot(dx, dz), step = c.speed * dt;
@@ -139,6 +141,12 @@ export function syncCrew() {
   }
   while (sellers.length < S.sellers) sellers.push(mkChar('seller', sellers.length));
   while (sellers.length > S.sellers) removeChar(sellers.pop()!);
+  const duty = onDuty('manager') && !visiting;
+  if (duty && !manager) { manager = mkChar('manager', 0); manager.x = 3.4; manager.z = ROADZ + 1; }
+  if (!duty && manager) {
+    if (manager.task && res.get(manager.task.i) === manager.id) res.delete(manager.task.i);
+    removeChar(manager); manager = null;
+  }
   sellers.forEach((s, j) => { s.x = CARTP.x - 1.35 - j * 0.6; s.z = CARTP.z + 0.3 + (j % 2) * 0.3; s.face = Math.PI / 6; });
 }
 
@@ -152,9 +160,16 @@ const tmp = new THREE.Vector3();
 export function updateActors(dt: number, t: number) {
   updateChar(player, dt);
   hands.forEach(h => updateChar(h, dt));
+  if (manager) updateChar(manager, dt);
   sellers.forEach(s => updateChar(s, dt));
   poseChar(player, t);
   hands.forEach(h => poseChar(h, t));
+  if (manager) {
+    poseChar(manager, t);
+    const m = Math.ceil(timeLeft('manager') / 60000), tl = m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
+    const doing = manager.task && S.truck?.items[S.plots[manager.task.i]?.crop ?? ('' as never)] ? ' · for the truck 🚚' : '';
+    lbl('mgr', 'Manager · ' + tl + doing, tmp.set(manager.x, 2.7, manager.z), 'stafftag');
+  }
   sellers.forEach(s => poseChar(s, t));
   if (queue.length) lbl('q', String(queue.length + (player.task ? 1 : 0)), tmp.set(player.x, 2.5, player.z), 'q');
 }

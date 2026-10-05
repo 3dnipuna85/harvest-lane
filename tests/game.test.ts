@@ -329,8 +329,19 @@ describe('manager plans for the truck', () => {
     S.nextWants = { carrot: 6 };
     S.plots.forEach(p => { p.crop = null; p.at = 0; });
     expect(st.neededCrop()).toBe('carrot');
-    st.staffWork(t, true);
+    st.staffWork(t, false); // away: the instant version plants
     expect(S.plots.filter(p => p.crop === 'carrot').length).toBe(6);
     expect(st.neededCrop()).toBeNull();
+  });
+});
+
+describe('fisherman', () => {
+  it('lands a catch every 15 seconds while hired, also while away', async () => {
+    const st = await import('../src/game/staff');
+    S.level = 5; S.coins = 100000; S.inv = {};
+    st.hireStaff('fisher', 1, t);
+    const sum = st.catchUp(t, t + 10 * 60_000);
+    expect(sum.fish).toBeGreaterThanOrEqual(38);
+    expect((S.inv.fish || 0) + (S.inv.crab || 0) + (S.inv.goldfish || 0)).toBe(sum.fish);
   });
 });
