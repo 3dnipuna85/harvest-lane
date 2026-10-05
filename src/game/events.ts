@@ -10,6 +10,9 @@ export interface GameEvents {
   harvest: { i: number; crop: CropId; n: number };
   machineDone: { id: MachineId; out: GoodId };
   sellerSale: { item: ItemId; coins: number };
+  truckArrive: { who: string };
+  truckDone: { who: string; coins: number; tip: number };
+  truckMissed: { who: string; coins: number };
 }
 
 type Handler<K extends keyof GameEvents> = (e: GameEvents[K]) => void;

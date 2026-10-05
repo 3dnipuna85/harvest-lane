@@ -18,6 +18,8 @@ export interface Order {
   coins: number;
   xp: number;
 }
+/** A buyer waiting at the gate in a truck. Pays more than a board order, but only until `end`. */
+export interface Truck extends Order { arrive: number; end: number }
 export type Tab = 'orders' | 'barn' | 'machines' | 'helpers';
 
 export interface State {
@@ -36,8 +38,13 @@ export interface State {
   orders: Order[];
   skipUntil: number;
   orderSeq: number;
+  truck: Truck | null;
+  /** When the next truck pulls up (ms timestamp). */
+  nextTruck: number;
+  /** Buyer reputation, 1 to 5 stars. On-time trucks raise it and pay more; missed trucks lower it. */
+  rep: number;
   /** Lifetime totals shown on the player's profile. */
-  stats: { earned: number; harvested: number; orders: number };
+  stats: { earned: number; harvested: number; orders: number; trucks: number; missed: number };
   saved: number;
 }
 
@@ -53,7 +60,9 @@ export function fresh(t = now()): State {
     coins: 30, xp: 0, level: 1, sel: 'wheat', tab: 'orders',
     plots: Array.from({ length: START_PLOTS }, () => ({ crop: null, at: 0 })),
     inv: { wheat: 2 }, machines, farmhands: 0, sellers: 0, sellCrops: false,
-    orders: [], skipUntil: 0, orderSeq: 0, stats: { earned: 0, harvested: 0, orders: 0 }, saved: t,
+    orders: [], skipUntil: 0, orderSeq: 0,
+    truck: null, nextTruck: t + 25000, rep: 3,
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 }, saved: t,
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };

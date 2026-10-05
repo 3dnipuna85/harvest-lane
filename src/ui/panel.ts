@@ -5,6 +5,7 @@ import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines'
 import { now } from '../game/clock';
 import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../game/economy';
 import { canFill, canSkip, orderItems } from '../game/orders';
+import { canFillTruck, truckOffer } from '../game/trucks';
 import { save, S, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
@@ -33,7 +34,7 @@ function itemRow(k: ItemId) {
 export function panelSignature() {
   const parts: unknown[] = [S.tab, S.level];
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
-  if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','));
+  if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
   if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed);
   return parts.join('|');
@@ -61,7 +62,7 @@ function machineCard(k: MachineId) {
 export function renderPanel() {
   let h = '';
   if (S.tab === 'orders') {
-    h = '<div class="list">' + S.orders.map((o, i) => `
+    h = '<div class="list">' + truckCard() + S.orders.map((o, i) => `
       <div class="card"><div class="top"><div class="big">${customerFace(o.who)}</div><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
         <div class="reward">${coinHTML}${fmt(o.coins)} <span class="small">+${o.xp} XP</span></div></div>
         <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
@@ -91,6 +92,22 @@ export function renderPanel() {
   $('panel').innerHTML = h;
 }
 
+const stars = () => '★★★★★'.slice(0, Math.round(S.rep)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(S.rep));
+
+function truckCard() {
+  const k = S.truck;
+  if (!k) return `<div class="card truckcard idle"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">Truck buyers</div>
+    <div class="sub">The next truck is on its way. Trucks pay extra and tip you for fast loading, but they won't wait forever.</div></div>
+    <span class="rep" title="Buyer reputation">${stars()}</span></div></div>`;
+  return `<div class="card truckcard"><div class="top"><div class="big">🚚</div><div class="grow"><div class="ttl">${k.who} <span class="small">is waiting at the gate</span></div>
+      <div class="sub"><span class="rep">${stars()}</span> Load before the timer runs out or they leave.</div></div>
+      <div class="reward">${coinHTML}<span data-tpay>${fmt(k.coins)}</span> <span class="small">+${k.xp} XP</span></div></div>
+    <div class="tbar big"><i data-tbar></i></div>
+    <div class="needs">${orderItems(k).map(([i, q]) => `<span class="need" data-need="${i}" data-q="${q}">${iconHTML(i, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
+    <div class="row"><button class="btn gold" data-act="truck" data-check="truck">Load truck</button><span class="small grow" data-tnote></span></div>
+  </div>`;
+}
+
 function setBadge(k: Tab, n: number) {
   const b = document.querySelector<HTMLElement>(`[data-badge="${k}"]`);
   if (!b) return;
@@ -114,6 +131,7 @@ export function updatePanel() {
     else if (kind === 'inv') ok = inv(arg as ItemId) > 0;
     else if (kind === 'order') ok = !!S.orders[+arg] && canFill(S.orders[+arg]);
     else if (kind === 'skip') ok = canSkip();
+    else if (kind === 'truck') ok = canFillTruck();
     b.disabled = !ok;
   });
   const sn = t < S.skipUntil ? 'Next skip in ' + Math.ceil((S.skipUntil - t) / 1000) + 's' : '';
@@ -128,7 +146,15 @@ export function updatePanel() {
       : !m.on ? 'Paused'
       : 'Waiting for ' + recipe(k).filter(([i, q]) => inv(i) < q).map(([i]) => ITEMS[i].name.toLowerCase()).join(' and ');
   });
-  setBadge('orders', S.orders.filter(canFill).length);
+  const k = S.truck;
+  if (k) {
+    const left = Math.max(0, k.end - t), frac = left / (k.end - k.arrive), { tip } = truckOffer(t);
+    document.querySelectorAll<HTMLElement>('[data-tbar]').forEach(e => { e.style.width = (frac * 100).toFixed(1) + '%'; e.parentElement!.classList.toggle('low', frac < 0.25); });
+    document.querySelectorAll<HTMLElement>('[data-tnote]').forEach(e => {
+      e.textContent = Math.ceil(left / 1000) + 's left' + (tip ? ' · +' + fmt(tip) + ' tip if you load now' : '');
+    });
+  }
+  setBadge('orders', S.orders.filter(canFill).length + (canFillTruck() ? 1 : 0));
   setBadge('barn', totalItems());
   setBadge('machines', MACHINE_IDS.filter(k => S.machines[k].owned && S.machines[k].job).length);
 }
@@ -147,6 +173,7 @@ export function bindPanelInput() {
     else if (a === 'sell') act.sell(k as ItemId, b.dataset.n === 'all' ? inv(k as ItemId) : 1, cx, cy);
     else if (a === 'deliver') act.deliver(i, cx, cy);
     else if (a === 'skip') act.skip(i);
+    else if (a === 'truck') act.loadTruck(cx, cy);
     else if (a === 'buyM') act.buyMachine(k as MachineId);
     else if (a === 'upM') act.upgradeMachine(k as MachineId, cx, cy);
     else if (a === 'toggleM') { S.machines[k as MachineId].on = (b as HTMLInputElement).checked; save(); return; }

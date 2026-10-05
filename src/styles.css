@@ -297,3 +297,63 @@ body.office-open .zoom{display:none}
 .hud .lvlpill{margin-right:auto}
 .hud .brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .hud .account,.hud .account.in{margin:0}
+
+/* ---------- Truck buyers ---------- */
+.fx.red{color:#d23a2c}
+.lbl.say{font-size:12.5px;padding:5px 10px;border:2px solid #4a2e1a;border-radius:14px;background:#fff;max-width:220px;white-space:normal;text-align:center}
+.lbl.say.angry{background:#ffe3df;border-color:#b3261e;color:#9b1c14;animation:wobble .25s infinite}
+.lbl.say.happy{background:#e9f8de;border-color:#3f8f2f;color:#2f6d22}
+@keyframes wobble{0%,100%{rotate:-2deg}50%{rotate:2deg}}
+.lbl.truck{z-index:2;flex-direction:column;align-items:stretch;gap:3px;padding:5px 8px;border:2px solid #4a2e1a;font-size:12px}
+.lbl.truck .r{display:flex;align-items:center;gap:6px;justify-content:center}
+.lbl.truck .tneed{display:flex;align-items:center;gap:2px}
+.lbl.truck .tneed.ok{color:var(--leaf)}
+.lbl.truck .ic-need{width:18px;height:18px}
+.tbar{display:block;flex:1;min-width:60px;height:7px;border-radius:4px;background:#e9dcc0;overflow:hidden}
+.tbar i{display:block;height:100%;background:#6cc04a;transition:width .2s linear}
+.tbar.low i,.lbl.truck .tbar.low i{background:#e2463a}
+.tbar.big{height:9px;margin:2px 0}
+.lbl.truck .tclock{font-size:13px;min-width:34px;text-align:right}
+.lbl.truck.hurry{border-color:#b3261e;animation:pulse .6s infinite alternate}
+.lbl.truck.ready{border-color:#3f8f2f;background:#f0fbe8}
+.lbl.truck .ttip{color:var(--leaf)}
+.lbl.truck .tgo{color:#2f6d22;font-size:12.5px}
+@keyframes pulse{to{box-shadow:0 0 0 4px rgba(226,70,58,.35)}}
+.truckcard{border:2px solid #e2a14b;background:linear-gradient(#fff8e8,#fff1d2)}
+.truckcard .big{font-size:30px;display:grid;place-items:center}
+.truckcard.idle{opacity:.85}
+.rep{color:#e8a317;letter-spacing:1px;font-size:14px}
+
+/* ---------- Level-up celebration ---------- */
+.levelup{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:rgba(30,45,15,.55);overflow:hidden;animation:luFade .3s ease-out}
+.levelup.out{animation:luFade .3s ease-in reverse forwards}
+@keyframes luFade{from{opacity:0}}
+.lu-rays{position:absolute;left:50%;top:50%;width:160vmax;height:160vmax;translate:-50% -50%;pointer-events:none;
+  background:repeating-conic-gradient(rgba(255,230,140,.32) 0 9deg,transparent 9deg 22deg);mask:radial-gradient(circle,#000 0,transparent 60%);animation:luSpin 18s linear infinite}
+@keyframes luSpin{to{rotate:360deg}}
+.lu-card-main{position:relative;width:min(380px,100%);display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:18px;animation:luPop .55s cubic-bezier(.2,1.6,.4,1)}
+@keyframes luPop{from{transform:scale(.3) rotate(-8deg);opacity:0}}
+.lu-star{position:relative;width:118px;height:118px;margin-top:-6px;display:grid;place-items:center;animation:luBob 1.6s ease-in-out infinite}
+.lu-star-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 0 rgba(0,0,0,.18))}
+.lu-star b{position:relative;font-family:var(--display);font-weight:400;font-size:44px;color:#fff;text-shadow:0 3px 0 #b86b00,0 0 12px rgba(0,0,0,.25);margin-top:8px}
+@keyframes luBob{50%{transform:translateY(-6px) scale(1.04)}}
+.lu-hero{display:flex;align-items:center;gap:10px;animation:luSlide .5s .3s both cubic-bezier(.2,1.4,.4,1)}
+.lu-hero img{width:62px;height:62px;object-fit:contain;animation:luWave 1s .8s ease-in-out 3}
+.lu-say{margin:0;background:#fff;border:2px solid #4a2e1a;border-radius:14px;padding:6px 12px;font-weight:900;color:#6b4423;font-size:14px}
+@keyframes luSlide{from{transform:translateX(-40px);opacity:0}}
+@keyframes luWave{50%{rotate:-8deg}}
+.lu-unlocks{width:100%;text-align:center}
+.lu-unlocks p{margin:0 0 6px;font-family:var(--display);color:#8a5a2e;font-size:15px}
+.lu-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.lu-card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px;min-width:88px;border-radius:12px;background:#fff6e2;border:2px solid #ecd3a3;animation:luPop .45s both cubic-bezier(.2,1.6,.4,1)}
+.lu-card img,.lu-card .ic-emoji{width:36px;height:36px;object-fit:contain;font-size:30px;line-height:36px;text-align:center}
+.lu-card b{font-size:13.5px;color:var(--ink)}
+.lu-card span{font-size:11px;font-weight:800;color:#8a6a45}
+.lu-bonus{display:flex;align-items:center;gap:6px;font-weight:900;color:#8a5a2e;font-size:15px;animation:luPop .45s .8s both cubic-bezier(.2,1.6,.4,1)}
+.lu-bonus .coin-dot{width:26px;height:26px}
+.lu-bonus b{font-family:var(--display);font-weight:400;font-size:26px;color:#b07800}
+.lu-go{font-size:18px;padding:10px 34px;animation:luPop .45s 1s both cubic-bezier(.2,1.6,.4,1)}
+.lu-coin{position:fixed;z-index:80;pointer-events:none}
+.lu-coin .coin-dot{width:28px;height:28px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.2))}
+.lu-conf{position:absolute;top:50%;width:9px;height:14px;border-radius:2px;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.lu-rays,.lu-star,.lu-hero img{animation:none}}

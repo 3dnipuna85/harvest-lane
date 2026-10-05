@@ -6,6 +6,7 @@ import { now } from './clock';
 import { add, gainXP, goodXP, inv, mTime, sell } from './economy';
 import { emit } from './events';
 import { S } from './state';
+import { truckTick } from './trucks';
 
 let sellAcc = 0;
 
@@ -22,6 +23,7 @@ export function nextSale(): ItemId | undefined {
 /** Advance workshops and market sellers by dt seconds. */
 export function sim(dt: number) {
   const t = now();
+  truckTick(t);
   for (const k of MACHINE_IDS) {
     const m = S.machines[k], d = MACHINES[k];
     if (!m.owned) continue;

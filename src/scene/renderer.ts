@@ -6,6 +6,8 @@ import { fx } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
 import { initAnimals, updateAnimals } from './actors/animals';
 import { initDog, updateDog } from './actors/dog';
+import { initTruck, truckAngry, truckLeaving, truckPos, truckSay, updateTruck } from './actors/truck';
+import { chaChing, honk } from '../ui/sound';
 import { computeFull, resize } from './camera';
 import { ctx } from './context';
 import { resetFlyers, spawnFly, updateFlies } from './fx/flyers';
@@ -73,6 +75,7 @@ export function initScene() {
   initActors();
   initAnimals();
   initDog();
+  initTruck();
   syncPlots();
   syncBuildings();
 }
@@ -85,6 +88,7 @@ export function renderScene(dt: number, t: number) {
   updateActors(dt, t);
   updateAnimals(dt, t);
   updateDog(dt, t);
+  updateTruck(dt);
   updateDecor(dt, t);
   updatePlots(t, dt);
   updateBuildings(dt);
@@ -113,5 +117,25 @@ function bindSceneEvents() {
     sellerWave();
     const [sx, sy] = toScreen(new THREE.Vector3(CARTP.x, 2.2, CARTP.z));
     fx(sx, sy, '+' + fmt(coins), 'gold');
+  });
+  on('truckArrive', ({ who }) => {
+    truckLeaving(false);
+    truckSay('Beep beep! Order for ' + who + '!');
+    honk();
+  });
+  on('truckDone', ({ coins, tip }) => {
+    truckLeaving(true);
+    truckSay(tip ? 'Wow, that was fast! Here’s a tip!' : 'Thanks, see you next time!', 'happy');
+    chaChing();
+    const [sx, sy] = toScreen(truckPos());
+    fx(sx, sy, '+' + fmt(coins + tip) + ' coins' + (tip ? ' (tip!)' : ''), 'gold');
+  });
+  on('truckMissed', ({ coins }) => {
+    truckLeaving(false);
+    truckAngry();
+    truckSay('Too slow! I’m going somewhere else! 😠', 'angry', 3.5);
+    honk(true);
+    const [sx, sy] = toScreen(truckPos());
+    fx(sx, sy, 'Lost ' + fmt(coins) + ' coins', 'red');
   });
 }

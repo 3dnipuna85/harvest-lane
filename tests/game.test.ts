@@ -151,6 +151,43 @@ describe('profile stats', () => {
     expect(S.stats.orders).toBe(1);
     expect(S.stats.earned).toBe(o.coins);
     const { stats: _drop, ...old } = S;
-    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0 });
+    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0 });
+  });
+});
+
+describe('truck buyers', () => {
+  it('arrives on schedule, pays a tip when loaded early, and raises reputation', async () => {
+    const { truckTick, deliverTruck } = await import('../src/game/trucks');
+    truckTick(t);
+    expect(S.truck).toBeNull();
+    t = S.nextTruck;
+    truckTick(t);
+    const k = S.truck!;
+    expect(k).toBeTruthy();
+    expect(deliverTruck(t)).toBeNull();
+    for (const [i, q] of Object.entries(k.items)) S.inv[i as keyof typeof S.inv] = q;
+    const coins = S.coins, rep = S.rep;
+    const r = deliverTruck(t + 1000)!;
+    expect(r.tip).toBeGreaterThan(0);
+    expect(S.coins).toBe(coins + r.coins + r.tip);
+    expect(S.rep).toBeGreaterThan(rep);
+    expect(S.truck).toBeNull();
+    expect(S.stats.trucks).toBe(1);
+  });
+
+  it('leaves angry when time runs out, but not for time spent away from the game', async () => {
+    const { truckTick } = await import('../src/game/trucks');
+    const { on } = await import('../src/game/events');
+    let missed = 0;
+    const off = on('truckMissed', () => { missed++; });
+    t = S.nextTruck; truckTick(t);
+    t = S.truck!.end + 100; truckTick(t);
+    expect(missed).toBe(1);
+    expect(S.rep).toBe(2);
+    t = S.nextTruck; truckTick(t);
+    t = S.truck!.end + 3_600_000; truckTick(t);
+    expect(missed).toBe(1);
+    expect(S.rep).toBe(2);
+    off();
   });
 });

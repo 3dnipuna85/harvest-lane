@@ -4,7 +4,7 @@ import { plotCost, xpNeed } from '../game/economy';
 import { S } from '../game/state';
 import { markDirty } from './dirty';
 import { $, coinHTML, fmt } from './format';
-import { toast } from './toasts';
+import { celebrateLevel } from './levelup';
 
 export function bindHud() {
   on('earn', () => {
@@ -13,8 +13,8 @@ export function bindHud() {
     void p.offsetWidth;
     p.classList.add('bump');
   });
-  on('levelUp', ({ level, unlocked }) => {
-    toast('Level ' + level + '!' + (unlocked.length ? ' Unlocked: ' + unlocked.join(', ') : ''), 'lv');
+  on('levelUp', ({ level }) => {
+    celebrateLevel(level);
     markDirty();
   });
 }
