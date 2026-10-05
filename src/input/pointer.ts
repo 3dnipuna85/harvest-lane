@@ -9,6 +9,9 @@ import { FISH_SPOT } from '../scene/layout';
 import { ctx } from '../scene/context';
 import { $ } from '../ui/format';
 import { openOffice } from '../ui/office';
+import { inTown } from '../scene/mode';
+import { applyTownCam, setTownZoom, town, townView, type Place } from '../scene/town/town';
+import { goFarm, goTown, visitPlace } from '../ui/town';
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
@@ -19,8 +22,9 @@ function pick(cx: number, cy: number) {
   if (visiting) return;
   const r = ctx.cvs.getBoundingClientRect();
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -(((cy - r.top) / r.height) * 2 - 1));
-  ray.setFromCamera(ndc, ctx.camera);
-  const hits = ray.intersectObjects(ctx.pickables, true);
+  const away = inTown();
+  ray.setFromCamera(ndc, away ? town.camera : ctx.camera);
+  const hits = ray.intersectObjects(away ? town.pickables : ctx.pickables, true);
   for (const h of hits) {
     let o: THREE.Object3D | null = h.object;
     while (o && !o.userData.type) o = o.parent;
@@ -31,10 +35,13 @@ function pick(cx: number, cy: number) {
     if (u.type === 'bld') { openTab(u.id === 'barn' ? 'barn' : 'machines'); return; }
     if (u.type === 'cart') { openTab('helpers'); return; }
     if (u.type === 'animal') { tapAnimal(u.kind, u.i); $('hint').classList.add('gone'); save(); return; }
+    if (u.type === 'place') { visitPlace(u.k as Place); return; }
+    if (u.type === 'town') { goTown(); return; }
     if (u.type === 'land') { buyLand(); save(); return; }
     if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'truck') { if (!loadTruck(cx, cy)) openTab('orders'); save(); return; }
   }
+  if (away) return;
   // With a line in the water, a tap anywhere else reels in, so a bite is never lost to a near miss.
   if (isFishing() && line.state !== 'idle') tapWater();
 }
@@ -51,24 +58,30 @@ export function bindInput() {
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (touches.size === 2) {
       const [a, b] = [...touches.values()];
-      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: getZoom() };
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: inTown() ? townView.Z : getZoom() };
       pd = null;
       return;
     }
-    pd = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, drag: false };
+    pd = inTown() ? { x: e.clientX, y: e.clientY, px: townView.px, py: townView.py, drag: false } : { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, drag: false };
   });
-  cvs.addEventListener('wheel', e => { e.preventDefault(); setZoom(getZoom() * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); }, { passive: false });
+  const zoomBy = (f: number) => (inTown() ? setTownZoom(townView.Z * f) : setZoom(getZoom() * f));
+  cvs.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1); }, { passive: false });
   addEventListener('pointermove', e => {
     if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && touches.size === 2) {
       const [a, b] = [...touches.values()];
-      setZoom((pinch.z * Math.hypot(a.x - b.x, a.y - b.y)) / Math.max(1, pinch.d));
+      const z = (pinch.z * Math.hypot(a.x - b.x, a.y - b.y)) / Math.max(1, pinch.d);
+      if (inTown()) setTownZoom(z); else setZoom(z);
       return;
     }
     if (!pd) return;
     const dx = e.clientX - pd.x, dy = e.clientY - pd.y;
     if (!pd.drag && Math.hypot(dx, dy) > 8) pd.drag = true;
-    if (pd.drag) {
+    if (pd.drag && inTown()) {
+      townView.px = pd.px - dx * ((2 * townView.hw) / ctx.CW);
+      townView.py = pd.py + dy * ((2 * townView.hh) / ctx.CH);
+      applyTownCam();
+    } else if (pd.drag) {
       pan.x = pd.px - dx * ((2 * view.hw) / ctx.CW);
       pan.y = pd.py + dy * ((2 * view.hh) / ctx.CH);
       applyCam();
@@ -89,7 +102,14 @@ export function bindInput() {
     const el = e.target as HTMLElement;
     if (el.closest('.fishsign')) { tapWater(); save(); }
     else if (el.closest('.lbl.land')) { buyLand(); save(); }
+    else {
+      const sign = el.closest('.lbl.townsign');
+      const k = sign && [...sign.classList].find(c => c.startsWith('p-'))?.slice(2);
+      if (k === 'town') goTown();
+      else if (k === 'farm') goFarm();
+      else if (k) visitPlace(k as Place);
+    }
   });
-  $('zin').addEventListener('click', () => setZoom(getZoom() * 1.2));
-  $('zout').addEventListener('click', () => setZoom(getZoom() / 1.2));
+  $('zin').addEventListener('click', () => zoomBy(1.2));
+  $('zout').addEventListener('click', () => zoomBy(1 / 1.2));
 }

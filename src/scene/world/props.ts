@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { S } from '../../game/state';
 import { ctx } from '../context';
-import { Cap, Cyl, RB, Sph, part } from '../geometry';
+import { Cap, Cone, Cyl, RB, Sph, part } from '../geometry';
+import { lbl } from '../fx/labels';
 import { CARTP, DOCK, GW, PEN, ROADZ } from '../layout';
 import { T, olMat, toonGrad } from '../materials';
 import { groundTexture } from './ground';
 
-function tree(g: THREE.Object3D, x: number, z: number, s: number, fruit?: string) {
+export function tree(g: THREE.Object3D, x: number, z: number, s: number, fruit?: string) {
   const t = new THREE.Group();
   t.position.set(x, 0, z); t.scale.setScalar(s); g.add(t);
   part(Cap(0.18, 0.7), '#9a6438', t, 0, 0.5, 0);
@@ -18,7 +19,7 @@ function tree(g: THREE.Object3D, x: number, z: number, s: number, fruit?: string
   return t;
 }
 
-function bush(g: THREE.Object3D, x: number, z: number, s: number) {
+export function bush(g: THREE.Object3D, x: number, z: number, s: number) {
   const b = new THREE.Group();
   b.position.set(x, 0, z); b.scale.setScalar(s); g.add(b);
   part(Sph(0.42), '#4fae3d', b, 0, 0.3, 0);
@@ -100,6 +101,22 @@ export function buildCart() {
   cartG = g;
 }
 
+/** Where the road leaves for Market Town: a signpost pointing west. Tapping it drives there. */
+const TOWN_SIGN = { x: -16.6, z: ROADZ - 1.5 };
+export function buildTownSign() {
+  const g = new THREE.Group();
+  g.position.set(TOWN_SIGN.x, 0, TOWN_SIGN.z);
+  part(Cap(0.08, 1.4), '#9a6438', g, 0, 0.75, 0, { ol: 0.015 });
+  const board = part(RB(1.3, 0.38, 0.09, 0.05), '#e6b56c', g, -0.25, 1.3, 0.05);
+  part(Cone(0.24, 0.3, 4), '#e6b56c', board, -0.78, 0, 0, { r: [0, 0, Math.PI / 2], s: [1, 1, 0.3] });
+  part(RB(1.0, 0.3, 0.09, 0.05), '#c98f55', g, 0.15, 0.85, 0.05);
+  g.userData.type = 'town';
+  ctx.scene.add(g);
+  ctx.pickables.push(g);
+}
+
+const tmpS = new THREE.Vector3();
 export function updateCart() {
   cartG.visible = S.level >= 3 || S.sellers > 0;
+  lbl('townsign', '<b>Market Town</b><span>Animals · shops</span>', tmpS.set(TOWN_SIGN.x, 2.2, TOWN_SIGN.z), 'townsign p-town');
 }

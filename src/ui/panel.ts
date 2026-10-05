@@ -7,12 +7,14 @@ import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../ga
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
-import { animalCost, animalState, animalUnlocked } from '../game/animals';
+import { animalState, animalUnlocked } from '../game/animals';
 import { save, S, type Order, type Tab } from '../game/state';
 import * as act from './actions';
 import { charImg, customerFace, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
-import { closeOffice, officeOpen, toggleOffice } from './office';
+import { closeOffice, officeOpen, officePlace, toggleOffice } from './office';
+import { renderTownDock, townAction, townPanel, townSignature, updateTownPanel } from './town';
+import { maxAnimals } from '../game/town';
 import { hire as hireStaffUI, hms, staffCards } from './staff';
 import { timeLeft, wagePerHour, type StaffId } from '../game/staff';
 
@@ -22,7 +24,9 @@ let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function renderTabs() {
   $('tabs').innerHTML = TABS.map(([k, n, ic]) =>
-    `<button class="tab ${officeOpen() && S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}" aria-label="${n}">${uiImg(ic, 'tab-ic')}<span class="tab-name">${n}</span><span class="badge" data-badge="${k}" hidden></span></button>`).join('');
+    `<button class="tab ${officeOpen() && !officePlace() && S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}" aria-label="${n}">${uiImg(ic, 'tab-ic')}<span class="tab-name">${n}</span><span class="badge" data-badge="${k}" hidden></span></button>`).join('')
+    + `<button class="tab towntab" data-act="town" aria-label="Market Town">${uiImg('nav-map', 'tab-ic')}<span class="tab-name">Town</span></button>`;
+  renderTownDock();
 }
 
 function itemRow(k: ItemId) {
@@ -36,6 +40,8 @@ function itemRow(k: ItemId) {
 
 /** Changes whenever the panel's structure (not just its numbers) needs rebuilding. */
 export function panelSignature() {
+  const pl = officePlace();
+  if (pl) return 'town|' + townSignature(pl);
   const parts: unknown[] = [S.tab, S.level];
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
@@ -66,6 +72,8 @@ function machineCard(k: MachineId) {
 
 export function renderPanel() {
   let h = '';
+  const pl = officePlace();
+  if (pl) { $('panel').innerHTML = townPanel(pl); return; }
   if (S.tab === 'orders') {
     h = '<div class="list">' + truckCard() + S.orders.map((o, i) => `
       <div class="card"><div class="top"><div class="big">${customerFace(o.who)}</div><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
@@ -84,7 +92,8 @@ export function renderPanel() {
   if (S.tab === 'animals') h = `<div class="list">
       <div class="row tend"><span class="small grow">Tap an animal on the farm to feed it, then tap again to collect.</span>
       <button class="btn gold" data-act="tend" data-check="tend">Feed and collect all</button></div>
-      ${ANIMAL_IDS.map(animalCard).join('')}</div>`;
+      ${ANIMAL_IDS.map(animalCard).join('')}
+      <div class="row"><span class="small grow">Want more animals or bigger pens? They’re sold at the Animal Market in town.</span><button class="btn alt" data-act="goMarket">${uiImg('nav-map', 'ic-inline')} Go to the Market</button></div></div>`;
   if (S.tab === 'helpers') {
     const fhLock = S.level < 2, slLock = S.level < 3;
     h = `<div class="list">
@@ -138,10 +147,8 @@ function animalCard(k: AnimalId) {
   if (!animalUnlocked(k)) {
     return `<div class="card lockedcard"><div class="top"><div class="big animal-ic">${a.icon}</div><div class="grow"><div class="ttl">${a.plural}</div><div class="sub">${what}</div></div><span class="small">Unlocks at Lv ${a.lvl}</span></div></div>`;
   }
-  const buy = h.n >= a.max ? '<span class="small">Full</span>'
-    : `<button class="btn gold" data-act="buyA" data-k="${k}" data-check="cost:${animalCost(k)}">Buy ${coinHTML}${fmt(animalCost(k))}</button>`;
-  return `<div class="card"><div class="top"><div class="big animal-ic">${a.icon}</div><div class="grow"><div class="ttl">${a.plural} <span class="small">${h.n}/${a.max}</span></div>
-    <div class="sub">${what}</div><div class="sub" data-astat="${k}"></div></div>${buy}</div></div>`;
+  return `<div class="card"><div class="top"><div class="big animal-ic">${a.icon}</div><div class="grow"><div class="ttl">${a.plural} <span class="small">${h.n}/${maxAnimals(k)}</span></div>
+    <div class="sub">${what}</div><div class="sub" data-astat="${k}"></div></div></div></div>`;
 }
 
 function setBadge(k: Tab, n: number) {
@@ -154,6 +161,7 @@ function setBadge(k: Tab, n: number) {
 /** Per-frame value updates for whatever the panel currently shows. */
 export function updatePanel() {
   const t = now();
+  updateTownPanel();
   document.querySelectorAll<HTMLElement>('[data-staffleft]').forEach(e => { e.textContent = 'On duty · ' + hms(timeLeft(e.dataset.staffleft as StaffId, t)) + ' left'; });
   document.querySelectorAll<HTMLElement>('[data-count]').forEach(e => { e.textContent = String(inv(e.dataset.count as ItemId)); });
   document.querySelectorAll<HTMLElement>('[data-need]').forEach(e => {
@@ -215,6 +223,7 @@ export function bindPanelInput() {
     if (!b || (b as HTMLButtonElement).disabled) return;
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
+    if (townAction(a!, k)) { save(); return; }
     if (a === 'seed') S.sel = k as CropId;
     else if (a === 'expand') { if (S.plots.length >= MAX_PLOTS) act.buyLand(); else act.buyPlot(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);

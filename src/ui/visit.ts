@@ -4,6 +4,7 @@ import { migrate, save, setState, setVisiting, S, visiting, type State } from '.
 import { initScene } from '../scene/renderer';
 import { markDirty } from './dirty';
 import { closeOffice } from './office';
+import { inTown, leaveTown } from '../scene/mode';
 
 /** Look around a friend's farm: their saved copy is shown read-only, then the player's own farm comes back untouched. */
 
@@ -15,6 +16,7 @@ export function visitFarm(raw: string, name: string, level: number) {
   try { friend = migrate(JSON.parse(raw)); } catch { return false; }
   if (!visiting) { save(); home = S; }
   closeOffice();
+  if (inTown()) { leaveTown(); document.body.classList.remove('in-town'); }
   // A friend's buyer can't be served from here, and their line isn't in the water.
   friend.truck = null;
   setState(friend);

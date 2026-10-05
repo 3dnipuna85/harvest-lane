@@ -3,6 +3,7 @@ import { now } from './clock';
 import { add, gainXP, inv, type BuyResult } from './economy';
 import { emit } from './events';
 import { S } from './state';
+import { maxAnimals } from './town';
 
 export const animalUnlocked = (k: AnimalId) => S.level >= ANIMALS[k].lvl;
 export const animalCost = (k: AnimalId) => Math.round(ANIMALS[k].cost * Math.pow(1.6, Math.max(0, S.animals[k].n - ANIMALS[k].start)));
@@ -65,7 +66,7 @@ export function tendAll(t = now()) {
 export function buyAnimal(k: AnimalId): BuyResult {
   const h = S.animals[k], c = animalCost(k);
   if (!animalUnlocked(k)) return { ok: false, reason: 'locked' };
-  if (h.n >= ANIMALS[k].max) return { ok: false, reason: 'max' };
+  if (h.n >= maxAnimals(k)) return { ok: false, reason: 'max' };
   if (S.coins < c) return { ok: false, reason: 'coins', cost: c };
   S.coins -= c;
   h.n++;

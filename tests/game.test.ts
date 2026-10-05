@@ -151,7 +151,7 @@ describe('profile stats', () => {
     expect(S.stats.orders).toBe(1);
     expect(S.stats.earned).toBe(o.coins);
     const { stats: _drop, ...old } = S;
-    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0 });
+    expect(migrate(JSON.parse(JSON.stringify(old))).stats).toEqual({ earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0 });
   });
 });
 
@@ -343,5 +343,54 @@ describe('fisherman', () => {
     const sum = st.catchUp(t, t + 10 * 60_000);
     expect(sum.fish).toBeGreaterThanOrEqual(38);
     expect((S.inv.fish || 0) + (S.inv.crab || 0) + (S.inv.goldfish || 0)).toBe(sum.fish);
+  });
+});
+
+describe('market town', () => {
+  it('sells bigger pens up to the max', async () => {
+    const tw = await import('../src/game/town');
+    const an = await import('../src/game/animals');
+    S.coins = 1_000_000; S.level = 10;
+    expect(tw.maxAnimals('hen')).toBe(6);
+    for (let i = 0; i < tw.MAX_PEN; i++) expect(tw.buyPen().ok).toBe(true);
+    expect(tw.buyPen().ok).toBe(false);
+    expect(tw.maxAnimals('hen')).toBe(6 + tw.MAX_PEN * tw.PEN_STEP);
+    while (an.buyAnimal('hen').ok);
+    expect(S.animals.hen.n).toBe(tw.maxAnimals('hen'));
+    // a bigger herd survives a save and load
+    expect(migrate(JSON.parse(JSON.stringify(S))).animals.hen.n).toBe(12);
+  });
+
+  it('fertilizer makes new crops ripen sooner', async () => {
+    const tw = await import('../src/game/town');
+    S.coins = 1000;
+    expect(tw.buyBoost(t).ok).toBe(true);
+    plant(3, 'wheat');
+    t += 6000 * 0.76;
+    expect(ripe(S.plots[3])).toBe(true);
+    t += tw.BOOST_MIN * 60_000;
+    plant(4, 'wheat');
+    t += 6000 * 0.76;
+    expect(ripe(S.plots[4])).toBe(false);
+  });
+
+  it('needs level 8 and 25,000 coins for a shop; the shopkeeper sells at town prices but keeps what trucks want', async () => {
+    const tw = await import('../src/game/town');
+    const st = await import('../src/game/staff');
+    S.coins = 30000; S.level = 7;
+    expect(tw.buyShop().ok).toBe(false);
+    S.level = 8;
+    expect(st.hireStaff('shopkeeper', 1, t).ok).toBe(false);
+    expect(tw.buyShop().ok).toBe(true);
+    expect(S.coins).toBe(5000);
+    expect(st.hireStaff('shopkeeper', 1, t).ok).toBe(true);
+    S.inv = { bread: 3, egg: 2 };
+    S.nextWants = { bread: 2 };
+    const coins = S.coins;
+    const sum = st.catchUp(t, t + 60_000);
+    expect(S.inv.bread).toBe(2);
+    expect(S.inv.egg || 0).toBe(0);
+    expect(sum.shop).toBe(S.coins - coins);
+    expect(sum.shop).toBeGreaterThan(0);
   });
 });

@@ -5,8 +5,14 @@ import { ctx } from '../context';
 interface Label extends HTMLDivElement { _h: string | null; _c: string | null; _used: boolean }
 const LBL = new Map<string, Label>();
 const tmpV = new THREE.Vector3();
+/** While in Market Town the farm keeps running but its labels stay hidden, and labels project with the town camera. */
+let muted = false;
+let cam: THREE.Camera | null = null;
+export function muteLabels(on: boolean) { muted = on; }
+export function labelCamera(c: THREE.Camera | null) { cam = c; }
 
 export function lbl(key: string, html: string, wpos: THREE.Vector3, cls = '') {
+  if (muted) return;
   let e = LBL.get(key);
   if (!e) {
     e = document.createElement('div') as Label;
@@ -16,7 +22,7 @@ export function lbl(key: string, html: string, wpos: THREE.Vector3, cls = '') {
   }
   if (e._c !== cls) { e.className = 'lbl ' + cls; e._c = cls; }
   if (e._h !== html) { e.innerHTML = html; e._h = html; }
-  tmpV.copy(wpos).project(ctx.camera);
+  tmpV.copy(wpos).project(cam || ctx.camera);
   e.style.transform = `translate(${(((tmpV.x + 1) / 2) * ctx.CW).toFixed(1)}px,${(((1 - tmpV.y) / 2) * ctx.CH).toFixed(1)}px) translate(-50%,-50%)`;
   e._used = true;
   e.hidden = false;
@@ -30,6 +36,6 @@ export function clearLabels() { for (const e of LBL.values()) e.remove(); LBL.cl
 export function toScreen(v: THREE.Vector3): [number, number] {
   if (!ctx.ok3d) return [innerWidth / 2, innerHeight / 2];
   const r = ctx.cvs.getBoundingClientRect();
-  tmpV.copy(v).project(ctx.camera);
+  tmpV.copy(v).project(cam || ctx.camera);
   return [r.left + ((tmpV.x + 1) / 2) * r.width, r.top + ((1 - tmpV.y) / 2) * r.height];
 }

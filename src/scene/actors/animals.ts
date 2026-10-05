@@ -25,7 +25,7 @@ function tag<V extends { g: THREE.Group }>(w: Wanderer<V>) {
   return w;
 }
 
-function buildChicken(): ChickenView {
+export function buildChicken(): ChickenView {
   const g = new THREE.Group();
   part(Sph(0.24), '#fffdf7', g, 0, 0.32, 0, { s: [1, 0.95, 1.1], ol: 0.022 });
   part(Sph(0.12), '#fffdf7', g, 0, 0.42, -0.24, { s: [0.8, 1.2, 0.7], r: [-0.5, 0, 0], ol: 0.018 });
@@ -69,7 +69,7 @@ function updateChicken(h: Wanderer<ChickenView>, dt: number) {
   h.v.legs[0].rotation.x = sw; h.v.legs[1].rotation.x = -sw;
 }
 
-function buildCow(): CowView {
+export function buildCow(): CowView {
   const g = new THREE.Group();
   const body = part(Cap(0.36, 0.55), '#ffffff', g, 0, 0.66, 0, { r: [Math.PI / 2, 0, 0], ol: 0.028 });
   for (const [x, y, z, s] of [[0.3, 0.15, 0.1, 0.17], [-0.28, 0.05, -0.2, 0.2], [0.12, -0.15, 0.3, 0.14], [-0.2, 0.25, 0.25, 0.13]]) {
@@ -103,7 +103,7 @@ function buildCow(): CowView {
 }
 
 /** A round pink pig for the pen, rigged like the cows so it shares their wandering. */
-function buildPig(): CowView {
+export function buildPig(): CowView {
   const g = new THREE.Group(), pink = '#ffb3bf', dark = '#e98a9a';
   part(Sph(0.36), pink, g, 0, 0.45, 0, { s: [0.95, 0.85, 1.25], ol: 0.024 });
   const legs: THREE.Group[] = [];
@@ -131,7 +131,7 @@ function buildPig(): CowView {
 }
 
 /** A fluffy sheep: a cloud of wool puffs with a dark face and legs. */
-function buildSheep(): CowView {
+export function buildSheep(): CowView {
   const g = new THREE.Group(), wool = '#fbf8f1', dark = '#3b3330';
   const body = new THREE.Group(); body.position.y = 0.55; g.add(body);
   for (const [x, y, z, r] of [[0, 0, 0, 0.36], [0.2, 0.1, 0.2, 0.22], [-0.2, 0.1, 0.2, 0.22], [0.2, 0.1, -0.22, 0.22], [-0.2, 0.1, -0.22, 0.22], [0, 0.22, 0, 0.24], [0, 0.05, 0.32, 0.2], [0, 0.05, -0.34, 0.2]]) {
@@ -189,7 +189,7 @@ function updateCow(c: Wanderer<CowView>, dt: number, t: number) {
 const BUILD: Record<Exclude<AnimalId, 'hen'>, () => CowView> = { cow: buildCow, pig: buildPig, sheep: buildSheep };
 
 function addHen(i: number) {
-  const x = -5 + i * 3;
+  const x = -5 + (i % 6) * 3 + (i >= 6 ? 1.5 : 0);
   chickens.push(tag({ x, z: ROADZ + ((i % 3) - 1) * 0.3, tx: x, tz: ROADZ, face: 0, t: Math.random() * 3, phase: 0, v: buildChicken(), kind: 'hen', i }));
 }
 

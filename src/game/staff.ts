@@ -5,6 +5,7 @@ import { clock, now } from './clock';
 import { harvest, inv, plant, ripe, sell } from './economy';
 import { emit, muteEvents } from './events';
 import { landCatch } from './fishing';
+import { SHOP_EVERY_MS, shopSale } from './town';
 import { S } from './state';
 import { canFillTruck, deliverTruck } from './trucks';
 
@@ -13,12 +14,13 @@ import { canFillTruck, deliverTruck } from './trucks';
  * keeper feeds the animals and collects what they make. Both keep working while the game is closed, until their
  * contract runs out (see catchUp).
  */
-export type StaffId = 'manager' | 'keeper' | 'fisher';
+export type StaffId = 'manager' | 'keeper' | 'fisher' | 'shopkeeper';
 export interface StaffDef { name: string; lvl: number; perHour: (level: number) => number; job: string }
 
 export const STAFF: Record<StaffId, StaffDef> = {
   manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops, loads trucks so you never lose a buyer, keeps your animal keeper re-hired, and sells spare crops to pay your helpers’ wages. Works while you’re away too.' },
   fisher: { name: 'Fisherman', lvl: 3, perHour: l => 24 + 7 * l, job: 'Fishes from the rowboat and brings in a catch every 15 seconds: fish, crabs and now and then a golden fish. Works while you’re away too.' },
+  shopkeeper: { name: 'Shopkeeper', lvl: 8, perHour: l => 50 + 12 * l, job: 'Runs your shop in Market Town, selling your goods and animal products for 50% more than the farm gate. Works while you’re away too.' },
   keeper: { name: 'Animal keeper', lvl: 4, perHour: l => 30 + 9 * l, job: 'Feeds your animals and collects eggs, milk, truffles and wool, even while you’re away.' },
 };
 export const STAFF_IDS = Object.keys(STAFF) as StaffId[];
@@ -38,6 +40,7 @@ const TRUCK_DELAY_MS = 6000;
 /** The fisherman lands one catch this often. */
 const FISHER_EVERY_MS = 15000;
 let fishAt = 0;
+let shopAt = 0;
 
 export const onDuty = (k: StaffId, t = now()) => (S.staff[k] || 0) > t;
 export const timeLeft = (k: StaffId, t = now()) => Math.max(0, (S.staff[k] || 0) - t);
@@ -60,11 +63,12 @@ export function neededCrop(): CropId | null {
   return null;
 }
 
-export type HireResult = { ok: true; until: number } | { ok: false; reason: 'locked' | 'coins'; cost?: number };
+export type HireResult = { ok: true; until: number } | { ok: false; reason: 'locked' | 'coins' | 'noshop'; cost?: number };
 
 /** Hire (or extend) a contract for h hours, paid up front. */
 export function hireStaff(k: StaffId, h: number, t = now()): HireResult {
   if (S.level < STAFF[k].lvl) return { ok: false, reason: 'locked' };
+  if (k === 'shopkeeper' && !S.town.shop) return { ok: false, reason: 'noshop' };
   const c = termCost(k, h);
   if (S.coins < c) return { ok: false, reason: 'coins', cost: c };
   S.coins -= c;
@@ -75,7 +79,7 @@ export function hireStaff(k: StaffId, h: number, t = now()): HireResult {
 
 /** One round of staff work at time t. `patient` gives the player first go at ripe crops and trucks. */
 export function staffWork(t = now(), patient = true) {
-  const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0, fish: 0 };
+  const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0, fish: 0, shop: 0 };
   if (onDuty('manager', t)) {
     // While the game is open the manager walks the field himself (scene/actors/ai.ts); this instant version is for
     // time away, replayed by catchUp.
@@ -108,6 +112,10 @@ export function staffWork(t = now(), patient = true) {
       }
     }
   }
+  if (onDuty('shopkeeper', t) && S.town.shop) {
+    if (!shopAt || shopAt > t) shopAt = t;
+    while (t - shopAt >= SHOP_EVERY_MS) { shopAt += SHOP_EVERY_MS; const c = shopSale(); if (c) { done.shop += c; } }
+  } else shopAt = 0;
   if (onDuty('fisher', t)) {
     if (!fishAt || fishAt > t) fishAt = t;
     while (t - fishAt >= FISHER_EVERY_MS) { fishAt += FISHER_EVERY_MS; landCatch(); done.fish++; }
@@ -131,8 +139,8 @@ export function staffTick(t = now()) {
  * and run their rounds, quietly. Returns totals for a welcome-back note.
  */
 export function catchUp(from: number, to = now()) {
-  const sum = { crops: 0, products: 0, trucks: 0, seeds: 0, fish: 0 };
-  const end = Math.min(to, Math.max(S.staff.manager || 0, S.staff.keeper || 0, S.staff.fisher || 0));
+  const sum = { crops: 0, products: 0, trucks: 0, seeds: 0, fish: 0, shop: 0 };
+  const end = Math.min(to, Math.max(S.staff.manager || 0, S.staff.keeper || 0, S.staff.fisher || 0, S.staff.shopkeeper || 0));
   if (end <= from) return sum;
   const real = clock.now;
   const step = Math.max(5000, (end - from) / 20000);
@@ -141,7 +149,7 @@ export function catchUp(from: number, to = now()) {
     for (let t = from; t <= end; t += step) {
       clock.now = () => t;
       const d = staffWork(t, false);
-      sum.crops += d.crops; sum.products += d.products; sum.seeds += d.seeds; sum.fish += d.fish;
+      sum.crops += d.crops; sum.products += d.products; sum.seeds += d.seeds; sum.fish += d.fish; sum.shop += d.shop;
     }
   } finally { clock.now = real; muteEvents(false); }
   return sum;

@@ -463,3 +463,27 @@ body.visiting .dock,body.visiting #coinPill,body.visiting #truckPill,body.visiti
 .staffcard .term .coin-dot{width:13px;height:13px}
 .onduty{display:inline-block;margin-left:4px;padding:2px 8px;border-radius:9px;background:#dff3d0;color:#2f6d22;font-size:11.5px;font-weight:900}
 .lbl.stafftag{font-size:11px;background:#eef3ff;border:2px solid #34466e;color:#22325a}
+
+/* ---------- Market Town ---------- */
+.towndock{display:none}
+body.in-town .dock:not(.towndock),body.in-town #fishBtn,body.in-town .hint{display:none}
+body.in-town .towndock{display:flex;gap:6px;left:50%;right:auto;transform:translateX(-50%);flex-wrap:nowrap}
+body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
+.towndock .tab:first-child{background:linear-gradient(#bfe89a,#7cc94f);color:#2f5d1c}
+.dock .towntab{background:linear-gradient(#d9f0ff,#9fd3f2);color:#1f5675}
+.lbl.townsign{flex-direction:column;gap:1px;pointer-events:auto;cursor:pointer;font-size:11px;padding:4px 10px;background:#fff6e2;border:2px solid #9a6b35;color:#7a5a34}
+.lbl.townsign b{font-family:var(--display);font-weight:400;font-size:14px;color:#7a3b10;letter-spacing:.2px}
+.lbl.townsign .r{display:flex;align-items:center;gap:4px}
+.lbl.townsign.forsale{background:#fff3b0;border-color:#c98a2e}
+.lbl.townsign.home{background:#eaf7dd;border-color:#3f8f2f}
+.lbl.townsign.home b{color:#2f6d22}
+.townintro{font-size:12.5px;font-weight:800;color:#7a5a34;padding:2px 4px}
+.travel{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(116,192,67,.96);animation:travelin .3s ease-out}
+.travel.out{animation:travelout .35s ease-in forwards}
+.travel .trip{display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;font-family:var(--display);font-size:22px;text-shadow:0 2px 0 #3f7a22}
+.travel .trip b{font-weight:400}
+.trip-truck{font-size:56px;animation:drive .65s ease-in-out infinite alternate}
+@keyframes travelin{from{opacity:0}}
+@keyframes travelout{to{opacity:0}}
+@keyframes drive{from{transform:translateX(-30px) rotate(-2deg)}to{transform:translateX(30px) rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.travel,.trip-truck{animation:none!important}}

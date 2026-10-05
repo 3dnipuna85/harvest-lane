@@ -77,7 +77,7 @@ async function fillList(list: HTMLElement) {
       if (c.snap && visitFarm(c.snap, c.name, c.level)) closeFriends();
     }));
   } catch (e) {
-    list.innerHTML = `<p class="fr-empty">${denied(e) ? 'Friends need a one-time switch in the game’s Firebase settings. Ask the farm owner to update the Firestore rules.' : 'Couldn’t load your friends. Check your connection and try again.'}</p>`;
+    list.innerHTML = `<p class="fr-empty">${denied(e) ? 'The friends list is opening soon. Your invite link already works: friends who use it will show up here.' : 'Couldn’t load your friends. Check your connection and try again.'}</p>`;
   }
 }
 

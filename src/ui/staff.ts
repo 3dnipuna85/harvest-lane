@@ -8,15 +8,16 @@ import { shakeScene, toast } from './toasts';
 
 /** Helpers-tab cards and messages for the paid farm manager and animal keeper. */
 
-const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma', fisher: 'boy-head' };
+const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma', fisher: 'boy-head', shopkeeper: 'baker' };
 
 export const hms = (ms: number) => {
   const m = Math.ceil(ms / 60000), h = Math.floor(m / 60);
   return h ? `${h}h ${m % 60}m` : `${m}m`;
 };
 
-export function awayNote(d: { crops: number; products: number; seeds: number; fish?: number }) {
+export function awayNote(d: { crops: number; products: number; seeds: number; fish?: number; shop?: number }) {
   const bits = [];
+  if (d.shop) bits.push(`sold ${fmt(d.shop)} coins of goods at your shop`);
   if (d.fish) bits.push(`caught ${fmt(d.fish)} fish`);
   if (d.crops) bits.push(`harvested ${fmt(d.crops)} crops`);
   if (d.products) bits.push(`collected ${fmt(d.products)} animal goods`);
@@ -33,16 +34,18 @@ export function staffCard(k: StaffId) {
     <div class="row terms">${buttons}</div></div>`;
 }
 
-export function staffCards() { return STAFF_IDS.map(staffCard).join(''); }
+/** Helpers tab: every paid staff member, except the shopkeeper until there is a shop to keep. */
+export function staffCards() { return STAFF_IDS.filter(k => k !== 'shopkeeper' || S.town.shop).map(staffCard).join(''); }
 
 export function hire(k: StaffId, h: number) {
   const r = hireStaff(k, h);
   if (r.ok) toast(`${STAFF[k].name} is on duty for ${hms(timeLeft(k))}.`);
   else if (r.reason === 'coins') { toast(`You need ${fmt(r.cost!)} coins for that contract.`); shakeScene(); }
+  else if (r.reason === 'noshop') toast('Buy your shop in Market Town first.');
   markDirty();
 }
 
-on('staffEnding', ({ k, left }) => toast(`Your ${STAFF[k].name.toLowerCase()}’s contract ends in ${hms(left)}. Extend it in Helpers.`));
+on('staffEnding', ({ k, left }) => toast(`Your ${STAFF[k].name.toLowerCase()}’s contract ends in ${hms(left)}. Extend it in ${k === 'shopkeeper' ? 'Helpers or at your shop' : 'Helpers'}.`));
 on('staffEnded', ({ k }) => { toast(`Your ${STAFF[k].name.toLowerCase()}’s contract has ended.`); markDirty(); });
 on('wagesUnpaid', () => toast('Your farmhands and sellers stopped working: there are no coins for their wages.'));
 on('wagesPaid', () => toast('Wages paid. Your helpers are back at work.'));

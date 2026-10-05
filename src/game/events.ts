@@ -19,10 +19,11 @@ export interface GameEvents {
   /** The fish got away: reeled in too early, or too late after the bite. */
   fishMissed: { early: boolean };
   landBought: { k: number };
-  staffEnding: { k: 'manager' | 'keeper' | 'fisher'; left: number };
+  shopSale: { item: ItemId; coins: number };
+  staffEnding: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper'; left: number };
   wagesUnpaid: Record<string, never>;
   wagesPaid: Record<string, never>;
-  staffEnded: { k: 'manager' | 'keeper' | 'fisher' };
+  staffEnded: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' };
   truckArrive: { who: string };
   truckDone: { who: string; coins: number; tip: number; items: ItemId[] };
   truckMissed: { who: string; coins: number };

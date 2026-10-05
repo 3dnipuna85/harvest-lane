@@ -48,7 +48,8 @@ export function plant(i: number, crop: CropId = S.sel): boolean {
   if (!p || S.coins < c.seed) return false;
   S.coins -= c.seed;
   p.crop = crop;
-  p.at = now();
+  // Fertilizer from the town store: planting while it lasts gives the crop a head start.
+  p.at = now() - (S.boost > now() ? CROPS[crop].time * 1000 * 0.25 : 0);
   emit('plant', { i, crop });
   return true;
 }

@@ -20,6 +20,8 @@ import { bindHud, updateHud } from './ui/hud';
 import { bindPanelInput, panelSignature, renderPanel, renderTabs, updatePanel } from './ui/panel';
 import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
+import { officeOpen, officePlace } from './ui/office';
+import { inTown } from './scene/mode';
 import { bindGuide } from './ui/guide';
 import { catchUp } from './game/staff';
 import { awayNote } from './ui/staff';
@@ -32,7 +34,7 @@ function frame(ts: number) {
   if (!visiting) sim(dt);
   renderScene(dt, ts / 1000);
   const dirty = takeDirty();
-  const ss = S.sel + S.level + S.tab;
+  const ss = S.sel + S.level + S.tab + officeOpen() + officePlace() + inTown();
   if (ss !== seedSig || dirty) { renderSeeds(); renderTabs(); seedSig = ss; }
   const ps = panelSignature();
   if (ps !== panelSig || dirty) { renderPanel(); panelSig = ps; }
@@ -50,8 +52,9 @@ function start() {
   bindPanelInput();
   bindGuide(S.level <= 2 && S.stats.harvested < 5);
   // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.
-  const dock = document.querySelector<HTMLElement>('.dock')!;
-  new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px')).observe(dock);
+  const docks = [...document.querySelectorAll<HTMLElement>('.dock')];
+  const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', Math.max(...docks.map(d => d.offsetHeight)) + 'px'));
+  docks.forEach(d => ro.observe(d));
   const has3D = setup3D($('sceneWrap'), $('overlay'));
   if (has3D) {
     bindInput();
@@ -61,7 +64,7 @@ function start() {
   // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
   initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled && !('claude' in globalThis)) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
-  if (staffAway.crops || staffAway.products || staffAway.fish) toast(awayNote(staffAway));
+  if (staffAway.crops || staffAway.products || staffAway.fish || staffAway.shop) toast(awayNote(staffAway));
   else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   setInterval(() => { save(); syncCloud(); }, 5000);
   // A hidden tab stops drawing frames, so replay the staff's work for that time when it comes back.
@@ -71,7 +74,7 @@ function start() {
     if (hiddenAt && !visiting) {
       const d = catchUp(hiddenAt);
       hiddenAt = 0;
-      if (d.crops || d.products || d.fish) toast(awayNote(d));
+      if (d.crops || d.products || d.fish || d.shop) toast(awayNote(d));
     }
   });
   addEventListener('pagehide', () => { save(); syncCloud(true); });

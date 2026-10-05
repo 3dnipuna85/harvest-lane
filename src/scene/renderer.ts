@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { on } from '../game/events';
+import { on as onAny } from '../game/events';
 import { iconHTML } from '../ui/art';
 import { fmt } from '../ui/format';
 import { fx } from '../ui/toasts';
@@ -25,7 +25,10 @@ import { CARTP, barnDoor, plotPos } from './layout';
 import { buildBarn, updateBarn } from './world/barn';
 import { initPlots, syncPlots, updatePlots } from './world/plots';
 import { buildDecor, updateDecor } from './world/decor';
-import { buildCart, buildWorld, updateCart } from './world/props';
+import { buildCart, buildTownSign, buildWorld, updateCart } from './world/props';
+import { applyTownCam, shopPos, town, updateTown } from './town/town';
+import { inTown } from './mode';
+import { muteLabels } from './fx/labels';
 import { initWorkshops, syncBuildings, updateBuildings, workshopDoor } from './world/workshops';
 
 function note(msg: string) {
@@ -55,7 +58,7 @@ export function setup3D(wrap: HTMLElement, overlay: HTMLElement): boolean {
   ctx.cvs = cvs;
   ctx.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
   computeFull();
-  new ResizeObserver(() => resize()).observe(wrap);
+  new ResizeObserver(() => { resize(); if (town.built) applyTownCam(); }).observe(wrap);
   bindSceneEvents();
   return true;
 }
@@ -81,6 +84,7 @@ export function initScene() {
   buildBarn();
   initWorkshops();
   buildCart();
+  buildTownSign();
   initPlots();
   initActors();
   initAnimals();
@@ -95,7 +99,10 @@ export function initScene() {
 /** Advance animations and draw one frame. */
 export function renderScene(dt: number, t: number) {
   if (!ctx.ok3d) return;
+  // In Market Town the farm keeps going (workers walk, trucks come and go) but only the town is drawn.
+  const away = inTown();
   beginLabels();
+  muteLabels(away);
   syncPlots(); syncBuildings(); syncCrew();
   updateCam(dt);
   updateActors(dt, t);
@@ -113,12 +120,22 @@ export function renderScene(dt: number, t: number) {
   updateCart();
   updatePuffs(dt);
   updateFlies(dt);
+  muteLabels(false);
+  if (away) updateTown(dt, t);
   endLabels();
-  ctx.renderer.render(ctx.scene, ctx.camera);
+  if (away) ctx.renderer.render(town.scene, town.camera);
+  else ctx.renderer.render(ctx.scene, ctx.camera);
 }
 
 /** Turn game events into visual feedback. */
 function bindSceneEvents() {
+  // Farm effects only make sense while the farm is on screen.
+  const on: typeof onAny = (ev, fn) => onAny(ev, (p => { if (!inTown()) fn(p); }) as typeof fn);
+  onAny('shopSale', ({ coins }) => {
+    if (!inTown()) return;
+    const [sx, sy] = toScreen(shopPos());
+    fx(sx, sy, '+' + fmt(coins), 'gold');
+  });
   on('plant', ({ i }) => {
     const q = plotPos(i);
     for (let k = 0; k < 7; k++) dust3(q.x + (Math.random() - 0.5) * 1.6, q.z + (Math.random() - 0.5) * 1.4);
