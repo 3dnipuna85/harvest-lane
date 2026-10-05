@@ -3,7 +3,7 @@ import { CROPS, CROP_IDS, type CropId } from '../data/crops';
 import { ANIMAL_IDS } from '../data/animals';
 import { animalUnlocked, collectAnimal, feedAnimal } from './animals';
 import { clock, now } from './clock';
-import { byStaff, harvest, inv, plant, ripe, sell } from './economy';
+import { byStaff, harvest, inv, plant, ripe, sell, unlockedCrops } from './economy';
 import { emit, muteEvents } from './events';
 import { landCatch } from './fishing';
 import { SHOP_EVERY_MS, shopSale } from './town';
@@ -88,6 +88,16 @@ export function hireStaff(k: StaffId, h: number, t = now()): HireResult {
 /** Helpers stop replanting a crop once the barn holds this many (unless a truck wants it): no point growing what won't sell. */
 export const BARN_ENOUGH = 60;
 export const worthPlanting = (c: CropId) => neededCrop() === c || inv(c) < BARN_ENOUGH;
+/**
+ * The seed farmhands plant: the manager's pick for the next truck, else the selected seed, else (when the barn
+ * already holds plenty of that) whichever unlocked crop the barn is lowest on. Null when every crop is stocked.
+ */
+export function handSeed(): CropId | null {
+  const n = neededCrop();
+  if (n) return n;
+  if (worthPlanting(S.sel)) return S.sel;
+  return unlockedCrops().filter(c => inv(c) < BARN_ENOUGH && S.coins >= CROPS[c].seed).sort((a, b) => inv(a) - inv(b))[0] ?? null;
+}
 
 export function staffWork(t = now(), patient = true) {
   return byStaff(() => work(t, patient));

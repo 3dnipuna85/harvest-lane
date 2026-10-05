@@ -191,5 +191,12 @@ export function hire(kind: 'farmhand' | 'seller'): BuyResult {
   return { ok: true };
 }
 
+/** Let one farmhand or seller go. Their hiring fee isn't refunded, but their wage stops. */
+export function fire(kind: 'farmhand' | 'seller'): boolean {
+  if (kind === 'farmhand' ? S.farmhands <= 0 : S.sellers <= 0) return false;
+  if (kind === 'farmhand') S.farmhands--; else S.sellers--;
+  return true;
+}
+
 /** XP for finishing one workshop product. */
 export const goodXP = (k: keyof typeof GOODS) => Math.max(2, Math.round(GOODS[k].sell / 10));

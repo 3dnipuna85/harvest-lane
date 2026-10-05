@@ -1,3 +1,4 @@
+import { sellersIdle } from '../../game/sim';
 import * as THREE from 'three';
 import { S } from '../../game/state';
 import { ctx } from '../context';
@@ -118,5 +119,7 @@ export function buildTownSign() {
 const tmpS = new THREE.Vector3();
 export function updateCart() {
   cartG.visible = S.level >= 3 || S.sellers > 0;
+  const idle = sellersIdle();
+  if (idle && cartG.visible) lbl('cartidle', idle === 'unpaid' ? '😤 Waiting for wages' : '🧺 Nothing to sell', tmpS.set(CARTP.x - 1.6, 2.4, CARTP.z), 'timer rotsoon');
   lbl('townsign', '<b>Market Town</b><span>Animals · shops</span>', tmpS.set(TOWN_SIGN.x, 2.2, TOWN_SIGN.z), 'townsign p-town');
 }

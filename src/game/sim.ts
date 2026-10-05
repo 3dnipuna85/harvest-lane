@@ -26,6 +26,13 @@ export function nextSale(): ItemId | undefined {
   return undefined;
 }
 
+/** Why the market sellers are standing still, or null while they have something to sell. */
+export function sellersIdle(): 'unpaid' | 'empty' | null {
+  if (!S.sellers) return null;
+  if (unpaid) return 'unpaid';
+  return nextSale() ? null : 'empty';
+}
+
 /** Advance workshops and market sellers by dt seconds. */
 export function sim(dt: number) {
   const t = now();

@@ -1,10 +1,12 @@
+import { sellersIdle } from '../game/sim';
 import { farmAction, farmPanel, farmSignature } from './estate';
 import type { CropId } from '../data/crops';
 import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
 import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines';
 import { now } from '../game/clock';
-import { farmhandCost, inv, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
+import { farmhandCost, fire, inv, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
+import { toast } from './toasts';
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
@@ -49,7 +51,7 @@ export function panelSignature() {
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
   if (S.tab === 'animals') parts.push(ANIMAL_IDS.map(k => S.animals[k].n).join(','), sickCount());
-  if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, resetArmed, S.staff.manager, S.staff.keeper, timeLeft('manager') > 0, timeLeft('keeper') > 0);
+  if (S.tab === 'helpers') parts.push(S.farmhands, S.sellers, S.sellCrops, sellersIdle(), resetArmed, S.staff.manager, S.staff.keeper, timeLeft('manager') > 0, timeLeft('keeper') > 0);
   return parts.join('|');
 }
 
@@ -103,11 +105,14 @@ export function renderPanel() {
     h = `<div class="list">
       <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('girl-head')}</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
         <div class="sub">They walk the field on their own, harvesting ripe plots and replanting with your selected seed. Wage: ${coinHTML}${fmt(wagePerHour())} an hour each.</div></div>
-        ${fhLock ? '<span class="small">Lv 2</span>' : S.farmhands >= MAX_FARMHANDS ? '<span class="small">Full crew</span>' : `<button class="btn gold" data-act="hire" data-k="fh" data-check="cost:${farmhandCost()}">Hire ${coinHTML}${fmt(farmhandCost())}</button>`}</div></div>
+        ${fhLock ? '<span class="small">Lv 2</span>' : S.farmhands >= MAX_FARMHANDS ? '<span class="small">Full crew</span>' : `<button class="btn gold" data-act="hire" data-k="fh" data-check="cost:${farmhandCost()}">Hire ${coinHTML}${fmt(farmhandCost())}</button>`}</div>
+        ${S.farmhands ? '<div class="row" style="justify-content:flex-end"><button class="btn alt" data-act="fire" data-k="fh">Let one go</button></div>' : ''}</div>
       <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${charImg('baker')}</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
         <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s. Wage: ${coinHTML}${fmt(wagePerHour())} an hour each.</div></div>
         ${slLock ? '<span class="small">Lv 3</span>' : S.sellers >= MAX_SELLERS ? '<span class="small">Full stall</span>' : `<button class="btn gold" data-act="hire" data-k="sl" data-check="cost:${sellerCost()}">Hire ${coinHTML}${fmt(sellerCost())}</button>`}</div>
-        ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}</div>
+        ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}
+        ${S.sellers ? '<div class="row" style="justify-content:flex-end"><button class="btn alt" data-act="fire" data-k="sl">Let one go</button></div>' : ''}
+        ${sellersIdle() === 'empty' ? `<div class="wherefrom">The sellers have nothing to sell. They sell machine goods and animal products, plus spare crops when the box above is ticked, and they always keep back what the trucks need.</div>` : sellersIdle() === 'unpaid' ? '<div class="wherefrom">The sellers stopped because their wages couldn’t be paid.</div>' : ''}</div>
       <div class="townintro">Helpers earn you coins, but XP only comes from work you do yourself.</div>
       ${staffCards()}
       <div class="row" style="justify-content:flex-end;margin-top:4px"><button class="btn ${resetArmed ? 'red' : 'alt'}" data-act="reset">${resetArmed ? 'Tap again to wipe this farm' : 'Start a new farm'}</button></div>
@@ -252,6 +257,7 @@ export function bindPanelInput() {
     else if (a === 'sellCrops') { S.sellCrops = (b as HTMLInputElement).checked; save(); return; }
     else if (a === 'staff') hireStaffUI(k as StaffId, +(b.dataset.h || 1));
     else if (a === 'hire') act.hire(k === 'fh' ? 'farmhand' : 'seller');
+    else if (a === 'fire') { if (fire(k === 'fh' ? 'farmhand' : 'seller')) toast(k === 'fh' ? 'A farmhand packed up and left. No more wage for them.' : 'A seller packed up and left. No more wage for them.'); }
     else if (a === 'reset') {
       if (!resetArmed) {
         resetArmed = true;

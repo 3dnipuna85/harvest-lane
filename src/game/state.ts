@@ -9,7 +9,7 @@ import { now } from './clock';
 
 export const SAVE_KEY = 'harvest-lane-3d-v1';
 /** Bump this and add a step to MIGRATIONS whenever the save shape changes. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface Plot { crop: CropId | null; at: number }
 export interface Job { start: number; end: number }
@@ -99,7 +99,7 @@ export function fresh(t = now()): State {
     version: SAVE_VERSION,
     coins: 30, xp: 0, level: 1, sel: 'wheat', tab: 'orders',
     plots: Array.from({ length: START_PLOTS }, () => ({ crop: null, at: 0 })),
-    inv: { wheat: 2 }, machines, farmhands: 0, sellers: 0, sellCrops: false,
+    inv: { wheat: 2 }, machines, farmhands: 0, sellers: 0, sellCrops: true,
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
@@ -117,6 +117,8 @@ type Raw = Record<string, any>;
 const MIGRATIONS: Record<number, (s: Raw) => Raw> = {
   // Version 0 is the prototype's unversioned save; its shape already matches version 1.
   0: s => ({ ...s, version: 1 }),
+  // Sellers used to stand idle when the barn held only crops; now they sell spare crops unless told not to.
+  1: s => ({ ...s, sellCrops: true, version: 2 }),
 };
 
 /** Turn whatever was stored (possibly old, partial or junk) into a valid current State. */

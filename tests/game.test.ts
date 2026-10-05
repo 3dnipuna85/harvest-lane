@@ -540,3 +540,26 @@ describe('farm tiers and diamonds', () => {
     expect(s.tier).toBe(3);
   });
 });
+
+describe('idle helpers', () => {
+  it('farmhands switch to the crop the barn is lowest on when the selected one is stocked', async () => {
+    const { handSeed, BARN_ENOUGH } = await import('../src/game/staff');
+    S.level = 7; S.coins = 1000; S.sel = 'strawberry';
+    S.inv = { strawberry: BARN_ENOUGH + 5, wheat: 80, corn: 70, carrot: 3, tomato: 90 };
+    expect(handSeed()).toBe('carrot');
+  });
+
+  it('sellers sell spare crops by default and say when they have nothing', async () => {
+    const { sellersIdle, nextSale } = await import('../src/game/sim');
+    S.sellers = 1; S.inv = { carrot: 40 };
+    expect(S.sellCrops).toBe(true);
+    expect(nextSale()).toBe('carrot');
+    S.inv = { carrot: 5 };
+    expect(sellersIdle()).toBe('empty');
+  });
+
+  it('old saves turn crop selling on', () => {
+    const s = migrate({ ...JSON.parse(JSON.stringify(S)), version: 1, sellCrops: false });
+    expect(s.sellCrops).toBe(true);
+  });
+});
