@@ -140,3 +140,41 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @media (prefers-reduced-motion:reduce){.fx,.toast,.pill.bump,.scene-wrap.shake{animation:none!important}}
+
+/* ---------- Painted UI: sprites from assets/elements, wooden boards and glossy buttons like the concept art ---------- */
+img.coin-dot{background:none;box-shadow:none;object-fit:contain;border-radius:0}
+.ic-img{width:34px;height:34px;object-fit:contain;display:block;margin:auto}
+.ic-emoji{font-size:30px;line-height:34px;text-align:center}
+.seed .ic{width:34px;height:34px;object-fit:contain;display:block;font-size:26px;line-height:34px;text-align:center}
+.ic-inline{width:18px;height:18px;object-fit:contain;vertical-align:-4px;display:inline-block;font-size:14px;line-height:18px}
+.ic-need{width:22px;height:22px;object-fit:contain;display:inline-block;font-size:18px;line-height:22px}
+.ic-fx{width:24px;height:24px;object-fit:contain;vertical-align:-6px;display:inline-block}
+.tab-ic{width:20px;height:20px;object-fit:contain;vertical-align:-4px;margin-right:5px}
+.portrait{width:40px;height:40px;border-radius:9px;display:block}
+.card .big .ic-img{width:38px;height:38px}
+
+.pill{background:#fff6e2;border-color:#a86b36;box-shadow:inset 0 0 0 2px #f3dcae,0 3px 0 #6e4220}
+.coins-val{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.3px}
+.lvlpill{padding:3px 12px 3px 3px}
+.avatar{width:38px;height:38px;border-radius:50%;display:block;margin:-2px 0}
+.lvlstar{position:relative;width:34px;height:34px;margin-left:-14px;display:grid;place-items:center;flex:none}
+.lvlstar img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.lvlstar b{position:relative;font-family:var(--display);font-weight:400;font-size:14px;color:#fff;text-shadow:0 1px 0 #b07800,0 -1px 0 #b07800,1px 0 0 #b07800,-1px 0 0 #b07800;padding-top:2px}
+.xpbar{height:12px;border-radius:7px;background:#3c2a18;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.xpbar i{background:linear-gradient(#8fe060,#3fae2c)}
+
+.board{background:#fff6e2;border:4px solid #a86b36;box-shadow:inset 0 0 0 3px #f0d6a2,0 5px 0 #6e4220}
+.card{border-color:#ecd3a3}
+.seed{border-color:#ecd3a3}
+.tab{background:#f0dcb2;color:#7a5530}
+.tab.on{background:linear-gradient(#cf9354,#a86b36);color:#fff;box-shadow:0 3px 0 #6e4220;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.tab .badge{background:#e2463a}
+
+.btn{font-family:var(--display);font-weight:400;font-size:14px;letter-spacing:.3px;color:#fff;border:2px solid #2c6820;
+  background:linear-gradient(#86d856,#3f9f2c);text-shadow:0 1px 0 rgba(0,0,0,.35);box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 3px 0 #2c6820}
+.btn:active:not(:disabled){box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 1px 0 #2c6820}
+.btn.gold{background:linear-gradient(#ffd75e,#f39a12);border-color:#b96a00;color:#fff;box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 3px 0 #b96a00}
+.btn.red{background:linear-gradient(#ff6d5c,#d9342a);border-color:#9c2f1e;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #9c2f1e}
+.btn.alt{background:linear-gradient(#fffaf0,#efd9ad);border-color:#c9a26a;color:#6b4423;text-shadow:none;box-shadow:inset 0 2px 0 #fff,0 3px 0 #c9a26a}
+.zoom button{border-color:#a86b36;background:#fff6e2;box-shadow:0 3px 0 #6e4220}
+.scene-wrap{border-color:#6e4220}

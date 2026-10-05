@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ctx } from '../context';
-import { emojiSprite } from '../geometry';
+import { ITEMS, type ItemId } from '../../data/goods';
+import { itemArt } from '../../ui/art';
+import { emojiSprite, imageSprite } from '../geometry';
 
 interface Fly { sp: THREE.Sprite; from: THREE.Vector3; to: THREE.Vector3; t: number }
 let flies: Fly[] = [];
@@ -8,9 +10,10 @@ let flies: Fly[] = [];
 export function resetFlyers() { flies = []; }
 
 /** An item icon that flies in an arc, e.g. from a plot to the barn. */
-export function spawnFly(icon: string, from: THREE.Vector3, to: THREE.Vector3, delay = 0) {
+export function spawnFly(item: ItemId, from: THREE.Vector3, to: THREE.Vector3, delay = 0) {
   if (!ctx.ok3d) return;
-  const sp = emojiSprite(icon, 0.9);
+  const art = itemArt(item);
+  const sp = art ? imageSprite(art, 0.9) : emojiSprite(ITEMS[item].icon, 0.9);
   sp.visible = false; ctx.scene.add(sp);
   flies.push({ sp, from, to, t: -delay });
 }

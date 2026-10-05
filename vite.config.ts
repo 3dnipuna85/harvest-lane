@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
@@ -12,7 +12,8 @@ function serviceWorker(): Plugin {
     apply: 'build',
     generateBundle(_, bundle) {
       const built = Object.keys(bundle).filter(f => f !== 'index.html').map(f => '/' + f);
-      const files = [...PUBLIC_FILES, ...built];
+      const sprites = readdirSync('public/ui').map(f => '/ui/' + f);
+      const files = [...PUBLIC_FILES, ...sprites, ...built];
       const version = createHash('sha256').update(files.join('\n')).digest('hex').slice(0, 10);
       const source = readFileSync('sw/sw.js', 'utf8')
         .replace('__VERSION__', version)

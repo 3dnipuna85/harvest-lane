@@ -1,10 +1,10 @@
 import { $ } from './format';
 
-/** Floating text that rises and fades at a page position. */
-export function fx(x: number, y: number, text: string, cls = '') {
+/** Floating text that rises and fades at a page position. `html` is trusted game text and may contain icons. */
+export function fx(x: number, y: number, html: string, cls = '') {
   const e = document.createElement('div');
   e.className = 'fx ' + cls;
-  e.textContent = text;
+  e.innerHTML = html;
   e.style.left = x + 'px';
   e.style.top = y + 'px';
   document.body.appendChild(e);

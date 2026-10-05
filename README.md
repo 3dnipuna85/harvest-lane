@@ -51,3 +51,7 @@ tests/               game-logic tests (Vitest)
 `game/` never imports three.js or touches the DOM. It announces what happened through `game/events.ts` (`plant`, `harvest`, `machineDone`, `sellerSale`, `levelUp`, `earn`) and the scene and UI react, so the rules can be unit tested and later run on a server.
 
 Saves live in `localStorage` under `harvest-lane-3d-v1` with a `version` field. To change the save shape, bump `SAVE_VERSION` in `src/game/state.ts` and add a step to `MIGRATIONS`.
+
+## Art
+
+`assets/concept/` is the target look and `assets/elements/` holds the painted UI sheets. The sprites the game uses are cut from those sheets into `public/ui/*.webp` (crops, coin, star, avatar, portraits, tab icons, plus spare ones like gem, energy, milk and wood for later features). `src/ui/art.ts` maps items to sprites; anything without art (the workshop goods) still shows its emoji.

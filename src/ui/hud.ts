@@ -22,7 +22,7 @@ export function bindHud() {
 /** Coins, level, XP bar and the "buy another plot" button. Runs every frame; only touches what changed. */
 export function updateHud() {
   $('coins').textContent = fmt(S.coins);
-  $('lvl').textContent = 'Lv ' + S.level;
+  $('lvl').textContent = String(S.level);
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
   const ex = $('expand') as HTMLButtonElement;
   if (S.plots.length >= MAX_PLOTS) { ex.disabled = true; ex.textContent = 'All land owned'; }

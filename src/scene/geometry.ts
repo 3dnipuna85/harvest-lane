@@ -77,6 +77,16 @@ export function emojiTex(ch: string) {
   x.fillText(ch, 64, 70);
   return (ETX[ch] = new THREE.CanvasTexture(c));
 }
+const ITX: Record<string, THREE.Texture> = {};
+const loader = new THREE.TextureLoader();
+/** A billboard of a painted sprite image (from public/ui/). */
+export function imageSprite(url: string, s: number) {
+  const map = ITX[url] || (ITX[url] = loader.load(url));
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthWrite: false }));
+  sp.scale.set(s, s, 1);
+  return sp;
+}
+
 export function emojiSprite(ch: string, s: number) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(ch), transparent: true, depthWrite: false }));
   sp.scale.set(s, s, 1);

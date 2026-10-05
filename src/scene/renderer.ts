@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { CROPS } from '../data/crops';
-import { GOODS } from '../data/goods';
 import { on } from '../game/events';
+import { iconHTML } from '../ui/art';
 import { fmt } from '../ui/format';
 import { fx } from '../ui/toasts';
 import { initActors, sellerWave, syncCrew, updateActors } from './actors/ai';
@@ -98,12 +97,12 @@ function bindSceneEvents() {
     for (let k = 0; k < 7; k++) dust3(q.x + (Math.random() - 0.5) * 1.6, q.z + (Math.random() - 0.5) * 1.4);
   });
   on('harvest', ({ i, crop, n }) => {
-    const q = plotPos(i), c = CROPS[crop];
-    for (let k = 0; k < n; k++) spawnFly(c.icon, new THREE.Vector3(q.x, 0.8, q.z), barnDoor(), k * 0.12);
+    const q = plotPos(i);
+    for (let k = 0; k < n; k++) spawnFly(crop, new THREE.Vector3(q.x, 0.8, q.z), barnDoor(), k * 0.12);
     const [sx, sy] = toScreen(new THREE.Vector3(q.x, 1.4, q.z));
-    fx(sx, sy, '+' + n + ' ' + c.icon + (n > 1 ? ' bonus!' : ''), 'green');
+    fx(sx, sy, '+' + n + ' ' + iconHTML(crop, 'ic-fx') + (n > 1 ? ' bonus!' : ''), 'green');
   });
-  on('machineDone', ({ id, out }) => spawnFly(GOODS[out].icon, workshopDoor(id), barnDoor(), 0));
+  on('machineDone', ({ id, out }) => spawnFly(out, workshopDoor(id), barnDoor(), 0));
   on('sellerSale', ({ coins }) => {
     sellerWave();
     const [sx, sy] = toScreen(new THREE.Vector3(CARTP.x, 2.2, CARTP.z));

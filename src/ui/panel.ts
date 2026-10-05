@@ -7,20 +7,21 @@ import { farmhandCost, inv, mTime, mUpCost, sellerCost, totalItems } from '../ga
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { save, S, type Tab } from '../game/state';
 import * as act from './actions';
+import { iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
 
-const TABS: [Tab, string][] = [['orders', 'Orders'], ['barn', 'Barn'], ['machines', 'Machines'], ['helpers', 'Helpers']];
+const TABS: [Tab, string, string][] = [['orders', 'Orders', 'book'], ['barn', 'Barn', 'crate'], ['machines', 'Machines', 'hammer'], ['helpers', 'Helpers', 'friends']];
 let resetArmed = false;
 let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function renderTabs() {
-  $('tabs').innerHTML = TABS.map(([k, n]) =>
-    `<button class="tab ${S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}">${n}<span class="badge" data-badge="${k}" hidden></span></button>`).join('');
+  $('tabs').innerHTML = TABS.map(([k, n, ic]) =>
+    `<button class="tab ${S.tab === k ? 'on' : ''}" data-act="tab" data-t="${k}">${uiImg(ic, 'tab-ic')}${n}<span class="badge" data-badge="${k}" hidden></span></button>`).join('');
 }
 
 function itemRow(k: ItemId) {
   const it = ITEMS[k];
-  return `<div class="card"><div class="top"><div class="big">${it.icon}</div>
+  return `<div class="card"><div class="top"><div class="big">${iconHTML(k)}</div>
     <div class="grow"><div class="ttl">${it.name}</div><div class="sub">${it.sell} coins each</div></div>
     <div class="count" data-count="${k}">0</div>
     <button class="btn alt" data-act="sell" data-k="${k}" data-n="1" data-check="inv:${k}">Sell 1</button>
@@ -39,18 +40,18 @@ export function panelSignature() {
 
 function machineCard(k: MachineId) {
   const d = MACHINES[k], m = S.machines[k], g = GOODS[d.out];
-  const rec = recipe(k).map(([i, q]) => q + ' ' + ITEMS[i].icon).join(' + ') + ' → ' + g.icon;
+  const rec = recipe(k).map(([i, q]) => q + ' ' + iconHTML(i, 'ic-inline')).join(' + ') + ' → ' + iconHTML(d.out, 'ic-inline');
   if (d.lvl > S.level) {
-    return `<div class="card lockedcard"><div class="top"><div class="big">${g.icon}</div><div class="grow"><div class="ttl">${d.name}</div><div class="sub">${rec}</div></div><span class="small">Unlocks at Lv ${d.lvl}</span></div></div>`;
+    return `<div class="card lockedcard"><div class="top"><div class="big">${iconHTML(d.out)}</div><div class="grow"><div class="ttl">${d.name}</div><div class="sub">${rec}</div></div><span class="small">Unlocks at Lv ${d.lvl}</span></div></div>`;
   }
   if (!m.owned) {
-    return `<div class="card"><div class="top"><div class="big">${g.icon}</div><div class="grow"><div class="ttl">${d.name}</div><div class="sub">${rec} · ${d.time}s · sells for ${g.sell}</div></div>
+    return `<div class="card"><div class="top"><div class="big">${iconHTML(d.out)}</div><div class="grow"><div class="ttl">${d.name}</div><div class="sub">${rec} · ${d.time}s · sells for ${g.sell}</div></div>
       <button class="btn gold" data-act="buyM" data-k="${k}" data-check="cost:${d.cost}">${coinHTML}${fmt(d.cost)}</button></div></div>`;
   }
   const up = m.lvl < MAX_MACHINE_LEVEL
     ? `<button class="btn alt" data-act="upM" data-k="${k}" data-check="cost:${mUpCost(k)}">Faster ${coinHTML}${fmt(mUpCost(k))}</button>`
     : '<span class="small">Max speed</span>';
-  return `<div class="card"><div class="top"><div class="big">${g.icon}</div><div class="grow"><div class="ttl">${d.name} <span class="small">Lv ${m.lvl}</span></div><div class="sub">${rec} · ${mTime(k).toFixed(1)}s</div></div>
+  return `<div class="card"><div class="top"><div class="big">${iconHTML(d.out)}</div><div class="grow"><div class="ttl">${d.name} <span class="small">Lv ${m.lvl}</span></div><div class="sub">${rec} · ${mTime(k).toFixed(1)}s</div></div>
       <label class="toggle"><input type="checkbox" id="on-${k}" data-act="toggleM" data-k="${k}" ${m.on ? 'checked' : ''}>Run</label></div>
       <div class="mbar"><i data-mbar="${k}"></i></div>
       <div class="row"><span class="small grow" data-mstat="${k}"></span>${up}</div></div>`;
@@ -62,7 +63,7 @@ export function renderPanel() {
     h = '<div class="list">' + S.orders.map((o, i) => `
       <div class="card"><div class="top"><div class="grow"><div class="ttl">${o.who}</div><div class="sub">Wants a delivery</div></div>
         <div class="reward">${coinHTML}${fmt(o.coins)} <span class="small">+${o.xp} XP</span></div></div>
-        <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}"><span>${ITEMS[k].icon}</span><span>0/${q}</span></span>`).join('')}</div>
+        <div class="needs">${orderItems(o).map(([k, q]) => `<span class="need" data-need="${k}" data-q="${q}">${iconHTML(k, 'ic-need')}<span>0/${q}</span></span>`).join('')}</div>
         <div class="row"><button class="btn" data-act="deliver" data-i="${i}" data-check="order:${i}">Deliver</button>
         <button class="btn alt" data-act="skip" data-i="${i}" data-check="skip">Skip</button><span class="small" data-skipnote></span></div>
       </div>`).join('') + '</div>';
@@ -76,10 +77,10 @@ export function renderPanel() {
   if (S.tab === 'helpers') {
     const fhLock = S.level < 2, slLock = S.level < 3;
     h = `<div class="list">
-      <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">🧑‍🌾</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
+      <div class="card ${fhLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${uiImg('farmer', 'portrait')}</div><div class="grow"><div class="ttl">Farmhands <span class="small">${S.farmhands}/${MAX_FARMHANDS}</span></div>
         <div class="sub">They walk the field on their own, harvesting ripe plots and replanting with your selected seed.</div></div>
         ${fhLock ? '<span class="small">Lv 2</span>' : S.farmhands >= MAX_FARMHANDS ? '<span class="small">Full crew</span>' : `<button class="btn gold" data-act="hire" data-k="fh" data-check="cost:${farmhandCost()}">Hire ${coinHTML}${fmt(farmhandCost())}</button>`}</div></div>
-      <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">🧺</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
+      <div class="card ${slLock ? 'lockedcard' : ''}"><div class="top"><div class="big">${uiImg('friends')}</div><div class="grow"><div class="ttl">Market sellers <span class="small">${S.sellers}/${MAX_SELLERS}</span></div>
         <div class="sub">They stand at the road cart and sell one of your best goods every 2.5s.</div></div>
         ${slLock ? '<span class="small">Lv 3</span>' : S.sellers >= MAX_SELLERS ? '<span class="small">Full stall</span>' : `<button class="btn gold" data-act="hire" data-k="sl" data-check="cost:${sellerCost()}">Hire ${coinHTML}${fmt(sellerCost())}</button>`}</div>
         ${slLock ? '' : `<label class="toggle"><input type="checkbox" id="sellcrops" data-act="sellCrops" ${S.sellCrops ? 'checked' : ''}>Also sell raw crops above 10</label>`}</div>
