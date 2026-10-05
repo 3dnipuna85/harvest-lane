@@ -4,7 +4,7 @@ import {
   createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, onAuthStateChanged, sendPasswordResetEmail,
   signInWithEmailAndPassword, signInWithPopup, signOut, type User,
 } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
 import type { Remote } from '../cloud';
 import { firebaseConfig } from './config';
 
@@ -61,3 +61,21 @@ export async function addFriend(me: string, other: string) {
 export async function friendIds(me: string) {
   return (await getDocs(collection(db, 'players', me, 'friends'))).docs.map(d => d.id);
 }
+
+/**
+ * Find friends by email. emails/{address} holds only the owner's uid, and the rules allow looking up one address
+ * you already know, never listing them, so nobody can browse other players' emails.
+ */
+export const registerEmail = (uid: string, email: string) => setDoc(doc(db, 'emails', email.trim().toLowerCase()), { uid });
+export async function uidForEmail(email: string) {
+  const d = (await getDoc(doc(db, 'emails', email.trim().toLowerCase()))).data();
+  return d && typeof d.uid === 'string' ? d.uid : null;
+}
+
+export interface Invite { from: string; name: string; photo: string }
+/** A friend request waits on the other player's card until they accept or decline it. */
+export const sendInvite = (from: string, to: string, me: Profile) => setDoc(doc(db, 'players', to, 'invites', from), { name: me.name, photo: me.photo, at: serverTimestamp() });
+export async function invitesFor(me: string): Promise<Invite[]> {
+  return (await getDocs(collection(db, 'players', me, 'invites'))).docs.map(d => ({ from: d.id, name: String(d.data().name || 'A farmer'), photo: String(d.data().photo || '') }));
+}
+export const dropInvite = (me: string, from: string) => deleteDoc(doc(db, 'players', me, 'invites', from));

@@ -487,3 +487,11 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 @keyframes travelout{to{opacity:0}}
 @keyframes drive{from{transform:translateX(-30px) rotate(-2deg)}to{transform:translateX(30px) rotate(2deg)}}
 @media (prefers-reduced-motion:reduce){.travel,.trip-truck{animation:none!important}}
+.fr-note{margin:4px 2px 0;font-size:12.5px;font-weight:800;min-height:1em}
+.fr-note.ok{color:#2f6d22}
+.fr-note.bad{color:#9b1c14}
+.fr-lead.small{font-size:12.5px;color:#8a6a45}
+.fr-row.req{background:#fff3b0;border-color:#e2c04a}
+.fr-row.req .btn{padding:7px 10px}
+.friendspill{position:relative}
+.friendspill .badge{top:-5px;right:-5px}

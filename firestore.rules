@@ -16,6 +16,18 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == uid;
         allow write: if request.auth != null && (request.auth.uid == uid || request.auth.uid == fid);
       }
+      // Friend requests sent by email: the sender writes one; the receiver reads it, then accepts or declines.
+      match /invites/{from} {
+        allow read, delete: if request.auth != null && (request.auth.uid == uid || request.auth.uid == from);
+        allow create, update: if request.auth != null && request.auth.uid == from && from != uid;
+      }
+    }
+    // Email to player lookup for "invite by email". Look up one address at a time (no listing);
+    // only the signed-in owner of that address can point it at their own account.
+    match /emails/{email} {
+      allow get: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.token.email != null
+        && request.auth.token.email.lower() == email && request.resource.data.uid == request.auth.uid;
     }
   }
 }
