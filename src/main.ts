@@ -27,7 +27,7 @@ import { bindSfx } from './ui/sfx';
 import { bindTips } from './ui/tips';
 import { bindGuide } from './ui/guide';
 import { catchUp } from './game/staff';
-import { awayNote, warnTrouble } from './ui/staff';
+import { anyAway, awayNote, warnTrouble } from './ui/staff';
 
 let seedSig = '', panelSig = '', lastT = 0;
 
@@ -70,7 +70,7 @@ function start() {
   // claude.ai keeps saves in the artifact's store; the public build signs in with Firebase when configured.
   initCloud(local?.saved || 0, has3D).then(onClaude => { if (!onClaude && onlineEnabled && !('claude' in globalThis)) import('./online/login').then(m => m.initOnline()); });
   const away = (now() - (S.saved || now())) / 1000;
-  if (staffAway.crops || staffAway.products || staffAway.fish || staffAway.shop) toast(awayNote(staffAway));
+  if (anyAway(staffAway)) toast(awayNote(staffAway));
   else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   if (away > 60) warnTrouble();
   setInterval(() => { save(); syncCloud(); }, 5000);
@@ -81,7 +81,7 @@ function start() {
     if (hiddenAt && !visiting) {
       const hiddenAt0 = hiddenAt, d = catchUp(hiddenAt);
       hiddenAt = 0;
-      if (d.crops || d.products || d.fish || d.shop) toast(awayNote(d));
+      if (anyAway(d)) toast(awayNote(d));
       if (now() - hiddenAt0 > 5 * 60_000) warnTrouble();
     }
   });

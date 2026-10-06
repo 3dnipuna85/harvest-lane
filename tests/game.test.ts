@@ -622,6 +622,24 @@ describe('woods and quarry', () => {
     expect(S.inv.stone).toBe(2);
   });
 
+  it('the lumberjack and quarry worker chop and dig while hired, without XP', async () => {
+    const st = await import('../src/game/staff');
+    S.coins = 1e6; S.level = 9;
+    expect(st.hireStaff('miner', 1, t)).toMatchObject({ ok: false, reason: 'locked' });
+    expect(st.hireStaff('lumberjack', 1, t).ok).toBe(true);
+    S.level = 11;
+    expect(st.hireStaff('miner', 1, t).ok).toBe(true);
+    const xp = S.xp;
+    const sum = st.catchUp(t, t + 10 * 60_000);
+    expect(sum.logs).toBeGreaterThan(0);
+    expect(sum.stone).toBeGreaterThan(0);
+    expect(S.inv.log).toBe(sum.logs);
+    expect(S.inv.stone).toBe(sum.stone);
+    expect(S.xp).toBe(xp);
+    // a felled tree regrows before he can chop it again: they work through the standing ones
+    expect(S.woods.filter(x => x > t).length).toBeGreaterThan(1);
+  });
+
   it('helpers never sell building materials', async () => {
     const { nextSale } = await import('../src/game/sim');
     S.sellers = 1; S.inv = { log: 50, plank: 20, brick: 9 };

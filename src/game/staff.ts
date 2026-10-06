@@ -6,6 +6,7 @@ import { clock, now } from './clock';
 import { byStaff, harvest, inv, plant, ripe, sell, unlockedCrops } from './economy';
 import { emit, muteEvents } from './events';
 import { landCatch } from './fishing';
+import { chopsOn, chopTree, hitsOn, mineRock, QUARRY_LVL, rockUp, ROCKS, treeUp, TREES, WOODS_LVL } from './resources';
 import { SHOP_EVERY_MS, shopSale } from './town';
 import { S } from './state';
 import { canFillTruck, deliverTruck } from './trucks';
@@ -15,13 +16,15 @@ import { canFillTruck, deliverTruck } from './trucks';
  * keeper feeds the animals and collects what they make. Both keep working while the game is closed, until their
  * contract runs out (see catchUp).
  */
-export type StaffId = 'manager' | 'keeper' | 'fisher' | 'shopkeeper';
+export type StaffId = 'manager' | 'keeper' | 'fisher' | 'shopkeeper' | 'lumberjack' | 'miner';
 export interface StaffDef { name: string; lvl: number; perHour: (level: number) => number; job: string }
 
 export const STAFF: Record<StaffId, StaffDef> = {
   manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops, loads trucks so you never lose a buyer, keeps your animal keeper re-hired, and sells spare crops to pay your helpers’ wages. Works while you’re away too.' },
   fisher: { name: 'Fisherman', lvl: 3, perHour: l => 24 + 7 * l, job: 'Fishes from the rowboat and brings in a catch every 15 seconds: fish, crabs and now and then a golden fish. Works while you’re away too.' },
   shopkeeper: { name: 'Shopkeeper', lvl: 8, perHour: l => 50 + 12 * l, job: 'Runs your shop in Market Town, selling your goods and animal products for 50% more than the farm gate. Works while you’re away too.' },
+  lumberjack: { name: 'Lumberjack', lvl: WOODS_LVL, perHour: l => 45 + 10 * l, job: 'Chops trees in the Woods, a swing every 8 seconds, and stacks the logs in your barn for the sawmill. Works while you’re away too.' },
+  miner: { name: 'Quarry worker', lvl: QUARRY_LVL, perHour: l => 60 + 12 * l, job: 'Breaks rocks in the Quarry, a swing every 8 seconds, and carts the stone to your barn for the stonecutter. Works while you’re away too.' },
   keeper: { name: 'Animal keeper', lvl: 4, perHour: l => 30 + 9 * l, job: 'Feeds your animals and collects eggs, milk, truffles and wool, even while you’re away.' },
 };
 export const STAFF_IDS = Object.keys(STAFF) as StaffId[];
@@ -40,7 +43,22 @@ const MANAGER_DELAY_MS = 8000;
 const TRUCK_DELAY_MS = 6000;
 /** The fisherman lands one catch this often. */
 const FISHER_EVERY_MS = 15000;
-let fishAt = 0;
+/** The lumberjack and quarry worker swing once this often (3 swings fell a tree, 4 break a rock). */
+export const SWING_EVERY_MS = 8000;
+let fishAt = 0, jackAt = 0, minerAt = 0;
+
+/** The tree or rock a worker is busy on: one already started, else the first one standing. -1 when all are down. */
+export const jackTree = (t = now()) => pick(TREES, i => treeUp(i, t), chopsOn);
+export const minerRock = (t = now()) => pick(ROCKS, i => rockUp(i, t), hitsOn);
+function pick(n: number, up: (i: number) => boolean, started: (i: number) => number) {
+  let first = -1;
+  for (let i = 0; i < n; i++) {
+    if (!up(i)) continue;
+    if (started(i)) return i;
+    if (first < 0) first = i;
+  }
+  return first;
+}
 let shopAt = 0;
 
 export const onDuty = (k: StaffId, t = now()) => (S.staff[k] || 0) > t;
@@ -104,7 +122,7 @@ export function staffWork(t = now(), patient = true) {
   return byStaff(() => work(t, patient));
 }
 function work(t: number, patient: boolean) {
-  const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0, fish: 0, shop: 0 };
+  const done = { crops: 0, products: 0, trucks: 0, seeds: 0, renewed: 0, fish: 0, shop: 0, logs: 0, stone: 0 };
   if (onDuty('manager', t)) {
     // While the game is open the manager walks the field himself (scene/actors/ai.ts); this instant version is for
     // time away, replayed by catchUp.
@@ -145,6 +163,22 @@ function work(t: number, patient: boolean) {
     if (!fishAt || fishAt > t) fishAt = t;
     while (t - fishAt >= FISHER_EVERY_MS) { fishAt += FISHER_EVERY_MS; landCatch(); done.fish++; }
   } else fishAt = 0;
+  if (onDuty('lumberjack', t)) {
+    if (!jackAt || jackAt > t) jackAt = t;
+    while (t - jackAt >= SWING_EVERY_MS) {
+      jackAt += SWING_EVERY_MS;
+      const i = jackTree(t), had = inv('log');
+      if (i >= 0 && chopTree(i, t) === 'done') done.logs += inv('log') - had;
+    }
+  } else jackAt = 0;
+  if (onDuty('miner', t)) {
+    if (!minerAt || minerAt > t) minerAt = t;
+    while (t - minerAt >= SWING_EVERY_MS) {
+      minerAt += SWING_EVERY_MS;
+      const i = minerRock(t), had = inv('stone');
+      if (i >= 0 && mineRock(i, t) === 'done') done.stone += inv('stone') - had;
+    }
+  } else minerAt = 0;
   return done;
 }
 
@@ -164,8 +198,8 @@ export function staffTick(t = now()) {
  * and run their rounds, quietly. Returns totals for a welcome-back note.
  */
 export function catchUp(from: number, to = now()) {
-  const sum = { crops: 0, products: 0, trucks: 0, seeds: 0, fish: 0, shop: 0 };
-  const end = Math.min(to, Math.max(S.staff.manager || 0, S.staff.keeper || 0, S.staff.fisher || 0, S.staff.shopkeeper || 0));
+  const sum = { crops: 0, products: 0, trucks: 0, seeds: 0, fish: 0, shop: 0, logs: 0, stone: 0 };
+  const end = Math.min(to, Math.max(...STAFF_IDS.map(k => S.staff[k] || 0)));
   if (end <= from) return sum;
   const real = clock.now;
   const step = Math.max(5000, (end - from) / 20000);
@@ -174,7 +208,7 @@ export function catchUp(from: number, to = now()) {
     for (let t = from; t <= end; t += step) {
       clock.now = () => t;
       const d = staffWork(t, false);
-      sum.crops += d.crops; sum.products += d.products; sum.seeds += d.seeds; sum.fish += d.fish; sum.shop += d.shop;
+      sum.crops += d.crops; sum.products += d.products; sum.seeds += d.seeds; sum.fish += d.fish; sum.shop += d.shop; sum.logs += d.logs; sum.stone += d.stone;
     }
   } finally { clock.now = real; muteEvents(false); }
   return sum;

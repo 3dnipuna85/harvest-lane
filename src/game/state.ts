@@ -73,7 +73,7 @@ export interface State {
   /** Recent sales of each item (decaying), so flooding the market lowers its price. See economy.ts. */
   market: Partial<Record<ItemId, { n: number; t: number }>>;
   /** When each paid staff contract ends (ms timestamp; 0 = not hired). */
-  staff: { manager: number; keeper: number; fisher: number; shopkeeper: number };
+  staff: { manager: number; keeper: number; fisher: number; shopkeeper: number; lumberjack: number; miner: number };
   /** Market Town: whether the player owns a shop there, and how many times the pen was enlarged. */
   town: { shop: boolean; pen: number };
   /** Fertilizer runs until this time (ms); crops planted before then grow faster. */
@@ -122,7 +122,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0 }, town: { shop: false, pen: 0 }, boost: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -149,7 +149,7 @@ export function migrate(raw: unknown): State {
   while (v < SAVE_VERSION && MIGRATIONS[v]) { s = MIGRATIONS[v](s); v++; }
   const out: State = { ...base, ...s, version: SAVE_VERSION, inv: { ...(s.inv || {}) }, machines: { ...base.machines } } as State;
   out.stats = { ...base.stats, ...(s.stats || {}) };
-  out.staff = { manager: +s.staff?.manager || 0, keeper: +s.staff?.keeper || 0, fisher: +s.staff?.fisher || 0, shopkeeper: +s.staff?.shopkeeper || 0 };
+  out.staff = { manager: +s.staff?.manager || 0, keeper: +s.staff?.keeper || 0, fisher: +s.staff?.fisher || 0, shopkeeper: +s.staff?.shopkeeper || 0, lumberjack: +s.staff?.lumberjack || 0, miner: +s.staff?.miner || 0 };
   out.town = { shop: !!s.town?.shop, pen: Math.max(0, Math.min(3, Math.floor(+s.town?.pen || 0))) };
   out.boost = +s.boost || 0;
   out.gemAt = +s.gemAt || 0;

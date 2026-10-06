@@ -13,7 +13,7 @@ import { initScene } from './scene/renderer';
 import { markDirty } from './ui/dirty';
 import { toast } from './ui/toasts';
 import { catchUp } from './game/staff';
-import { awayNote } from './ui/staff';
+import { anyAway, awayNote } from './ui/staff';
 
 /** A place to keep one player's farm as a JSON string. */
 export interface Remote {
@@ -70,7 +70,7 @@ export async function connectRemote(r: Remote) {
       if (has3D) initScene();
       markDirty();
       lastSent = key();
-      toast(done.crops || done.products || done.fish || done.shop ? awayNote(done) : 'Welcome back. Your farm is loaded.');
+      toast(anyAway(done) ? awayNote(done) : 'Welcome back. Your farm is loaded.');
     } else await syncCloud(true);
   } catch { /* stay on the local save */ }
 }

@@ -10,15 +10,21 @@ import { shakeScene, toast } from './toasts';
 
 /** Helpers-tab cards and messages for the paid farm manager and animal keeper. */
 
-const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma', fisher: 'boy-head', shopkeeper: 'baker' };
+const FACE: Record<StaffId, string> = { manager: 'grocer', keeper: 'grandma', fisher: 'boy-head', shopkeeper: 'baker', lumberjack: 'oldfarmer', miner: 'girl-head' };
 
 export const hms = (ms: number) => {
   const m = Math.ceil(ms / 60000), h = Math.floor(m / 60);
   return h ? `${h}h ${m % 60}m` : `${m}m`;
 };
 
-export function awayNote(d: { crops: number; products: number; seeds: number; fish?: number; shop?: number }) {
+type Away = { crops: number; products: number; seeds: number; fish?: number; shop?: number; logs?: number; stone?: number };
+/** True when the staff did anything worth a welcome-back note. */
+export const anyAway = (d: Away) => !!(d.crops || d.products || d.fish || d.shop || d.logs || d.stone);
+
+export function awayNote(d: Away) {
   const bits = [];
+  if (d.logs) bits.push(`chopped ${fmt(d.logs)} logs`);
+  if (d.stone) bits.push(`dug ${fmt(d.stone)} stone`);
   if (d.shop) bits.push(`sold ${fmt(d.shop)} coins of goods at your shop`);
   if (d.fish) bits.push(`caught ${fmt(d.fish)} fish`);
   if (d.crops) bits.push(`harvested ${fmt(d.crops)} crops`);

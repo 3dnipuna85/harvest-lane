@@ -17,10 +17,10 @@ export function bindSfx() {
   on('farmUpgrade', () => sfxLevelUp());
   on('gems', () => sfxGem());
   on('cropRotted', () => sfxThud());
-  on('treeChop', () => sfxChop());
-  on('treeFelled', () => sfxTimber());
-  on('rockHit', () => sfxClink());
-  on('rockBroken', () => { sfxClink(); sfxThud(); });
+  on('treeChop', () => { if (!hands.staff) sfxChop(); });
+  on('treeFelled', () => { if (!hands.staff) sfxTimber(); });
+  on('rockHit', () => { if (!hands.staff) sfxClink(); });
+  on('rockBroken', () => { if (!hands.staff) { sfxClink(); sfxThud(); } });
 
   const box = $('soundBox');
   const sync = () => {

@@ -30,10 +30,10 @@ export interface GameEvents {
   fishMissed: { early: boolean };
   landBought: { k: number };
   shopSale: { item: ItemId; coins: number };
-  staffEnding: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper'; left: number };
+  staffEnding: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' | 'lumberjack' | 'miner'; left: number };
   wagesUnpaid: Record<string, never>;
   wagesPaid: Record<string, never>;
-  staffEnded: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' };
+  staffEnded: { k: 'manager' | 'keeper' | 'fisher' | 'shopkeeper' | 'lumberjack' | 'miner' };
   truckArrive: { who: string };
   contractArrive: { who: string };
   contractDone: { coins: number; gems: number };

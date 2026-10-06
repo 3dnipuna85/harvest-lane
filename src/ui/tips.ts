@@ -33,12 +33,12 @@ const TIPS: Tip[] = [
   },
   {
     id: 'woods', when: () => S.level >= WOODS_LVL, title: 'The Woods are open! 🌲', art: uiImg('log'), look: [-9.4, -13],
-    steps: ['Drag the view up past the barn to the forest behind the fence.', 'Tap a tree 3 times to chop it down for logs. Stumps grow back in 4 minutes.', `Build a Sawmill to turn 2 logs into planks. Farm upgrades need planks!`],
+    steps: ['Drag the view up past the barn to the forest behind the fence.', 'Tap a tree 3 times to chop it down for logs. Stumps grow back in 4 minutes.', `Build a Sawmill to turn 2 logs into planks. Farm upgrades need planks!`, 'Tired arms? Hire a Lumberjack in Helpers to chop for you.'],
     goal: 'Goal: chop 10 logs and make your first planks.',
   },
   {
     id: 'quarry', when: () => S.level >= QUARRY_LVL, title: 'The Quarry is open! ⛏️', art: uiImg('stone'), look: [11.3, -13],
-    steps: ['The Quarry is behind the fence on the right, past the workshops.', 'Tap a rock 4 times to break it for stone. New rocks are dug out in 5 minutes.', 'Build a Stonecutter to turn stone into bricks for farm upgrades.'],
+    steps: ['The Quarry is behind the fence on the right, past the workshops.', 'Tap a rock 4 times to break it for stone. New rocks are dug out in 5 minutes.', 'Build a Stonecutter to turn stone into bricks for farm upgrades.', 'Tired arms? Hire a Quarry worker in Helpers to dig for you.'],
     goal: 'Goal: mine 10 stone and make 5 bricks.',
   },
   machineTip('dairy', ['It turns 3 milk into a wheel of cheese.', 'Keep your cows fed: no milk, no cheese!', 'The Estate upgrade needs 10 cheese.'], 'Goal: make 3 cheese.'),
