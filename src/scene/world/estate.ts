@@ -91,7 +91,9 @@ function grand(g: THREE.Group) {
   }
 }
 
+let bound = false;
 export function buildEstate() {
+  tiers.length = 0; water = null; flags = [];
   for (const make of [countryFarm, ranch, estate, grand]) {
     const g = new THREE.Group();
     g.visible = false;
@@ -99,6 +101,8 @@ export function buildEstate() {
     ctx.scene.add(g);
     tiers.push(g);
   }
+  if (bound) return;
+  bound = true;
   on('farmUpgrade', () => { for (let k = 0; k < 10; k++) setTimeout(() => sparkle(HOUSE.x - 2 + Math.random() * 4, HOUSE.z + 1 + Math.random() * 5), k * 90); });
 }
 

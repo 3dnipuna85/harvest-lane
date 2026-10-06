@@ -37,6 +37,9 @@ function buildDog(): DogView {
   return { g, legs, tail, head };
 }
 
+/** Where the dog is, or null before it exists. */
+export const dogAt = () => (dog ? { x: dog.x, z: dog.z } : null);
+
 export function initDog() {
   const p = getPlayer();
   dog = { x: p.x - 0.8, z: p.z + 0.5, face: Math.PI / 4, phase: 0, v: buildDog() };

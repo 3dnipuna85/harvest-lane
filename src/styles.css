@@ -529,3 +529,4 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .soundbtn{font-size:18px!important}
 .soundbox{position:fixed;z-index:40;right:calc(var(--safe-r, 0px) + 64px);top:50%;transform:translateY(-120%);display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:#fff6e2;border:3px solid #a86b36;box-shadow:0 6px 0 rgba(0,0,0,.18);font-weight:800;color:#6b4a2a;min-width:170px}
 .soundbox b{font-family:var(--display);font-weight:400;font-size:18px}
+.lbl.say.chat{font-size:12px;max-width:190px;pointer-events:none}

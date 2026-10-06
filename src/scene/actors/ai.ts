@@ -27,6 +27,8 @@ export const isFishing = () => fishing;
 
 /** The player's farmer, for followers like the dog. */
 export const getPlayer = () => player;
+/** Everyone on the farm who can chat: for the speech bubbles in fx/chatter.ts. */
+export const crew = () => ({ player, hands, sellers, manager });
 
 export function initActors() {
   queue = []; res.clear(); hands = []; sellers = []; manager = null; saleTurn = 0; fishing = false; stopFishing();
