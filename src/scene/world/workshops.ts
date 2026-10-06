@@ -11,6 +11,9 @@ import { T } from '../materials';
 import { lbl } from '../fx/labels';
 import { dust3, smoke3 } from '../fx/particles';
 
+/** Where workshop id stands: beside the barn for the first row, or its own spot in the back row. */
+export const wsPos = (id: MachineId) => MACHINES[id].at ?? { x: BX[MACHINE_IDS.indexOf(id) + 1], z: BZ };
+
 type SlotState = 'locked' | 'lot' | 'owned';
 interface Slot { root: THREE.Group; st: SlotState | null; inner: THREE.Group | null; pop: number; puffT: number }
 let slots: Slot[] = [];
@@ -42,9 +45,10 @@ function workshopModel(id: MachineId, owned: boolean) {
 }
 
 export function initWorkshops() {
-  slots = MACHINE_IDS.map((id, j) => {
+  slots = MACHINE_IDS.map(id => {
     const root = new THREE.Group();
-    root.position.set(BX[j + 1], 0, BZ);
+    const p = wsPos(id);
+    root.position.set(p.x, 0, p.z);
     root.userData = { type: 'bld', id };
     ctx.scene.add(root);
     ctx.pickables.push(root);
@@ -72,7 +76,8 @@ export function syncBuildings() {
       slot.root.add(slot.inner);
       if (was && st === 'owned') {
         slot.pop = 0.5;
-        for (let k = 0; k < 14; k++) dust3(BX[j + 1] + (Math.random() - 0.5) * 2.2, BZ + (Math.random() - 0.5) * 1.8);
+        const p = wsPos(id);
+        for (let k = 0; k < 14; k++) dust3(p.x + (Math.random() - 0.5) * 2.2, p.z + (Math.random() - 0.5) * 1.8);
       }
     }
   });
@@ -83,7 +88,7 @@ const winOn = () => T('#ffe27a', { emissive: '#ffb300', emissiveIntensity: 0.8 }
 
 export function updateBuildings(dt: number) {
   MACHINE_IDS.forEach((id, j) => {
-    const d = MACHINES[id], m = S.machines[id], slot = slots[j], x = BX[j + 1];
+    const d = MACHINES[id], m = S.machines[id], slot = slots[j], { x, z: BZ } = wsPos(id);
     if (slot.st === 'locked') { lbl('b' + j, '🔒 Lv ' + d.lvl, tmp.set(x, 0.5, BZ), 'lock'); return; }
     if (slot.st === 'lot') { lbl('b' + j, `<span>${d.name}</span><span class="r">${coinHTML}${fmt(d.cost)}</span>`, tmp.set(x, 1.15, BZ + 0.7), 'sign'); return; }
     const win = slot.inner?.userData.win as THREE.Mesh | undefined;
@@ -108,4 +113,4 @@ export function updateBuildings(dt: number) {
 }
 
 /** Where a workshop's finished goods start their flight to the barn. */
-export const workshopDoor = (id: MachineId) => new THREE.Vector3(BX[MACHINE_IDS.indexOf(id) + 1], 1.2, BZ + 1.1);
+export const workshopDoor = (id: MachineId) => { const p = wsPos(id); return new THREE.Vector3(p.x, 1.2, p.z + 1.1); };

@@ -1,5 +1,5 @@
 import { CROP_IDS } from '../data/crops';
-import { GOOD_IDS, PRODUCT_IDS, type ItemId } from '../data/goods';
+import { GOOD_IDS, MATERIALS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, recipe } from '../data/machines';
 import { SELLER_INTERVAL_S } from '../data/limits';
 import { now } from './clock';
@@ -21,7 +21,7 @@ export function resetSim() { sellAcc = 0; }
 export function nextSale(): ItemId | undefined {
   // The best price on the market right now, keeping back anything a truck is coming for.
   const keep = truckReserve();
-  const goods = [...GOOD_IDS, ...PRODUCT_IDS].filter(k => inv(k) > (keep[k] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a));
+  const goods = [...GOOD_IDS, ...PRODUCT_IDS].filter(k => !MATERIALS.includes(k) && inv(k) > (keep[k] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a));
   if (goods[0]) return goods[0];
   if (S.sellCrops) return CROP_IDS.filter(c => inv(c) > 10 + (keep[c] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a))[0];
   return undefined;

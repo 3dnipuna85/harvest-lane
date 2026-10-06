@@ -530,3 +530,13 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .soundbox{position:fixed;z-index:40;right:calc(var(--safe-r, 0px) + 64px);top:50%;transform:translateY(-120%);display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:#fff6e2;border:3px solid #a86b36;box-shadow:0 6px 0 rgba(0,0,0,.18);font-weight:800;color:#6b4a2a;min-width:170px}
 .soundbox b{font-family:var(--display);font-weight:400;font-size:18px}
 .lbl.say.chat{font-size:12px;max-width:190px;pointer-events:none}
+
+/* What-to-do-now tips */
+.tipsbox{z-index:65}
+.tip-card{max-width:440px;width:100%;display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.tip-head{display:flex;align-items:center;gap:10px;font-size:17px;color:#5b3a1e}
+.tip-head img,.tip-emoji{width:44px;height:44px;font-size:36px;line-height:44px;text-align:center;flex:none}
+.tip-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-weight:700;color:#6b4a2a;font-size:14px;line-height:1.35}
+.tip-goal{display:flex;align-items:center;gap:8px;background:#fff3cf;border-radius:12px;padding:6px 10px;font-weight:900;color:#a0522d}
+.tip-goal .face{width:38px;height:38px;border-radius:50%}
+.tip-btns{justify-content:flex-end;gap:8px}

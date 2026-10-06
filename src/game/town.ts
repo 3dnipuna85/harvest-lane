@@ -1,5 +1,5 @@
 import { ANIMALS, type AnimalId } from '../data/animals';
-import { GOOD_IDS, PRODUCT_IDS, type ItemId } from '../data/goods';
+import { GOOD_IDS, MATERIALS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { now } from './clock';
 import { earn, flood, inv, unitPrice, type BuyResult } from './economy';
 import { emit } from './events';
@@ -69,7 +69,7 @@ export function truckReserve(): Partial<Record<ItemId, number>> {
 /** The most valuable good or animal product in the barn that no truck needs, for the shopkeeper to sell. */
 export function shopItem(): ItemId | undefined {
   const keep = truckReserve();
-  return [...GOOD_IDS, ...PRODUCT_IDS].filter(k => inv(k) > (keep[k] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a))[0];
+  return [...GOOD_IDS, ...PRODUCT_IDS].filter(k => !MATERIALS.includes(k) && inv(k) > (keep[k] || 0)).sort((a, b) => unitPrice(b) - unitPrice(a))[0];
 }
 
 /** One shop sale at town prices. Returns the coins taken. */

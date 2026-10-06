@@ -82,6 +82,9 @@ export const sfxLevelUp = () => fx(t => {
   [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.11, 0.22, 'square', 0.035));
   [1047, 1319, 1568].forEach(f => tone(f, t + 0.5, 0.7, 'triangle', 0.03));
 });
+export const sfxChop = () => fx(t => { noise(t, 0.12, 0.09, 900); tone(180, t, 0.12, 'square', 0.04, sfxBus, 0.6); });
+export const sfxClink = () => fx(t => { tone(1800, t, 0.12, 'square', 0.03, sfxBus, 0.8); noise(t, 0.08, 0.06, 4000); });
+export const sfxTimber = () => fx(t => { noise(t, 0.6, 0.08, 500); tone(110, t + 0.1, 0.5, 'sine', 0.08, sfxBus, 0.6); });
 export const sfxMoo = () => fx(t => { tone(160, t, 0.6, 'sawtooth', 0.025, sfxBus, 0.75); tone(162, t, 0.6, 'triangle', 0.04, sfxBus, 0.75); });
 
 /* ---------------- Music: a light, looping country tune, composed on the fly ---------------- */

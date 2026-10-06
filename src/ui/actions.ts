@@ -1,5 +1,6 @@
 import { sfxCoin } from './sound';
 import { deliverContract } from '../game/contracts';
+import { QUARRY_LVL, WOODS_LVL, chopTree, mineRock } from '../game/resources';
 import { MACHINES, type MachineId } from '../data/machines';
 import * as eco from '../game/economy';
 import { deliver as deliverOrder, fillOrders, skip as skipOrder } from '../game/orders';
@@ -58,6 +59,20 @@ export function loadTruck(_x: number, _y: number) {
   }
   toast(r.who + ' paid ' + fmt(r.coins + r.tip) + ' coins' + (r.tip ? ', including a ' + fmt(r.tip) + ' tip!' : ''));
   return true;
+}
+
+export function chop(i: number) {
+  const r = chopTree(i);
+  if (r === 'locked') toast(`The Woods open at level ${WOODS_LVL}.`);
+  else if (r === 'regrowing') toast('Just a stump for now. It grows back soon.');
+  return r;
+}
+
+export function mine(i: number) {
+  const r = mineRock(i);
+  if (r === 'locked') toast(`The Quarry opens at level ${QUARRY_LVL}.`);
+  else if (r === 'regrowing') toast('Only rubble here. A new rock is being dug out.');
+  return r;
 }
 
 export function loadContract() {

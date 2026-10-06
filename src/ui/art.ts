@@ -3,6 +3,7 @@ import { ITEMS, type ItemId } from '../data/goods';
 /** Painted sprites in public/ui/, cut from assets/elements/. Items without art fall back to their emoji. */
 export const ART: Partial<Record<ItemId, string>> = {
   wheat: 'wheat', corn: 'corn', carrot: 'carrot', tomato: 'tomato', strawberry: 'strawberry', milk: 'milk',
+  log: 'log', stone: 'stone', brick: 'brick', cheese: 'cheese', honey: 'honey',
 };
 
 export const artUrl = (name: string) => `${import.meta.env.BASE_URL}ui/${name}.webp`;

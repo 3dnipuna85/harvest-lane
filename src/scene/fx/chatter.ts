@@ -93,5 +93,7 @@ export function bindChatter() {
   on('wagesPaid', () => { const h = aHand(); if (h) say('wage', charAt(h), 'Payday! Back to work! 💪', 'happy'); });
   on('levelUp', () => say('p', me(), pick(['I’m getting good at this!', 'Level up! Somebody get me a trophy.', 'Look at me, a real farmer now!']), 'happy'));
   on('fishCaught', ({ kind, byPlayer }) => { if (byPlayer && kind === 'goldfish') say('p', me(), 'A GOLDEN fish?! Nobody will believe me!', 'happy', 4); });
+  on('treeFelled', () => { if (Math.random() < 0.4) say('p', me(), pick(['TIMBERRR! 🌲', 'Sorry, tree. It’s for a good cause.', 'Who needs a gym when you have an axe?']), 'happy'); });
+  on('rockBroken', () => { if (Math.random() < 0.4) say('p', me(), pick(['Rock solid profit! 🪨', 'My arms are now 80% stone.', 'Take that, rock!']), 'happy'); });
   on('machineDone', () => { if (Math.random() < 0.12) say('p', me(), pick(['Mmm, smells like money.', 'Fresh out of the machine!', 'That machine works harder than I do.'])); });
 }

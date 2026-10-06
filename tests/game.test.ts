@@ -131,7 +131,7 @@ describe('saves', () => {
     const s = migrate(JSON.parse(JSON.stringify(old)));
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.coins).toBe(999);
-    expect(Object.keys(s.machines)).toHaveLength(5);
+    expect(Object.keys(s.machines)).toHaveLength(9);
   });
 
   it('falls back to a fresh farm for junk', () => {
@@ -514,7 +514,10 @@ describe('farm tiers and diamonds', () => {
     expect(capped()).toBe(true);
     expect(S.xp).toBe(xpNeed(10));
     S.coins = 9000; S.gems = 8;
+    expect(upgradeFarm()).toEqual({ ok: false, reason: 'mats' });
+    S.inv.plank = 12;
     expect(upgradeFarm()).toEqual({ ok: true, tier: 1 });
+    expect(S.inv.plank).toBe(2);
     expect(S.coins).toBe(1000);
     // the XP saved at the cap levels up straight away, with its diamond
     expect(S.level).toBe(11);
@@ -595,5 +598,33 @@ describe('contract lorries', () => {
     expect(S.coins).toBe(pay);
     expect(S.gems).toBeGreaterThanOrEqual(gems);
     expect(pay).toBeGreaterThan(need * 30 * 3);
+  });
+});
+
+describe('woods and quarry', () => {
+  it('three chops fell a tree for logs, and the stump regrows', async () => {
+    const { chopTree, TREE_REGROW_MS } = await import('../src/game/resources');
+    expect(chopTree(0, t)).toBe('locked');
+    S.level = 9;
+    expect(chopTree(0, t)).toBe('hit');
+    expect(chopTree(0, t)).toBe('hit');
+    expect(chopTree(0, t, () => 0.9)).toBe('done');
+    expect(S.inv.log).toBe(2);
+    expect(chopTree(0, t)).toBe('regrowing');
+    expect(chopTree(0, t + TREE_REGROW_MS)).toBe('hit');
+  });
+
+  it('four hits break a rock for stone', async () => {
+    const { mineRock } = await import('../src/game/resources');
+    S.level = 11;
+    for (let k = 0; k < 3; k++) expect(mineRock(2, t)).toBe('hit');
+    expect(mineRock(2, t, () => 0.9)).toBe('done');
+    expect(S.inv.stone).toBe(2);
+  });
+
+  it('helpers never sell building materials', async () => {
+    const { nextSale } = await import('../src/game/sim');
+    S.sellers = 1; S.inv = { log: 50, plank: 20, brick: 9 };
+    expect(nextSale()).toBeUndefined();
   });
 });

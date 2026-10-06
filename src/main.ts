@@ -24,6 +24,7 @@ import { officeOpen, officePlace } from './ui/office';
 import { inTown } from './scene/mode';
 import { bindEstate } from './ui/estate';
 import { bindSfx } from './ui/sfx';
+import { bindTips } from './ui/tips';
 import { bindGuide } from './ui/guide';
 import { catchUp } from './game/staff';
 import { awayNote, warnTrouble } from './ui/staff';
@@ -53,6 +54,7 @@ function start() {
   bindHud();
   bindEstate();
   bindSfx();
+  bindTips();
   bindPanelInput();
   bindGuide(S.level <= 2 && S.stats.harvested < 5);
   // The Farm Office pop-up sits just above the dock, whatever height the dock wraps to.

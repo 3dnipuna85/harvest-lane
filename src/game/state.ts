@@ -81,6 +81,11 @@ export interface State {
   /** The contract lorry waiting for machine goods (game/contracts.ts), and when the next one comes (0 = not scheduled). */
   contract: Contract | null;
   nextContract: number;
+  /** When each tree in the Woods / rock in the Quarry is back (ms; 0 = standing now). */
+  woods: number[];
+  rocks: number[];
+  /** Tips windows already shown (ui/tips.ts). */
+  tips: string[];
   /** Diamonds, the rare currency for farm upgrades. */
   gems: number;
   /** Farm tier (data/tiers.ts): caps the level until upgraded. */
@@ -117,7 +122,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0 }, town: { shop: false, pen: 0 }, boost: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0,
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0 }, town: { shop: false, pen: 0 }, boost: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -149,6 +154,10 @@ export function migrate(raw: unknown): State {
   out.boost = +s.boost || 0;
   out.gemAt = +s.gemAt || 0;
   out.nextContract = +s.nextContract || 0;
+  out.woods = Array.isArray(s.woods) ? s.woods.map((v: unknown) => +(v as number) || 0) : [];
+  out.rocks = Array.isArray(s.rocks) ? s.rocks.map((v: unknown) => +(v as number) || 0) : [];
+  // Farms from before the tips already know the bakery and the shop.
+  out.tips = Array.isArray(s.tips) ? s.tips.filter((v: unknown) => typeof v === 'string') : out.level >= 8 ? ['bakery', 'shop'] : out.level >= 2 ? ['bakery'] : [];
   out.contract = s.contract && typeof s.contract === 'object' && s.contract.items && +s.contract.end ? s.contract as Contract : null;
   out.gems = Math.max(0, Math.floor(+s.gems || 0));
   // Farms from before tiers keep their level: they start on the first tier that allows it.

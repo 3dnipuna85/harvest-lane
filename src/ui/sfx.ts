@@ -2,7 +2,7 @@ import { hands } from '../game/economy';
 import { on } from '../game/events';
 import { $ } from './format';
 import {
-  prefs, setMusic, setSfx, sfxBell, sfxCatch, sfxCluck, sfxGem, sfxHarvest, sfxLevelUp, sfxMoo, sfxPlant, sfxSplash, sfxThud,
+  prefs, setMusic, setSfx, sfxBell, sfxCatch, sfxChop, sfxClink, sfxTimber, sfxCluck, sfxGem, sfxHarvest, sfxLevelUp, sfxMoo, sfxPlant, sfxSplash, sfxThud,
 } from './sound';
 
 /** Game events → sound effects, and the sound settings pop-up. Staff work stays quiet so a busy farm isn't noisy. */
@@ -17,6 +17,10 @@ export function bindSfx() {
   on('farmUpgrade', () => sfxLevelUp());
   on('gems', () => sfxGem());
   on('cropRotted', () => sfxThud());
+  on('treeChop', () => sfxChop());
+  on('treeFelled', () => sfxTimber());
+  on('rockHit', () => sfxClink());
+  on('rockBroken', () => { sfxClink(); sfxThud(); });
 
   const box = $('soundBox');
   const sync = () => {

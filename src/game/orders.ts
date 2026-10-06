@@ -29,7 +29,7 @@ function orderPool() {
   for (const m of MACHINE_IDS) if (S.machines[m].owned || demanded().includes(m)) pool.push({ k: MACHINES[m].out, crop: false });
   for (const a of ANIMAL_IDS) if (S.level >= ANIMALS[a].lvl && S.animals[a].n > 0 && (S.made[ANIMALS[a].product] || 0) > 0) pool.push({ k: ANIMALS[a].product, crop: false });
   // River catches join the pool once the player has landed one (golden fish are too rare to order).
-  for (const k of ['fish', 'crab'] as const) if ((S.made[k] || 0) > 0) pool.push({ k, crop: false });
+  for (const k of ['fish', 'crab', 'log', 'stone'] as const) if ((S.made[k] || 0) > 0) pool.push({ k, crop: false });
   return pool;
 }
 

@@ -9,6 +9,10 @@ export interface GameEvents {
   animalSick: { kind: AnimalId; i: number };
   cropRotted: { i: number; crop: CropId };
   earn: { amount: number };
+  treeChop: { i: number };
+  treeFelled: { i: number; n: number };
+  rockHit: { i: number };
+  rockBroken: { i: number; n: number };
   gems: { n: number; why: string };
   farmUpgrade: { tier: number };
   /** XP is full but the farm tier caps the level. */

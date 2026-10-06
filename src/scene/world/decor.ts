@@ -80,7 +80,7 @@ function windmill(g: THREE.Object3D, x: number, z: number) {
   }
 }
 
-function pine(g: THREE.Object3D, x: number, z: number, s: number) {
+export function pine(g: THREE.Object3D, x: number, z: number, s: number) {
   const p = new THREE.Group();
   p.position.set(x, 0, z); p.scale.setScalar(s); g.add(p);
   part(Cap(0.16, 0.5), '#8a5a36', p, 0, 0.35, 0);
@@ -183,7 +183,7 @@ export function buildDecor() {
   pond(g);
   // pines along the back and edges, as in the concept's forest border
   for (const [x, z, s] of [[-12.3, -8.6, 1.1], [-9.6, -8.9, 0.9], [-0.2, -9.0, 0.85], [5.9, -9.0, 0.9], [12.2, -7.9, 1.1], [-12.4, 2.0, 1.0],
-    [12.4, 9.6, 1.0], [-14.6, -6.2, 1.4], [-27, 6.5, 1.5], [27, 5.5, 1.5], [14.8, -9, 1.4], [-14.8, -10.5, 1.4], [0, -11, 1.3], [7, -11.2, 1.4]]) {
+    [12.4, 9.6, 1.0], [-14.6, -6.2, 1.4], [-27, 6.5, 1.5], [27, 5.5, 1.5], [14.8, -9, 1.4], [-14.8, -10.5, 1.4]]) {
     pine(g, x, z, s);
   }
   rocks(g, [[-12.4, -5.0, 0.8], [-12.0, -4.6, 0.5], [12.4, -5.2, 0.7], [-12.4, 9.8, 0.8], [-11.8, 10.1, 0.5], [12.5, 7.4, 0.6], [-6.8, -8.8, 0.6], [9.6, -8.9, 0.7]]);
