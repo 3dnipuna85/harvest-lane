@@ -1,3 +1,4 @@
+import { sfxCoin } from './sound';
 import { deliverContract } from '../game/contracts';
 import { MACHINES, type MachineId } from '../data/machines';
 import * as eco from '../game/economy';
@@ -38,7 +39,7 @@ export function buyLand() {
 
 export function sell(k: Parameters<typeof eco.sell>[0], n: number, x: number, y: number) {
   const g = eco.sell(k, n);
-  if (g) fx(x, y, '+' + fmt(g), 'gold');
+  if (g) { fx(x, y, '+' + fmt(g), 'gold'); sfxCoin(); }
 }
 
 export function deliver(i: number, x: number, y: number) {

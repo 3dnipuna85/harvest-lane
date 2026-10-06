@@ -122,7 +122,7 @@ function updateChar(c: Char, dt: number) {
     if (!c.done && c.act >= c.actDur * 0.6) {
       c.done = true;
       const { i, crop } = c.task!, p = S.plots[i];
-      if (c.actType === 'plant' && p && !p.crop) { if (!plant(i, crop) && c.kind === 'player') seedDenied(crop); }
+      if (c.actType === 'plant' && p && !p.crop) { if (c.kind === 'player') { if (!plant(i, crop)) seedDenied(crop); } else byStaff(() => plant(i, crop)); }
       // only the player's own harvests earn XP
       else if (c.actType === 'harvest' && p && ripe(p)) { if (c.kind === 'player') harvest(i); else byStaff(() => harvest(i)); }
     }

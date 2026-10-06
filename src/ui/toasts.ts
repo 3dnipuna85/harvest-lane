@@ -1,3 +1,4 @@
+import { sfxBuzz } from './sound';
 import { $ } from './format';
 
 /** Floating text that rises and fades at a page position. `html` is trusted game text and may contain icons. */
@@ -21,6 +22,7 @@ export function toast(msg: string, cls: '' | 'lv' = '') {
 }
 
 export function shakeScene() {
+  sfxBuzz();
   const w = $('sceneWrap');
   w.classList.remove('shake');
   void w.offsetWidth;

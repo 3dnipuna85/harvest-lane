@@ -1,3 +1,4 @@
+import { sfxTap } from './sound';
 import { canFillContract } from '../game/contracts';
 import { sellersIdle } from '../game/sim';
 import { farmAction, farmPanel, farmSignature } from './estate';
@@ -252,6 +253,7 @@ export function bindPanelInput() {
   document.addEventListener('click', e => {
     const b = (e.target as Element).closest<HTMLElement>('[data-act]');
     if (!b || (b as HTMLButtonElement).disabled) return;
+    sfxTap();
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
     if (townAction(a!, k) || farmAction(a!)) { save(); return; }
