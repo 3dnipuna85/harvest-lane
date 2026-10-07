@@ -23,11 +23,24 @@ export function buyerId() {
   return b;
 }
 
+/** ?testpay switches this browser to Lemon Squeezy's test checkouts (fake cards); ?testpay=0 switches back. */
+export function testPay() {
+  try {
+    const q = new URLSearchParams(location.search).get('testpay');
+    if (q !== null) localStorage.setItem('harvest-lane-testpay', q === '0' ? '0' : '1');
+    return localStorage.getItem('harvest-lane-testpay') === '1';
+  } catch { return false; }
+}
+/** The checkout this browser should use for a pack, if any. */
+export const packLink = (p: Pack) => (testPay() ? p.testLink : p.link) || '';
+const anyLink = () => PACKS.some(p => packLink(p));
+
 /** The pack's checkout page, tagged with who is buying and which pack. */
 export function checkoutUrl(p: Pack) {
-  if (!p.link) return '';
+  const link = packLink(p);
+  if (!link) return '';
   const q = `checkout[custom][buyer]=${encodeURIComponent(buyerId())}&checkout[custom][pack]=${encodeURIComponent(p.id)}`;
-  return p.link + (p.link.includes('?') ? '&' : '?') + q;
+  return link + (link.includes('?') ? '&' : '?') + q;
 }
 
 /** The player opened a checkout: look for the payment for a while, whenever they come back. */
@@ -36,7 +49,7 @@ const pendingFor = () => Date.now() - (+(get(PENDING) || 0));
 
 let busy = false;
 export async function claimPacks() {
-  if (busy || visiting || !PACKS.some(p => p.link)) return 0;
+  if (busy || visiting || !anyLink()) return 0;
   busy = true;
   try {
     const r = await fetch('/api/claim', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ buyer: buyerId() }) });
@@ -63,7 +76,7 @@ export function claimSoon() { if (Date.now() - lastLook > 20_000) { lastLook = D
 
 /** Collect on start, when the tab comes back after a checkout, and every few seconds for a while after one. */
 export function bindPayments() {
-  if (!PACKS.some(p => p.link)) return;
+  if (!anyLink()) return;
   if (/[?&]paid=/.test(location.search)) { markCheckout(); history.replaceState(null, '', location.pathname); }
   setTimeout(claimPacks, 3000);
   addEventListener('visibilitychange', () => { if (!document.hidden && pendingFor() < 30 * 60_000) claimPacks(); });

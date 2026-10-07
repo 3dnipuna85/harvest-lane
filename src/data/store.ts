@@ -15,6 +15,8 @@ export interface Pack {
   once?: boolean;
   tag?: string;
   link?: string;
+  /** The Lemon Squeezy test-mode share link (fake cards only), used instead of `link` after opening the game with ?testpay. */
+  testLink?: string;
 }
 
 export const PACKS: Pack[] = [

@@ -3,7 +3,7 @@ import { now } from '../game/clock';
 import { S } from '../game/state';
 import { BAGS, bagCoins, buyBag, buyXpBoost, canBuyPack, grantPack, running, rushMachines, RUSH_GEMS, testShop, XP_BOOST_GEMS, XP_BOOST_MIN, xpBoosted, type SpendResult } from '../game/store';
 import { uiImg } from './art';
-import { checkoutUrl, claimSoon, markCheckout } from './payments';
+import { checkoutUrl, claimSoon, markCheckout, packLink, testPay } from './payments';
 import { gemHTML } from './estate';
 import { coinHTML, fmt } from './format';
 import { hms } from './staff';
@@ -32,7 +32,7 @@ export function shopPanel() {
     const owned = !canBuyPack(p.id), extras = [p.coins ? `${coinHTML}${fmt(p.coins)}` : '', p.xpMin ? `${p.xpMin} min Double XP` : ''].filter(Boolean).join(' + ');
     const btn = owned ? '<span class="small">Bought</span>'
       : test ? `<button class="btn ${armed === p.id ? 'red' : 'gold'}" data-act="pack" data-k="${p.id}">${armed === p.id ? 'Tap again (test, free)' : usd(p.usd)}</button>`
-      : p.link ? `<a class="btn gold" href="${checkoutUrl(p)}" target="_blank" rel="noopener" data-act="checkout">${usd(p.usd)}</a>`
+        : packLink(p) ? `<a class="btn gold" href="${checkoutUrl(p)}" target="_blank" rel="noopener" data-act="checkout">${usd(p.usd)}</a>`
       : `<button class="btn" disabled>${usd(p.usd)} · soon</button>`;
     return `<div class="card shopitem pack ${p.once ? 'starter' : ''}"><div class="big">${uiImg(p.coins ? 'gift' : 'gem')}</div><div class="grow">
       <div class="ttl">${p.name} ${p.tag ? `<span class="packtag">${p.tag}</span>` : ''}</div>
@@ -45,8 +45,8 @@ export function shopPanel() {
     <div class="shophead">Get more diamonds</div>
     ${test ? '<div class="testnote">TEST MODE: purchases are free and nothing is charged. Turn it off with ?testshop=0</div>' : ''}
     ${packs}
-    ${PACKS.some(p => p.link) && !test ? '<div class="testnote paynote">Payments are handled by Lemon Squeezy in a new tab. Your diamonds arrive here a few seconds after paying. Not there? Keep this page open, or reopen this shop.</div>' : ''}
-    <div class="townintro">Prices in US dollars. Everything in the game can be earned by playing; packs just get you there faster. <a href="/refunds" target="_blank">Refunds</a> · <a href="/terms" target="_blank">Terms</a> · <a href="/contact" target="_blank">Help</a>${test || PACKS.some(p => p.link) ? '' : ' Real-money packs are coming soon.'}</div></div>`;
+    ${PACKS.some(p => packLink(p)) && !test ? '<div class="testnote paynote">Payments are handled by Lemon Squeezy in a new tab. Your diamonds arrive here a few seconds after paying. Not there? Keep this page open, or reopen this shop.</div>' : ''}
+    <div class="townintro">Prices in US dollars. Everything in the game can be earned by playing; packs just get you there faster. <a href="/refunds" target="_blank">Refunds</a> · <a href="/terms" target="_blank">Terms</a> · <a href="/contact" target="_blank">Help</a>${testPay() ? ' <b>TEST PAYMENTS: use Lemon Squeezy test cards only. Turn off with ?testpay=0</b>' : ''}${test || PACKS.some(p => packLink(p)) ? '' : ' Real-money packs are coming soon.'}</div></div>`;
 }
 
 export const shopSignature = () => [S.gems, S.coins >= 0 && S.level, xpBoosted(), running().length, armed, S.bought.join(','), Math.floor((S.xpBoost - now()) / 60000)].join('|');
