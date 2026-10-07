@@ -956,3 +956,22 @@ describe('building upgrades', () => {
     expect(migrate(JSON.parse(JSON.stringify({ ...S, build: { barn: 9, pens: 2 } }))).build).toEqual({ barn: 3, pens: 2, house: 0 });
   });
 });
+
+describe('orchard and crystal cave', () => {
+  it('open by level, give apples and crystals, then regrow', async () => {
+    const a = await import('../src/game/areas');
+    expect(a.pickApples(0, t)).toBe('locked');
+    S.level = 27;
+    expect(a.pickApples(0, t, () => 0.9)).toBe('done');
+    expect(inv('apple')).toBe(3);
+    expect(a.pickApples(0, t + 1000)).toBe('growing');
+    expect(a.pickApples(0, t + a.APPLE_REGROW_MS)).toBe('done');
+    for (let k = 1; k < a.CAVE_HITS; k++) expect(a.mineCrystal(0, t, () => 0)).toBe('hit');
+    const gems = S.gems;
+    expect(a.mineCrystal(0, t, () => 0)).toBe('done');
+    expect(inv('crystal')).toBe(1);
+    expect(inv('stone')).toBe(4);
+    expect(S.gems).toBe(gems + 1);
+    expect(a.mineCrystal(0, t + 1000)).toBe('growing');
+  });
+});

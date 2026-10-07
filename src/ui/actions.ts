@@ -1,4 +1,5 @@
 import { sfxCoin } from './sound';
+import { CAVE_LVL, ORCHARD_LVL, mineCrystal, pickApples } from '../game/areas';
 import { deliverContract } from '../game/contracts';
 import { chopTree, mineRock, plantSapling, rockLvl, treeLvl, WOODS_TREES } from '../game/resources';
 import { MACHINES, type MachineId } from '../data/machines';
@@ -82,6 +83,20 @@ export function mine(i: number) {
   const r = mineRock(i);
   if (r === 'locked') toast(`${rockLvl(i) === rockLvl(0) ? 'The Quarry opens' : 'Hill Quarry is found'} at level ${rockLvl(i)}.`);
   else if (r === 'regrowing') toast('Only rubble here. A new rock is being dug out.');
+  return r;
+}
+
+export function pickTree(i: number) {
+  const r = pickApples(i);
+  if (r === 'locked') toast(`The Apple Orchard is found at level ${ORCHARD_LVL}.`);
+  else if (r === 'growing') toast('These apples aren’t ripe yet. Come back in a few minutes.');
+  return r;
+}
+
+export function crystal(i: number) {
+  const r = mineCrystal(i);
+  if (r === 'locked') toast(`The Crystal Cave is found at level ${CAVE_LVL}.`);
+  else if (r === 'growing') toast('This crystal was mined. A new one grows in the cave.');
   return r;
 }
 

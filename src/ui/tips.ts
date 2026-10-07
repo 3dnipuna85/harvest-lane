@@ -1,3 +1,4 @@
+import { CAVE_LVL, ORCHARD_LVL } from '../game/areas';
 import { MACHINES, type MachineId } from '../data/machines';
 import { capped } from '../game/estate';
 import { HILL_LVL, QUARRY_LVL, RIDGE_LVL, WOODS_LVL } from '../game/resources';
@@ -50,6 +51,16 @@ const TIPS: Tip[] = [
     id: 'hill', when: () => S.level >= HILL_LVL, title: 'You found Hill Quarry! ⛏️', art: uiImg('stone'), look: [18, -13.4],
     steps: ['A new stone pit, past the Quarry on the far right.', 'Hill rocks are tough (5 hits) but give more stone.', 'Miners say there are diamonds in these hills… 💎'],
     goal: 'Goal: break a rock on Hill Quarry.',
+  },
+  {
+    id: 'orchard', when: () => S.level >= ORCHARD_LVL, title: 'You found the Apple Orchard! 🍎', art: '🍎', look: [-10.5, 18.8],
+    steps: ['Drag the view down, across the river on the left.', 'Tap a tree full of apples to pick 3 or 4. It ripens again in 6 minutes.', 'Apples sell well, and buyers will start asking for them.'],
+    goal: 'Goal: pick apples from every tree.',
+  },
+  {
+    id: 'cave', when: () => S.level >= CAVE_LVL, title: 'You found the Crystal Cave! 💠', art: '💠', look: [12.2, 19.2],
+    steps: ['Drag the view down, across the river on the right.', 'Crystal rocks are the toughest yet: 6 hits each.', 'Each gives stone, often a crystal worth 140 coins, and sometimes a diamond 💎.'],
+    goal: 'Goal: break a crystal rock.',
   },
   machineTip('dairy', ['It turns 3 milk into a wheel of cheese.', 'Keep your cows fed: no milk, no cheese!', 'The Estate upgrade needs 10 cheese.'], 'Goal: make 3 cheese.'),
   machineTip('apiary', ['The bees turn 3 strawberries into a jar of honey.', 'Honey is the most valuable thing on the farm.', 'The Grand Estate upgrade needs 20 honey.'], 'Goal: fill 5 jars of honey.'),

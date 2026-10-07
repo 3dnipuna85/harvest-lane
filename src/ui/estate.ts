@@ -85,6 +85,7 @@ export function bindEstate() {
   on('gems', ({ n, why }) => {
     const r = $('gemPill').getBoundingClientRect();
     fx(r.left + r.width / 2, r.bottom + 8, `+${n} ${gemHTML()}`, 'gemfx');
+    if (why === 'cave') toast(`${gemHTML()} You found a diamond inside the crystal!`);
     if (why === 'truck' || why === 'shop') toast(`${gemHTML()} You found a diamond${why === 'shop' ? ' in the shop till' : ' in the truck driver’s tip'}!`);
     markDirty();
   });

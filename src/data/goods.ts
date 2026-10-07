@@ -2,7 +2,7 @@ import { CROPS, type CropId } from './crops';
 
 export type GoodId = 'bread' | 'popcorn' | 'juice' | 'sauce' | 'cake' | 'plank' | 'brick' | 'cheese' | 'honey';
 /** Things animals give: collected from the pen and the yard, not made in a workshop. */
-export type ProductId = 'egg' | 'milk' | 'truffle' | 'wool' | 'fish' | 'crab' | 'goldfish' | 'log' | 'stone';
+export type ProductId = 'egg' | 'milk' | 'truffle' | 'wool' | 'fish' | 'crab' | 'goldfish' | 'log' | 'stone' | 'apple' | 'crystal';
 export type ItemId = CropId | GoodId | ProductId;
 
 export interface Good {
@@ -35,6 +35,8 @@ export const PRODUCTS: Record<ProductId, Good> = {
   goldfish: { name: 'Golden Fish', icon: '🐠', sell: 150 },
   log:     { name: 'Logs',    icon: '🪵', sell: 12 },
   stone:   { name: 'Stone',   icon: '🪨', sell: 14 },
+  apple:   { name: 'Apples',  icon: '🍎', sell: 38 },
+  crystal: { name: 'Crystal', icon: '💠', sell: 140 },
 };
 export const PRODUCT_IDS = Object.keys(PRODUCTS) as ProductId[];
 /** Building materials: kept for farm upgrades, so helpers and the shop never sell them. */

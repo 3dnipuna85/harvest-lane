@@ -15,6 +15,9 @@ export interface GameEvents {
   saplingPlanted: { i: number };
   rockHit: { i: number };
   rockBroken: { i: number; n: number };
+  applesPicked: { i: number; n: number };
+  crystalHit: { i: number };
+  crystalBroken: { i: number; stone: number; crystal: number };
   gems: { n: number; why: string };
   packBought: { id: string };
   adReward: { r: string };

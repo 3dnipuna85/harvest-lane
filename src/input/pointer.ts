@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buyLand, buyPlot, chop, loadContract, mine, loadTruck, tapAnimal } from '../ui/actions';
+import { buyLand, buyPlot, chop, loadContract, mine, pickTree, crystal, loadTruck, tapAnimal } from '../ui/actions';
 import { save, visiting, type Tab } from '../game/state';
 import { isFishing, tapPlot } from '../scene/actors/ai';
 import { line } from '../game/fishing';
@@ -43,6 +43,8 @@ function pick(cx: number, cy: number) {
     if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'tree') { chop(u.i); save(); return; }
     if (u.type === 'rock') { mine(u.i); save(); return; }
+    if (u.type === 'apple') { pickTree(u.i); save(); return; }
+    if (u.type === 'crystal') { crystal(u.i); save(); return; }
     if (u.type === 'crow') { shooCrow(u.i); save(); return; }
     if (u.type === 'fox') { chaseFox(); save(); return; }
     if (u.type === 'contract') { if (!loadContract()) openTab('orders'); save(); return; }

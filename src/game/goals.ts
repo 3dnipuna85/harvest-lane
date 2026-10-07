@@ -167,4 +167,5 @@ export function bindGoals() {
   on('machineDone', () => progress('make'));
   on('treeFelled', ({ n }) => progress('gather', n));
   on('rockBroken', ({ n }) => progress('gather', n));
+  on('crystalBroken', ({ stone }) => progress('gather', stone));
 }

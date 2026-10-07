@@ -118,6 +118,9 @@ export interface State {
   /** When each tree in the Woods / rock in the Quarry is back (ms; 0 = standing now). */
   woods: number[];
   rocks: number[];
+  /** When each Apple Orchard tree is ripe again / each Crystal Cave rock is back (ms; 0 = now). */
+  orchard: number[];
+  cave: number[];
   /** Tips windows already shown (ui/tips.ts). */
   tips: string[];
   /** Diamonds, the rare currency for farm upgrades. */
@@ -158,7 +161,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], paid: [], ads: { day: '', n: 0 }, goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [], build: { barn: 0, pens: 0, house: 0 },
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], paid: [], ads: { day: '', n: 0 }, goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], orchard: [], cave: [], tips: [], build: { barn: 0, pens: 0, house: 0 },
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -199,6 +202,8 @@ export function migrate(raw: unknown): State {
   out.nextContract = +s.nextContract || 0;
   out.woods = Array.isArray(s.woods) ? s.woods.map((v: unknown) => +(v as number) || 0) : [];
   out.rocks = Array.isArray(s.rocks) ? s.rocks.map((v: unknown) => +(v as number) || 0) : [];
+  out.orchard = Array.isArray(s.orchard) ? s.orchard.map((v: unknown) => +(v as number) || 0) : [];
+  out.cave = Array.isArray(s.cave) ? s.cave.map((v: unknown) => +(v as number) || 0) : [];
   // Farms from before the tips already know the bakery and the shop.
   out.tips = Array.isArray(s.tips) ? s.tips.filter((v: unknown) => typeof v === 'string') : out.level >= 8 ? ['bakery', 'shop'] : out.level >= 2 ? ['bakery'] : [];
   out.contract = s.contract && typeof s.contract === 'object' && s.contract.items && +s.contract.end ? s.contract as Contract : null;
