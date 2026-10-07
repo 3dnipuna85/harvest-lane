@@ -3,6 +3,9 @@ import { MACHINES, MACHINE_IDS } from '../data/machines';
 import { earn } from '../game/economy';
 import { charImg, iconHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
+import { adsLeft, useAdView } from '../game/ads';
+import { adsAvailable, showInterstitial, watchFor } from './ads';
+import { toast } from './toasts';
 
 /** Coins handed out with each level: grows with the level reached. */
 export const levelBonus = (level: number) => 25 * level;
@@ -69,20 +72,32 @@ function show(level: number) {
       <div class="lu-hero">${charImg('oldfarmer')}<p class="lu-say">Great work, farmer!</p></div>
       ${cards.length ? `<div class="lu-unlocks"><p>Unlocked</p><div class="lu-row">${cards.join('')}</div></div>` : ''}
       <div class="lu-bonus">${coinHTML}<b>+${fmt(bonus)}</b> level bonus</div>
-      <button class="btn gold lu-go">Collect</button>
+      <div class="lu-btns">${adsAvailable() && adsLeft() > 0 ? '<button class="btn alt lu-x2">📺 Collect ×2</button>' : ''}<button class="btn gold lu-go">Collect</button></div>
     </div>`;
   document.body.appendChild(box);
   confetti(box);
   box.querySelectorAll<HTMLElement>('.lu-card').forEach((c, i) => { c.style.animationDelay = 0.55 + i * 0.15 + 's'; });
   const go = box.querySelector<HTMLButtonElement>('.lu-go')!;
   go.focus({ preventScroll: true });
+  let paid = bonus;
+  // Optional: watch an ad to double the level bonus.
+  box.querySelector<HTMLButtonElement>('.lu-x2')?.addEventListener('click', ev => {
+    const b = ev.currentTarget as HTMLButtonElement;
+    watchFor('level-bonus', () => useAdView(), `Level bonus doubled: +${fmt(bonus * 2)} coins!`, toast).then(ok => {
+      if (!ok) return;
+      paid = bonus * 2;
+      b.remove();
+      go.click();
+    });
+  });
   go.addEventListener('click', () => {
-    coinShower(box!.querySelector('.lu-bonus')!.getBoundingClientRect(), 16);
-    setTimeout(() => earn(bonus), 900);
+    coinShower(box!.querySelector('.lu-bonus')!.getBoundingClientRect(), paid > bonus ? 28 : 16);
+    setTimeout(() => earn(paid), 900);
     box!.classList.add('out');
     const b = box!;
     box = null;
-    setTimeout(() => { b.remove(); if (queue.length) show(queue.shift()!); }, 350);
+    // A short ad break after the last level-up in a row (if ads are on; ui/ads.ts limits how often).
+    setTimeout(() => { b.remove(); if (queue.length) show(queue.shift()!); else setTimeout(() => showInterstitial('level-up'), 1200); }, 350);
   }, { once: true });
 }
 

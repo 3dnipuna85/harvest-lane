@@ -33,8 +33,11 @@ const SIZE: Record<GoalKind, (l: number) => number> = {
   gather: l => 6 + Math.floor(l / 3),
 };
 
-/** A new timed challenge comes this long after the last one ended. */
+/** A new timed challenge comes this long after you beat the last one, and longer after you miss one. */
 export const TIMED_GAP_MS = 3 * 60_000;
+export const FAILED_GAP_MS = 10 * 60_000;
+/** Diamonds to start the next challenge right away instead of waiting. */
+export const SKIP_GEMS = 3;
 export const timedMin = (l: number) => Math.min(15, 8 + Math.floor(l / 5));
 
 export function goalKinds(level = S.level): GoalKind[] {
@@ -67,12 +70,36 @@ export function goalsTick(t = now(), rand = Math.random) {
   const g = S.goals, ch = g.list[2];
   if (ch.state === 'open' && t >= ch.until) {
     ch.state = 'failed';
-    g.nextTimed = t + TIMED_GAP_MS;
+    g.nextTimed = t + FAILED_GAP_MS;
     emit('goalFailed', { kind: ch.kind });
   } else if (ch.state !== 'open' && t >= g.nextTimed) {
     const pool = goalKinds().filter(k => k !== g.list[0].kind && k !== g.list[1].kind);
     g.list[2] = timed(pickOut(pool.length ? pool : goalKinds(), rand), S.level, t);
   }
+}
+
+/** Waiting for the next challenge, and how long. */
+export const challengeWait = (t = now()) => (S.goals && S.goals.list[2].state !== 'open' ? Math.max(0, S.goals.nextTimed - t) : 0);
+
+/** Start the next challenge now (after watching an ad, or for diamonds). */
+export function skipWait(pay: 'ad' | 'gems', t = now()) {
+  if (!S.goals || S.goals.list[2].state === 'open') return false;
+  if (pay === 'gems') { if (S.gems < SKIP_GEMS) return false; S.gems -= SKIP_GEMS; }
+  S.goals.nextTimed = t;
+  goalsTick(t);
+  return true;
+}
+
+/** Can this finished target's reward still be doubled? */
+export const canDouble = (i: number) => { const g = S.goals?.list[i]; return !!g && g.state === 'done' && !g.dbl && (g.coins > 0 || g.gems > 0); };
+/** Pay a finished target's coins and diamonds again (after watching an ad). XP isn't doubled. */
+export function doubleGoal(i: number) {
+  if (!canDouble(i)) return false;
+  const g = S.goals!.list[i];
+  g.dbl = true;
+  earn(g.coins);
+  gainGems(g.gems, 'goal');
+  return true;
 }
 
 /** Count some of your own work towards the open targets of that kind. */

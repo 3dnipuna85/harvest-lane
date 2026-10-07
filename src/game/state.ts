@@ -53,7 +53,9 @@ export interface Trouble {
 }
 export type GoalKind = 'harvest' | 'order' | 'animal' | 'truck' | 'fish' | 'make' | 'gather';
 /** One level target (game/goals.ts). `until` is the countdown end for a timed challenge, 0 for a plain target. */
-export interface Goal { kind: GoalKind; n: number; have: number; coins: number; xp: number; gems: number; until: number; state: 'open' | 'done' | 'failed' }
+export interface Goal { kind: GoalKind; n: number; have: number; coins: number; xp: number; gems: number; until: number; state: 'open' | 'done' | 'failed';
+  /** The reward was doubled by watching an ad. */
+  dbl?: boolean }
 export type Tab = 'orders' | 'barn' | 'animals' | 'machines' | 'helpers' | 'farm' | 'shop';
 
 export interface State {

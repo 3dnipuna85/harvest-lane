@@ -26,10 +26,17 @@ export function adUseful(r: AdReward, t = now()) {
   return true;
 }
 
+/** Count one of today's ad views; false if none are left. */
+export function useAdView(t = now()) {
+  if (adsLeft(t) <= 0) return false;
+  S.ads = { day: today(t), n: adsUsed(t) + 1 };
+  return true;
+}
+
 /** Give the reward for an ad that was watched to the end. */
 export function grantAd(r: AdReward, t = now()) {
   if (adsLeft(t) <= 0 || !adUseful(r, t)) return false;
-  S.ads = { day: today(t), n: adsUsed(t) + 1 };
+  useAdView(t);
   if (r === 'gems') gainGems(AD_GEMS, 'ad');
   else if (r === 'coins') S.coins += adCoins();
   else if (r === 'rush') for (const k of running()) S.machines[k].job!.end = t;

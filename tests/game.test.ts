@@ -764,7 +764,7 @@ describe('level targets', () => {
     expect(S.coins).toBe(coins + goal.coins);
   });
 
-  it('a missed challenge is replaced after a short wait, and a new level brings new targets', async () => {
+  it('a missed challenge is replaced after a wait, and a new level brings new targets', async () => {
     const g = await import('../src/game/goals');
     S.level = 5;
     g.goalsTick(t, () => 0);
@@ -773,10 +773,10 @@ describe('level targets', () => {
     expect(S.goals!.list[2].state).toBe('failed');
     g.progress(S.goals!.list[2].kind, 999, until + 1);
     expect(S.goals!.list[2].have).toBe(0);
-    g.goalsTick(until + g.TIMED_GAP_MS, () => 0);
+    g.goalsTick(until + g.FAILED_GAP_MS, () => 0);
     expect(S.goals!.list[2].state).toBe('open');
     S.level = 6;
-    g.goalsTick(until + g.TIMED_GAP_MS + 1, () => 0);
+    g.goalsTick(until + g.FAILED_GAP_MS + 1, () => 0);
     expect(S.goals!.lvl).toBe(6);
   });
 });
@@ -855,5 +855,36 @@ describe('rewarded ads', () => {
     S.ads = { day: '2000-01-01', n: 99 };
     expect(ads.adsLeft()).toBe(2); // a new day
     live.adCap = 10;
+  });
+});
+
+describe('targets: skip the wait and double rewards', () => {
+  it('a missed challenge waits 10 minutes unless you pay or watch an ad', async () => {
+    const goals = await import('../src/game/goals');
+    S.goals = null; S.level = 5;
+    const t0 = Date.now();
+    goals.goalsTick(t0);
+    const ch = S.goals!.list[2];
+    goals.goalsTick(ch.until + 1);
+    expect(S.goals!.list[2].state).toBe('failed');
+    expect(goals.challengeWait(ch.until + 1)).toBe(goals.FAILED_GAP_MS);
+    S.gems = 1;
+    expect(goals.skipWait('gems', ch.until + 2)).toBe(false);
+    S.gems = 10;
+    expect(goals.skipWait('gems', ch.until + 2)).toBe(true);
+    expect(S.gems).toBe(10 - goals.SKIP_GEMS);
+    expect(S.goals!.list[2].state).toBe('open');
+  });
+  it('a finished target can be doubled once', async () => {
+    const goals = await import('../src/game/goals');
+    S.goals = null; S.level = 5;
+    goals.goalsTick(Date.now());
+    const g = S.goals!.list[0];
+    goals.progress(g.kind, g.n);
+    expect(g.state).toBe('done');
+    const c = S.coins;
+    expect(goals.doubleGoal(0)).toBe(true);
+    expect(S.coins).toBe(c + g.coins);
+    expect(goals.doubleGoal(0)).toBe(false);
   });
 });

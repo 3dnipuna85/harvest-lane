@@ -29,7 +29,7 @@ async function previewCall(body?: unknown): Promise<AdminData & { error?: string
   const b = body as { settings?: GameSettings; lsApiKey?: string; lsSync?: boolean } | undefined;
   if (b?.settings) data = { ...data!, settings: { ...b.settings, updatedAt: Date.now() } };
   if (b?.lsApiKey || b?.lsSync) data = { ...data!, secrets: { ...data!.secrets, lsApi: true, webhook: true }, lemon: { ok: true, store: 'cgsapiens', testMode: true, webhook: 'created', missing: ['Starter Pack'], products: [{ name: 'Pouch of Diamonds', price: 499, pack: 'pouch', status: 'published' }, { name: 'Old thing', price: 100, pack: null, status: 'draft' }] } };
-  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, mailFrom: '', updatedAt: 0 },
+  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, adBreaks: true, adBreakMin: 3, mailFrom: '', updatedAt: 0 },
     secrets: { webhook: false, webhookFromCloudflare: false, lsApi: false, mail: false }, testFromCloudflare: false,
     orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }] };
 }
@@ -127,6 +127,9 @@ function render(d: AdminData) {
       <div><label>Ads per player per day</label><input type="number" id="adCap" min="0" max="50" value="${s.adCap}"></div>
     </div>
     <label class="check"><input type="checkbox" id="adsTest" ${s.adsTest ? 'checked' : ''}> Google test ads (no money earned; turn off once approved)</label>
+    <label class="check"><input type="checkbox" id="adBreaks" ${s.adBreaks ? 'checked' : ''}> Short ad break after a level-up</label>
+    <div class="row"><div><label>Minutes between ad breaks (at least)</label><input type="number" id="adBreakMin" min="1" max="120" value="${s.adBreakMin}"></div><div></div></div>
+    <p class="muted">Reward ads are always the player's choice (Google's rule): "Watch to double", "Retry now", and the shop's free rewards. Ad breaks between levels are allowed without asking.</p>
   </section>
 
   <section><h2>Invite emails</h2>
@@ -184,6 +187,8 @@ async function save() {
   s.adClient = (document.getElementById('adClient') as HTMLInputElement).value.trim();
   s.adsTest = (document.getElementById('adsTest') as HTMLInputElement).checked;
   s.adCap = +(document.getElementById('adCap') as HTMLInputElement).value || 0;
+  s.adBreaks = (document.getElementById('adBreaks') as HTMLInputElement).checked;
+  s.adBreakMin = +(document.getElementById('adBreakMin') as HTMLInputElement).value || 3;
   s.mailFrom = (document.getElementById('mailFrom') as HTMLInputElement).value.trim();
   const brevo = (document.getElementById('brevo') as HTMLInputElement).value.trim();
   const ev = (document.getElementById('xpev') as HTMLSelectElement).value;

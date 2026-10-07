@@ -5,10 +5,11 @@
  */
 import { pauseAudio } from './sound';
 
-interface AdBreak { type: 'reward'; name: string; beforeAd?: () => void; afterAd?: () => void; beforeReward?: (show: () => void) => void; adDismissed?: () => void; adViewed?: () => void; adBreakDone?: (i: { breakStatus: string }) => void }
+interface AdBreak { type: 'reward' | 'next'; name: string; beforeAd?: () => void; afterAd?: () => void; beforeReward?: (show: () => void) => void; adDismissed?: () => void; adViewed?: () => void; adBreakDone?: (i: { breakStatus: string }) => void }
 type W = Window & { adsbygoogle?: unknown[] };
 
-let cfg = { on: false, client: '', test: false };
+let cfg = { on: false, client: '', test: false, breaks: true, breakMin: 3 };
+let lastBreak = Date.now();
 let loaded = '';
 
 const flag = (k: string, q: string) => {
@@ -23,7 +24,7 @@ export const practiceAds = () => flag('harvest-lane-testads', 'testads');
 
 const push = (o: unknown) => { const w = window as W; (w.adsbygoogle = w.adsbygoogle || []).push(o); };
 
-export function configureAds(c: { on: boolean; client: string; test: boolean }) {
+export function configureAds(c: typeof cfg) {
   cfg = c;
   if (!c.on || !c.client || loaded === c.client) return;
   loaded = c.client;
@@ -59,6 +60,28 @@ function practiceAd(): Promise<boolean> {
   });
 }
 
+/**
+ * A short ad between levels (an "interstitial"). Google allows these at natural breaks such as finishing a level;
+ * the owner can switch them off and set how often they may come on the admin page.
+ */
+export function showInterstitial(name: string) {
+  if (!cfg.breaks || Date.now() - lastBreak < cfg.breakMin * 60_000) return;
+  if (practiceAds()) {
+    lastBreak = Date.now();
+    const el = document.createElement('div');
+    el.className = 'adcover';
+    el.innerHTML = '<div class="adbox"><b>Practice ad break</b><p>A short ad plays here between levels once ads are approved.</p><div class="adcount">3</div></div>';
+    document.body.appendChild(el);
+    pauseAudio(true);
+    let n = 3;
+    const tick = setInterval(() => { n--; if (n > 0) el.querySelector('.adcount')!.textContent = String(n); else { clearInterval(tick); el.remove(); pauseAudio(false); } }, 1000);
+    return;
+  }
+  if (!cfg.on || !cfg.client) return;
+  lastBreak = Date.now();
+  push({ type: 'next', name, beforeAd: () => pauseAudio(true), afterAd: () => pauseAudio(false) } satisfies AdBreak);
+}
+
 /** Show a rewarded ad; resolves true only if it was watched to the end. 'none' when no ad could be found. */
 export function showRewarded(name: string): Promise<boolean | 'none'> {
   if (practiceAds()) return practiceAd();
@@ -76,4 +99,18 @@ export function showRewarded(name: string): Promise<boolean | 'none'> {
     };
     push(b);
   });
+}
+
+let busy = false;
+/** Watch a rewarded ad, then run `reward` (which counts one of today's ad views). The player always chooses this. */
+export async function watchFor(name: string, reward: () => boolean, thanks: string, toast: (m: string) => void) {
+  if (busy) return false;
+  busy = true;
+  try {
+    const ok = await showRewarded(name);
+    if (ok === 'none') { toast('No ad is available right now. Try again in a little while.'); return false; }
+    if (!ok) { toast('Watch the ad to the end to get the reward.'); return false; }
+    if (reward()) { toast(thanks); return true; }
+    return false;
+  } finally { busy = false; }
 }

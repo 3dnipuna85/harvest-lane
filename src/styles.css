@@ -563,8 +563,8 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 @keyframes hurry{50%{transform:scale(1.08)}}
 .goal{display:flex;gap:6px;align-items:flex-start;background:#fff;border:2px solid #ecd3a3;border-radius:10px;padding:5px 7px}
 .goal.timed{border-color:#e7a33a;background:#fff8e6}
-.goal.done{opacity:.6}
-.goal.failed{opacity:.55;filter:grayscale(.6)}
+.goal.done>.gi,.goal.done .gt,.goal.done .gbar,.goal.done .gr{opacity:.6}
+.goal.failed>.gi,.goal.failed .gt,.goal.failed .gbar,.goal.failed .gr{opacity:.55;filter:grayscale(.6)}
 .goal .gi{font-size:18px;line-height:1.2}
 .goal .grow{flex:1;min-width:0}
 .goal .gt{font-size:12px;font-weight:900;color:var(--ink)}
@@ -608,3 +608,6 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .skyflash { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: #eef3ff; opacity: 0; animation: skyflash .6s ease-out }
 @keyframes skyflash { 0% { opacity: .55 } 12% { opacity: .05 } 22% { opacity: .65 } 100% { opacity: 0 } }
 @media (prefers-reduced-motion: reduce) { .skyflash { animation-duration: 1.2s; opacity: 0; animation-name: skyflash-soft } @keyframes skyflash-soft { 0% { opacity: .2 } 100% { opacity: 0 } } }
+.gacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap }
+.gacts .btn { padding: 4px 10px; font-size: 12px; min-height: 0 }
+.lu-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap }
