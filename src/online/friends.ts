@@ -87,6 +87,16 @@ function updatePill() {
   b.textContent = String(requests.length);
 }
 
+/** Ask the game's server to email the invite. */
+async function emailInvite(to: string): Promise<'ok' | 'already' | 'limit' | 'no'> {
+  try {
+    const r = await fetch('/api/invite-email', { method: 'POST', headers: { authorization: 'Bearer ' + await fb!.idToken(), 'content-type': 'application/json' }, body: JSON.stringify({ to }) });
+    if (r.ok) return 'ok';
+    const e = (await r.json().catch(() => ({}))) as { error?: string };
+    return e.error === 'already' ? 'already' : e.error === 'limit' ? 'limit' : 'no';
+  } catch { return 'no'; }
+}
+
 async function inviteByEmail(input: HTMLInputElement, note: HTMLElement) {
   if (!fb || !me) return;
   const email = input.value.trim();
@@ -99,6 +109,11 @@ async function inviteByEmail(input: HTMLInputElement, note: HTMLElement) {
     if (!uid) {
       // Not playing yet: the invite waits for that address, and the player's own email app sends the link.
       await fb.sendEmailInvite(me.uid, email, { name: me.name, photo: me.photo }).catch(() => {});
+      // The game emails them the invite (functions/api/invite-email.ts); if that isn't set up, the player's own email app does.
+      const sent = await emailInvite(email);
+      if (sent === 'ok') { input.value = ''; say('Invite email sent! When they sign up with this email, you’ll be friends.', true); return; }
+      if (sent === 'already') { say('That address already got an invite this week. When they sign up with it, you’ll be friends.', true); return; }
+      if (sent === 'limit') { say('You’ve sent 5 invite emails today. Try again tomorrow, or share your invite link.'); return; }
       say('They don’t play yet. Your invite will wait for them: when they sign up with this email, you’ll be friends.', true);
       const subject = encodeURIComponent(`${me.name} invited you to Harvest Lane`);
       const body = encodeURIComponent(`Hi! Come farm with me on Harvest Lane. Open this link and sign up with this email, and we'll be friends in the game:\n\n${inviteLink(me.uid)}`);
@@ -174,7 +189,7 @@ export function openFriends() {
   const body = !me
     ? `<p class="fr-lead">Sign in to invite friends and visit their farms.</p><button class="btn gold" data-fr="signin">Sign in</button>`
     : `<div class="fr-reqs" hidden></div>
-      <div class="fr-invite"><p class="fr-lead">Invite a friend who already plays by their email.</p>
+      <div class="fr-invite"><p class="fr-lead">Invite a friend by email. If they don’t play yet, we email them an invite.</p>
         <form class="fr-link fr-email"><input type="email" placeholder="friend@email.com" aria-label="Friend’s email" autocomplete="off"><button class="btn gold" type="submit">Send invite</button></form>
         <p class="fr-note" aria-live="polite"></p></div>
       <h3 class="fr-h">Your friends</h3><div class="fr-list"><p class="fr-empty">Loading…</p></div>

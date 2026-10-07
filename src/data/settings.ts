@@ -23,10 +23,12 @@ export interface GameSettings {
   adClient: string;
   adsTest: boolean;
   adCap: number;
+  /** The verified sender address for invite emails (Brevo). */
+  mailFrom: string;
   updatedAt: number;
 }
 
-export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: false, adCap: 10, updatedAt: 0 };
+export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: false, adCap: 10, mailFrom: '', updatedAt: 0 };
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v: unknown, lo: number, hi: number) => { const n = Number(v); return Number.isFinite(n) && n >= lo && n <= hi ? n : undefined; };
@@ -61,6 +63,7 @@ export function cleanSettings(raw: unknown): GameSettings {
     adClient: /^ca-pub-\d{10,20}$/.test(str(r.adClient, 40)) ? str(r.adClient, 40) : '',
     adsTest: r.adsTest === true,
     adCap: Math.round(num(r.adCap, 0, 50) ?? 10),
+    mailFrom: (() => { const m = str(r.mailFrom, 120); return /^[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}$/i.test(m) ? m : ''; })(),
     updatedAt: num(r.updatedAt, 0, 4e12) ?? 0,
   };
 }

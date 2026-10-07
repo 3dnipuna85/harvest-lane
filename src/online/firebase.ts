@@ -18,6 +18,8 @@ export const emailIn = (email: string, pw: string) => signInWithEmailAndPassword
 export const emailUp = (email: string, pw: string) => createUserWithEmailAndPassword(auth, email, pw);
 export const resetPw = (email: string) => sendPasswordResetEmail(auth, email);
 export const logOut = () => signOut(auth);
+/** A fresh ID token, for the game's own server (it checks it against Google's keys). */
+export const idToken = () => auth.currentUser?.getIdToken() ?? Promise.resolve('');
 
 export interface Profile { name: string; photo: string }
 export interface PlayerCard extends Profile { uid: string; level: number; earned: number; plots: number; snap: string | null }

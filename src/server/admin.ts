@@ -6,20 +6,20 @@
  */
 import { cleanSettings } from '../data/settings';
 import { connectLemon, newSecret, type LemonReport, type LsFetch } from './lemon';
-import { json, loadSettings, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
+import { json, loadSettings, MAIL_KEY, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
 
 /** The game's Firebase project (public: it is in every copy of the game's code). */
 const FIREBASE_PROJECT = 'harvest-lane-b6dcd';
 /** The owner's sign-in email, as a SHA-256 hash so the address itself isn't published. Always an admin. */
 export const OWNER_HASHES = ['2b577e1006a97c329ebe9d9dbfb6858cdc0a32d14a79bc266140bbc099d023e6'];
-const sha256 = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, '0')).join('');
+export const sha256 = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, '0')).join('');
 
 const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 interface Jwk { kid: string; n: string; e: string; kty: string }
 let keyCache: { at: number; keys: Jwk[] } | null = null;
 /** For tests. */
 export const forgetKeys = () => { keyCache = null; };
-type Fetch = (url: string) => Promise<{ json(): Promise<unknown> }>;
+export type Fetch = (url: string) => Promise<{ json(): Promise<unknown> }>;
 
 const b64 = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
 const part = (s: string) => JSON.parse(new TextDecoder().decode(b64(s)));
@@ -29,11 +29,11 @@ async function googleKeys(get: Fetch, fresh = false) {
   return keyCache.keys;
 }
 
-/** The signed-in admin's email, or why not. */
-export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetch(u)): Promise<{ email: string } | { error: string; status: number }> {
+export interface SignedIn { uid: string; email: string; emailVerified: boolean; name: string }
+
+/** Who sent this request, from the Firebase ID token in its Authorization header (checked against Google's keys). */
+export async function verifyUser(req: Request, env: Env, get: Fetch = u => fetch(u)): Promise<SignedIn | { error: string; status: number }> {
   const project = env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID || FIREBASE_PROJECT;
-  // More admins can be added with the optional ADMIN_EMAILS Cloudflare variable (comma separated).
-  const admins = (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const tok = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const [h, p, sig] = tok.split('.');
   if (!h || !p || !sig) return { error: 'signin', status: 401 };
@@ -45,11 +45,19 @@ export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetc
     if (!jwk) return { error: 'signin', status: 401 };
     const key = await crypto.subtle.importKey('jwk', { kty: 'RSA', n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
     const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64(sig), new TextEncoder().encode(h + '.' + p));
-    if (!ok || claims.aud !== project || claims.iss !== 'https://securetoken.google.com/' + project || !(claims.exp > now) || !(claims.iat < now + 300)) return { error: 'signin', status: 401 };
-    const email = String(claims.email || '').toLowerCase();
-    if (!claims.email_verified || !(admins.includes(email) || OWNER_HASHES.includes(await sha256(email)))) return { error: 'notadmin', status: 403 };
-    return { email };
+    if (!ok || claims.aud !== project || claims.iss !== 'https://securetoken.google.com/' + project || !(claims.exp > now) || !(claims.iat < now + 300) || !claims.sub) return { error: 'signin', status: 401 };
+    return { uid: String(claims.sub), email: String(claims.email || '').toLowerCase(), emailVerified: !!claims.email_verified, name: String(claims.name || '') };
   } catch { return { error: 'signin', status: 401 }; }
+}
+
+/** The signed-in admin's email, or why not. */
+export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetch(u)): Promise<{ email: string } | { error: string; status: number }> {
+  const u = await verifyUser(req, env, get);
+  if ('error' in u) return u;
+  // More admins can be added with the optional ADMIN_EMAILS Cloudflare variable (comma separated).
+  const admins = (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!u.emailVerified || !(admins.includes(u.email) || OWNER_HASHES.includes(await sha256(u.email)))) return { error: 'notadmin', status: 403 };
+  return { email: u.email };
 }
 
 /** GET /api/settings: what every player's game reads. Nothing secret is in it. */
@@ -82,7 +90,7 @@ export async function handleAdmin(req: Request, env: Env, get?: Fetch, lsFetch?:
   if (!env.PURCHASES) return json({ error: 'nokv' }, 503);
   let lemon: LemonReport | undefined;
   if (req.method === 'POST') {
-    let body: { settings?: unknown; webhookSecret?: string; lsApiKey?: string; lsSync?: boolean };
+    let body: { settings?: unknown; webhookSecret?: string; lsApiKey?: string; lsSync?: boolean; brevoKey?: string };
     try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
     if (body.settings !== undefined) {
       const s = cleanSettings(body.settings);
@@ -90,6 +98,7 @@ export async function handleAdmin(req: Request, env: Env, get?: Fetch, lsFetch?:
       await env.PURCHASES.put(SETTINGS_KEY, JSON.stringify(s));
     }
     if (typeof body.webhookSecret === 'string' && body.webhookSecret.trim().length >= 16) await env.PURCHASES.put(WEBHOOK_SECRET_KEY, body.webhookSecret.trim());
+    if (typeof body.brevoKey === 'string' && body.brevoKey.trim().length >= 20) await env.PURCHASES.put(MAIL_KEY, body.brevoKey.trim());
     const newKey = typeof body.lsApiKey === 'string' && body.lsApiKey.trim().length > 20 ? body.lsApiKey.trim() : '';
     if (newKey || body.lsSync) {
       const key = newKey || await env.PURCHASES.get(LS_KEY);
@@ -116,7 +125,7 @@ export async function handleAdmin(req: Request, env: Env, get?: Fetch, lsFetch?:
   return json({
     email: who.email,
     settings: await loadSettings(env),
-    secrets: { webhook: !!(await webhookSecret(env)), webhookFromCloudflare: !!env.LS_WEBHOOK_SECRET, lsApi: !!(await env.PURCHASES.get(LS_KEY)) },
+    secrets: { webhook: !!(await webhookSecret(env)), webhookFromCloudflare: !!env.LS_WEBHOOK_SECRET, lsApi: !!(await env.PURCHASES.get(LS_KEY)), mail: !!(await env.PURCHASES.get(MAIL_KEY)) },
     lemon,
     testFromCloudflare: env.LS_ALLOW_TEST === '1',
     orders: await recentOrders(env),

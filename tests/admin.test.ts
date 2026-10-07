@@ -13,7 +13,7 @@ async function setup() {
   const get = async () => ({ json: async () => ({ keys: [{ kid, kty: 'RSA', n: jwk.n, e: jwk.e }] }) });
   const token = async (claims: Record<string, unknown>) => {
     const now = Math.floor(Date.now() / 1000);
-    const hp = enc({ alg: 'RS256', kid }) + '.' + enc({ aud: 'farm', iss: 'https://securetoken.google.com/farm', iat: now, exp: now + 600, email: 'Boss@Example.com', email_verified: true, ...claims });
+    const hp = enc({ alg: 'RS256', kid }) + '.' + enc({ aud: 'farm', iss: 'https://securetoken.google.com/farm', iat: now, exp: now + 600, sub: 'u1', email: 'Boss@Example.com', email_verified: true, ...claims });
     const sig = Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', kp.privateKey, new TextEncoder().encode(hp))).toString('base64url');
     return hp + '.' + sig;
   };

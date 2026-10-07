@@ -10,7 +10,7 @@ import { cleanSettings, livePacks, type GameSettings } from '../data/settings';
 /** The bits of a Cloudflare KV namespace we use. */
 export interface KV {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
+  put(key: string, value: string, o?: { expirationTtl?: number }): Promise<void>;
   list(o: { prefix: string; cursor?: string }): Promise<{ keys: { name: string }[]; list_complete: boolean; cursor?: string }>;
 }
 /**
@@ -25,7 +25,7 @@ export interface Env {
 }
 
 /** KV keys besides orders. "secret:" keys are only ever read by the server. */
-export const SETTINGS_KEY = 'settings', WEBHOOK_SECRET_KEY = 'secret:ls_webhook';
+export const SETTINGS_KEY = 'settings', WEBHOOK_SECRET_KEY = 'secret:ls_webhook', MAIL_KEY = 'secret:brevo';
 export async function loadSettings(env: Env): Promise<GameSettings> {
   const raw = env.PURCHASES ? await env.PURCHASES.get(SETTINGS_KEY) : null;
   try { return cleanSettings(raw ? JSON.parse(raw) : {}); } catch { return cleanSettings({}); }
