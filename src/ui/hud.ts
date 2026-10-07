@@ -1,3 +1,4 @@
+import { updateTroubles } from './troubles';
 import { updateGoals } from './goals';
 import { updateGems } from './estate';
 import { MAX_PLOTS } from '../data/limits';
@@ -49,6 +50,7 @@ function updateTruckPill() {
 
 export function updateHud() {
   updateGoals();
+  updateTroubles();
   updateGems();
   updateTruckPill();
   $('coins').textContent = fmt(S.coins);

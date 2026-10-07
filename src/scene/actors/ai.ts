@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CROPS, type CropId } from '../../data/crops';
 import { MAX_QUEUE } from '../../data/limits';
 import { byStaff, harvest, plant, ripe } from '../../game/economy';
+import { water } from '../../game/troubles';
 import { now } from '../../game/clock';
 import { S, visiting } from '../../game/state';
 import { handSeed, onDuty, timeLeft, unpaid } from '../../game/staff';
@@ -179,6 +180,8 @@ export function updateActors(dt: number, t: number) {
 /** Player tapped plot i: queue a plant or harvest, or show the time left on a growing crop. */
 export function tapPlot(i: number) {
   const p = S.plots[i];
+  // In a dry spell, a tap waters a thirsty plot.
+  if (water(i)) { const q = plotPos(i), [sx, sy] = toScreen(tmp.set(q.x, 1, q.z)); fx(sx, sy, '💧 Watered', ''); return; }
   if (p.crop && !ripe(p)) {
     const q = plotPos(i), [sx, sy] = toScreen(tmp.set(q.x, 1, q.z));
     fx(sx, sy, Math.ceil(CROPS[p.crop].time - (now() - p.at) / 1000) + 's left', '');

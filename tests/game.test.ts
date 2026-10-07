@@ -731,3 +731,59 @@ describe('level targets', () => {
     expect(S.goals!.lvl).toBe(6);
   });
 });
+
+describe('troubles', () => {
+  it('heavy rain slows growing crops and rots ripe ones faster', async () => {
+    const tr = await import('../src/game/troubles');
+    S.level = 5;
+    S.plots[0] = { crop: 'wheat', at: t - 1000 };
+    S.plots[1] = { crop: 'wheat', at: t - 60_000 };
+    tr.startTrouble('rain', t);
+    tr.troubleTick(t - 4000);
+    tr.troubleTick(t);
+    expect(S.plots[0].at).toBe(t - 1000 + 2000);
+    expect(S.plots[1].at).toBe(t - 60_000 - 8000);
+  });
+
+  it('in a dry spell only watered crops keep growing', async () => {
+    const tr = await import('../src/game/troubles');
+    S.level = 5;
+    S.plots[0] = { crop: 'tomato', at: t - 1000 };
+    S.plots[1] = { crop: 'tomato', at: t - 1000 };
+    tr.startTrouble('dry', t);
+    expect(tr.water(1)).toBe(true);
+    expect(tr.water(1)).toBe(false);
+    tr.troubleTick(t - 2000);
+    tr.troubleTick(t);
+    expect(S.plots[0].at).toBe(t + 1000);
+    expect(S.plots[1].at).toBe(t - 1000);
+    S.coins = 0;
+    expect(tr.waterAll().ok).toBe(false);
+  });
+
+  it('crows eat crops unless shooed; the fox steals unless chased', async () => {
+    const tr = await import('../src/game/troubles');
+    S.level = 5;
+    S.plots.forEach(p => { p.crop = null; });
+    S.plots[0] = { crop: 'corn', at: t };
+    S.plots[1] = { crop: 'corn', at: t };
+    tr.startTrouble('crows', t, () => 0.3);
+    const crows = S.trouble!.crows!.map(c => c.i);
+    expect(crows.length).toBe(2);
+    expect(tr.shooCrow(crows[0], t)).toBe(true);
+    clock.now = () => t + tr.CROW_MS + 5000;
+    tr.troubleTick(t + tr.CROW_MS + 5000);
+    expect(S.plots[crows[0]].crop).toBe('corn');
+    expect(S.plots[crows[1]].crop).toBeNull();
+    expect(S.trouble).toBeNull();
+
+    S.inv = { egg: 20, milk: 2 };
+    tr.startTrouble('fox', t);
+    tr.troubleTick(t + tr.FOX_MS);
+    expect(S.inv.egg).toBe(14);
+    expect(S.inv.milk).toBe(0);
+    tr.startTrouble('fox', t);
+    for (let k = 0; k < tr.FOX_HP; k++) tr.chaseFox(t);
+    expect(S.trouble).toBeNull();
+  });
+});

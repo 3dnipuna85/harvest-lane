@@ -3,6 +3,7 @@ import { buyLand, buyPlot, chop, loadContract, mine, loadTruck, tapAnimal } from
 import { save, visiting, type Tab } from '../game/state';
 import { isFishing, tapPlot } from '../scene/actors/ai';
 import { line } from '../game/fishing';
+import { chaseFox, shooCrow } from '../game/troubles';
 import { applyCam, cancelFocus, focusOn, getZoom, pan, setZoom, view } from '../scene/camera';
 import { tapWater } from '../scene/actors/fishing';
 import { FISH_SPOT } from '../scene/layout';
@@ -42,6 +43,8 @@ function pick(cx: number, cy: number) {
     if (u.type === 'river') { tapWater(); $('hint').classList.add('gone'); save(); return; }
     if (u.type === 'tree') { chop(u.i); save(); return; }
     if (u.type === 'rock') { mine(u.i); save(); return; }
+    if (u.type === 'crow') { shooCrow(u.i); save(); return; }
+    if (u.type === 'fox') { chaseFox(); save(); return; }
     if (u.type === 'contract') { if (!loadContract()) openTab('orders'); save(); return; }
     if (u.type === 'truck') { if (!loadTruck(cx, cy)) openTab('orders'); save(); return; }
   }

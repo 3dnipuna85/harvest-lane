@@ -7,6 +7,7 @@ import { add, byStaff, inv, mTime, sell, unitPrice } from './economy';
 import { truckReserve } from './town';
 import { animalTick } from './animals';
 import { bindGoals, goalsTick } from './goals';
+import { troubleTick } from './troubles';
 
 bindGoals();
 import { emit } from './events';
@@ -43,6 +44,7 @@ export function sim(dt: number) {
   truckTick(t);
   contractTick(t);
   goalsTick(t);
+  troubleTick(t);
   fishTick(t);
   staffTick(t);
   animalTick(t);

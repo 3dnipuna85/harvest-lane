@@ -13,6 +13,8 @@ import { computeFull, focusOn, inView, resize, updateCam } from './camera';
 import { buildRiver, updateRiver } from './world/river';
 import { initLand, updateLand } from './world/land';
 import { fisherPos, initStaffActors, updateStaffActors } from './actors/staff';
+import { initPests, updatePests } from './actors/pests';
+import { initWeather, updateWeather } from './fx/weather';
 import { LAND } from '../data/land';
 import { parcelBox } from './layout';
 import { bobberPos, initFishing, reelAnim, updateFishing } from './actors/fishing';
@@ -73,7 +75,8 @@ export function initScene() {
   const scene = (ctx.scene = new THREE.Scene());
   ctx.pickables.length = 0;
   resetParticles(); resetFlyers(); clearLabels();
-  scene.add(new THREE.HemisphereLight('#ffffff', '#8fbf5f', 0.62));
+  const hemi = new THREE.HemisphereLight('#ffffff', '#8fbf5f', 0.62);
+  scene.add(hemi);
   const sun = new THREE.DirectionalLight('#fff1d6', 0.72);
   sun.position.set(-9, 20, 14);
   sun.castShadow = true;
@@ -100,6 +103,8 @@ export function initScene() {
   initLorry();
   initFishing();
   initStaffActors();
+  initPests();
+  initWeather(sun, hemi);
   syncPlots();
   syncBuildings();
 }
@@ -116,6 +121,8 @@ export function renderScene(dt: number, t: number) {
   updateActors(dt, t);
   updateFishing(dt, t);
   updateStaffActors(t);
+  updatePests(dt, t);
+  updateWeather(dt);
   updateRiver(dt, t);
   updateLand();
   updateAnimals(dt, t);

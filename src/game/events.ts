@@ -17,6 +17,14 @@ export interface GameEvents {
   gems: { n: number; why: string };
   packBought: { id: string };
   orderDone: { coins: number };
+  troubleStart: { kind: 'rain' | 'dry' | 'crows' | 'fox' };
+  troubleEnd: { kind: 'rain' | 'dry' | 'crows' | 'fox'; weather: boolean };
+  troubleBeaten: { kind: 'crows' | 'fox' };
+  cropEaten: { i: number; crop: CropId };
+  crowShooed: { i: number };
+  foxHit: { left: number };
+  foxStole: { egg: number; milk: number };
+  watered: { i: number };
   goalDone: { kind: GoalKind; n: number; coins: number; xp: number; gems: number; timed: boolean };
   goalFailed: { kind: GoalKind };
   farmUpgrade: { tier: number };

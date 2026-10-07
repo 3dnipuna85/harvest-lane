@@ -18,6 +18,7 @@ import { takeDirty } from './ui/dirty';
 import { $ } from './ui/format';
 import { bindHud, updateHud } from './ui/hud';
 import { bindGoalsUI } from './ui/goals';
+import { bindTroubles } from './ui/troubles';
 import { bindPanelInput, panelSignature, renderPanel, renderTabs, updatePanel } from './ui/panel';
 import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
@@ -54,6 +55,7 @@ function start() {
   fillOrders();
   bindHud();
   bindGoalsUI();
+  bindTroubles();
   bindEstate();
   bindSfx();
   bindTips();
