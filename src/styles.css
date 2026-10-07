@@ -416,6 +416,10 @@ body.office-open .zoom{display:none}
 @keyframes fishPulse{from{scale:1}to{scale:1.15}}
 @keyframes fishDot{0%,100%{opacity:.25}50%{opacity:1}}
 .zoom .fishbtn{font-size:20px}
+.zoom .techbtn{font-size:20px;opacity:.55}
+.zoom .techbtn.ready{opacity:1;background:#ffe79a;border-color:#c48a1e}
+.owned{color:var(--leaf);font-weight:900}
+body.visiting .zoom .techbtn{display:none!important}
 
 /* land parcels: the dock button and the For sale sign become a savings goal */
 .dock .expand.land{border-style:solid;border-color:#f0cd5f;background:rgba(255,240,200,.18)}

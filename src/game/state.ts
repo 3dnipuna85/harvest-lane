@@ -5,6 +5,7 @@ import { MACHINE_IDS, type MachineId } from '../data/machines';
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { START_PLOTS } from '../data/limits';
 import { LAND } from '../data/land';
+import { TECH_IDS, type TechId } from '../data/tech';
 import { BUILDING_IDS, MAX_BUILD, type BuildingId } from '../data/buildings';
 import { now } from './clock';
 
@@ -133,6 +134,8 @@ export interface State {
   land: number;
   /** Upgrade level of each farm building (data/buildings.ts), 0 to MAX_BUILD. */
   build: Record<BuildingId, number>;
+  /** Farm machines owned (data/tech.ts), in the order bought. */
+  tech: TechId[];
   saved: number;
 }
 
@@ -161,7 +164,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], paid: [], ads: { day: '', n: 0 }, goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], orchard: [], cave: [], tips: [], build: { barn: 0, pens: 0, house: 0 },
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], paid: [], ads: { day: '', n: 0 }, goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], orchard: [], cave: [], tips: [], build: { barn: 0, pens: 0, house: 0 }, tech: [],
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -211,6 +214,7 @@ export function migrate(raw: unknown): State {
   // Farms from before tiers keep their level: they start on the first tier that allows it.
   out.tier = typeof s.tier === 'number' ? Math.max(0, Math.min(TIERS.length - 1, Math.floor(s.tier))) : Math.max(0, TIERS.findIndex(x => x.cap > (+s.level || 1)));
   out.land = Math.max(0, Math.min(LAND.length, Math.floor(+s.land || 0)));
+  out.tech = TECH_IDS.filter(k => Array.isArray(s.tech) && s.tech.includes(k));
   out.build = { barn: 0, pens: 0, house: 0 };
   for (const k of BUILDING_IDS) out.build[k] = Math.max(0, Math.min(MAX_BUILD, Math.floor(+s.build?.[k] || 0)));
   out.made = { ...(s.made && typeof s.made === 'object' ? s.made : {}) };

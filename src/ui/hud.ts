@@ -1,6 +1,7 @@
 import { updateTroubles } from './troubles';
 import { updateGoals } from './goals';
 import { updateGems } from './estate';
+import { updateTechBtns } from './tech';
 import { on } from '../game/events';
 import { matsOk, nextParcel, plotCost, plotLvl, plotMats, plotSlot, xpNeed } from '../game/economy';
 import { S } from '../game/state';
@@ -52,6 +53,7 @@ export function updateHud() {
   updateGoals();
   updateTroubles();
   updateGems();
+  updateTechBtns();
   updateTruckPill();
   $('coins').textContent = fmt(S.coins);
   $('lvl').textContent = String(S.level);

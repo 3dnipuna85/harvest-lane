@@ -8,6 +8,7 @@ import { truckReserve } from './town';
 import { animalTick } from './animals';
 import { bindGoals, goalsTick } from './goals';
 import { troubleTick } from './troubles';
+import { fleetTick } from './tech';
 
 bindGoals();
 import { emit } from './events';
@@ -47,6 +48,7 @@ export function sim(dt: number) {
   troubleTick(t);
   fishTick(t);
   staffTick(t);
+  fleetTick(t);
   animalTick(t);
   payWages(dt);
   for (const k of MACHINE_IDS) {

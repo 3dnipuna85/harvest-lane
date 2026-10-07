@@ -30,6 +30,8 @@ export function updateTroubles() {
     sig = s;
     el.className = 'trouble ' + tr.kind;
     el.innerHTML = tr.kind === 'rain' ? '🌧️ <b>Heavy rain</b> <span data-left></span><br>Crops grow slowly and ripe crops rot 3× faster. Harvest them now!'
+      : tr.kind === 'dry' && S.tech.includes('sprinkler') ? `☀️ <b>Dry spell</b> <span data-left></span><br>💦 Your sprinklers are keeping every crop watered.`
+      : tr.kind === 'crows' && S.tech.includes('drone') ? `🐦 <b>Crows!</b><br>🛸 Your crop drone is chasing them off.`
       : tr.kind === 'dry' ? `☀️ <b>Dry spell</b> <span data-left></span><br>Thirsty crops stop growing. Tap the 💧 plots to water them. <button class="btn gold" data-act="waterAll" ${S.coins >= waterAllCost() ? '' : 'disabled'}>Water all ${coinHTML}${fmt(waterAllCost())}</button>`
       : tr.kind === 'crows' ? `🐦 <b>Crows!</b> ${tr.crows!.length} left<br>They’re eating your crops. Tap each crow to shoo it away! <button class="btn alt" data-act="lookTrouble">📍 Show me</button>`
       : `🦊 <b>A fox!</b> <span data-left></span><br>It’s sneaking up to the hen house. Tap it ${tr.hp ?? FOX_HP} more time${(tr.hp ?? FOX_HP) > 1 ? 's' : ''} before it steals eggs and milk! <button class="btn alt" data-act="lookTrouble">📍 Show me</button>`;
@@ -48,7 +50,7 @@ export function bindTroubles() {
     else { toast(`You need ${fmt(r.cost)} coins to water everything. Tap plots to water them free.`); shakeScene(); }
   });
   let eaten: string[] = [];
-  on('troubleStart', ({ kind }) => { eaten = []; if (kind === 'crows' || kind === 'fox') { shakeScene(); if (!inTown()) look(); } });
+  on('troubleStart', ({ kind }) => { eaten = []; if ((kind === 'crows' && !S.tech.includes('drone')) || kind === 'fox') { shakeScene(); if (!inTown()) look(); } });
   on('cropEaten', ({ crop }) => eaten.push(CROPS[crop].name.toLowerCase()));
   on('troubleEnd', ({ kind }) => {
     if (kind === 'rain') toast('🌤️ The rain has stopped.');

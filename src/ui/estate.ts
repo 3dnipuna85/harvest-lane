@@ -5,6 +5,7 @@ import { inv } from '../game/economy';
 import { on } from '../game/events';
 import { S } from '../game/state';
 import { BUILDINGS, BUILDING_IDS, MAX_BUILD, type BuildingId } from '../data/buildings';
+import { techAction, techCards, techSignature } from './tech';
 import { buildLvl, buildShort, nextStep, upgradeBuilding } from '../game/buildings';
 import { iconHTML, uiImg } from './art';
 import { markDirty } from './dirty';
@@ -26,7 +27,7 @@ export function farmPanel() {
       ${(Object.entries(n.mats) as [ItemId, number][]).map(([k, q]) => `<span class="cost ${inv(k) >= q ? 'ok' : ''}">${iconHTML(k, 'ic-inline')}<b>${Math.min(inv(k), q)}</b>/${q}</span>`).join('')}
       <button class="btn gold grow-0" data-act="upgradeFarm">Upgrade</button></div></div>`
     : '<div class="empty-note">Your farm is a Grand Estate, the finest in the valley. 🏆</div>';
-  const builds = '<div class="secthead">Buildings</div>' + BUILDING_IDS.map(buildCard).join('');
+  const builds = '<div class="secthead">Buildings</div>' + BUILDING_IDS.map(buildCard).join('') + techCards();
   return `<div class="list"><div class="card"><div class="top"><div class="big">🏡</div><div class="grow"><div class="ttl">${t.name}</div>
       <div class="sub">${capped() ? `<b class="capnote">Level ${S.level} is the top level for a ${t.name}. Upgrade the farm to keep levelling.</b>` : `Your farm allows ${capTxt(levelCap())}.`}</div></div></div></div>
     <div class="tiers">${ladder}</div>
@@ -35,7 +36,7 @@ export function farmPanel() {
     <div class="townintro">${gemHTML()} <b>Diamonds</b> are rare. You get one each level-up, sometimes when your shopkeeper makes a sale in town, and sometimes when you load a truck yourself in time for the tip. <button class="btn gold" data-act="tab" data-t="shop">${gemHTML()} Diamond Shop</button></div></div>`;
 }
 
-export const farmSignature = () => [BUILDING_IDS.map(k => buildLvl(k) + ':' + buildShort(k).length + ':' + (nextStep(k) ? S.coins >= nextStep(k)!.coins : 0)).join(','), S.tier, S.gems, S.level, capped(), nextTier() ? S.coins >= nextTier()!.coins : 0, matsShort().map(([k]) => k + inv(k)).join(',')].join('|');
+export const farmSignature = () => [techSignature(), BUILDING_IDS.map(k => buildLvl(k) + ':' + buildShort(k).length + ':' + (nextStep(k) ? S.coins >= nextStep(k)!.coins : 0)).join(','), S.tier, S.gems, S.level, capped(), nextTier() ? S.coins >= nextTier()!.coins : 0, matsShort().map(([k]) => k + inv(k)).join(',')].join('|');
 
 const costRow = (coins: number, gems: number, mats: Partial<Record<ItemId, number>>) =>
   `<span class="cost ${S.coins >= coins ? 'ok' : ''}">${coinHTML}<b>${fmt(Math.min(S.coins, coins))}</b>/${fmt(coins)}</span>`
@@ -53,6 +54,7 @@ function buildCard(k: BuildingId) {
 }
 
 export function farmAction(a: string, k = '') {
+  if (techAction(a, k)) return true;
   if (a === 'build') {
     const id = k as BuildingId, n = nextStep(id), r = upgradeBuilding(id);
     if (r.ok) { toast(`🔨 ${BUILDINGS[id].name} upgraded! ${n!.adds[0].toUpperCase() + n!.adds.slice(1)} is ready.`, 'lv'); return true; }

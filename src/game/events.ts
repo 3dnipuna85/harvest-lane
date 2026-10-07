@@ -35,6 +35,8 @@ export interface GameEvents {
   goalDone: { kind: GoalKind; n: number; coins: number; xp: number; gems: number; timed: boolean };
   goalFailed: { kind: GoalKind; rush?: boolean };
   farmUpgrade: { tier: number };
+  techBought: { k: 'tractor' | 'harvester' | 'sprinkler' | 'drone' | 'fleet' };
+  machineRun: { k: 'tractor' | 'harvester'; n: number };
   buildingUp: { k: 'barn' | 'pens' | 'house'; lvl: number };
   /** XP is full but the farm tier caps the level. */
   levelCapped: { level: number };

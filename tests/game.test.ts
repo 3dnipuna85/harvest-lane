@@ -975,3 +975,33 @@ describe('orchard and crystal cave', () => {
     expect(a.mineCrystal(0, t + 1000)).toBe('growing');
   });
 });
+
+describe('farm machines', () => {
+  it('are bought in order and do their jobs', async () => {
+    const tech = await import('../src/game/tech');
+    const tr = await import('../src/game/troubles');
+    S.coins = 1_000_000; S.gems = 500; S.inv.plank = 500; S.inv.brick = 500; S.inv.cheese = 50; S.inv.honey = 50;
+    expect(tech.buyTech('harvester')).toMatchObject({ ok: false, reason: 'order' });
+    expect(tech.buyTech('tractor')).toEqual({ ok: false, reason: 'locked', lvl: 12 });
+    S.level = 30;
+    expect(tech.buyTech('tractor')).toEqual({ ok: true });
+    S.plots.forEach(p => { p.crop = null; });
+    expect(tech.sowAll()).toBe(S.plots.length);
+    expect(tech.buyTech('harvester')).toEqual({ ok: true });
+    t += 60_000;
+    expect(tech.harvestAll()).toBeGreaterThanOrEqual(S.plots.length);
+    // sprinklers and the drone give crops a head start and handle dry spells and crows
+    expect(tech.buyTech('sprinkler')).toEqual({ ok: true });
+    expect(tech.buyTech('drone')).toEqual({ ok: true });
+    plant(0);
+    expect(S.plots[0].at).toBeLessThan(t);
+    tr.startTrouble('dry', t);
+    expect(tr.thirsty(0)).toBe(false);
+    S.trouble = null;
+    tr.startTrouble('crows', t);
+    tr.troubleTick(t + tr.DRONE_SHOO_MS + 1);
+    expect(S.trouble).toBeNull();
+    expect(S.plots[0].crop).toBe('wheat');
+    expect(migrate(JSON.parse(JSON.stringify(S))).tech).toEqual(['tractor', 'harvester', 'sprinkler', 'drone']);
+  });
+});

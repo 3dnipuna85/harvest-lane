@@ -6,6 +6,7 @@ import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS }
 import { TIERS } from '../data/tiers';
 import { LAND, PARCEL_PLOTS, RIVER0, RIVER_PLOTS } from '../data/land';
 import { BARN_PAY, HOUSE_XP } from '../data/buildings';
+import { TECH_GROW } from '../data/tech';
 import { now } from './clock';
 import { emit } from './events';
 import { S, type Plot } from './state';
@@ -67,6 +68,8 @@ export function mUpMats(k: MachineId): Mats {
   if (S.level < 9) return {};
   return l >= 2 ? { plank: 10 * l, brick: 6 * (l - 1) } : { plank: 10 };
 }
+/** Head start from sprinklers and the crop drone, as a share of the grow time. */
+export const techGrow = () => TECH_GROW * ((S.tech?.includes('sprinkler') ? 1 : 0) + (S.tech?.includes('drone') ? 1 : 0));
 export const inv = (k: ItemId) => S.inv[k] || 0;
 export const add = (k: ItemId, n: number) => { S.inv[k] = inv(k) + n; };
 export const totalItems = () => (Object.keys(ITEMS) as ItemId[]).reduce((a, k) => a + inv(k), 0);
@@ -120,8 +123,9 @@ export function plant(i: number, crop: CropId = S.sel): boolean {
   if (!p || S.coins < c.seed) return false;
   S.coins -= c.seed;
   p.crop = crop;
-  // Fertilizer from the town store: planting while it lasts gives the crop a head start.
-  p.at = now() - (S.boost > now() ? CROPS[crop].time * 1000 * 0.25 : 0);
+  // Fertilizer from the town store gives the crop a head start while it lasts; sprinklers and the crop drone
+  // (data/tech.ts) give one always.
+  p.at = now() - CROPS[crop].time * 1000 * ((S.boost > now() ? 0.25 : 0) + techGrow());
   emit('plant', { i, crop });
   return true;
 }

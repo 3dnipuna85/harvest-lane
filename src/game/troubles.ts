@@ -15,13 +15,16 @@ export const RAIN_MS = 150_000, DRY_MS = 180_000;
 /** Crows eat their plot this long after landing; the fox raids this long after showing up. */
 export const CROW_MS = 25_000, FOX_MS = 30_000;
 export const FOX_HP = 3;
+/** With a crop drone, crows are chased off this long after landing. */
+export const DRONE_SHOO_MS = 5000;
 export const RAIN_GROW = 0.5, RAIN_ROT = 3;
 export const nextGap = (rand = Math.random) => (7 + rand() * 7) * 60_000;
 export const waterAllCost = () => 4 * S.plots.length + 10 * S.level;
 
 export const trouble = (t = now()) => (S.trouble && t < S.trouble.end ? S.trouble : null);
 const growing = (i: number) => { const p = S.plots[i]; return !!p.crop && !ripe(p); };
-export const thirsty = (i: number) => S.trouble?.kind === 'dry' && growing(i) && !S.trouble.wet!.includes(i);
+/** Sprinklers (data/tech.ts) water the field themselves, so nothing goes thirsty. */
+export const thirsty = (i: number) => S.trouble?.kind === 'dry' && !S.tech?.includes('sprinkler') && growing(i) && !S.trouble.wet!.includes(i);
 
 export function startTrouble(kind: Trouble['kind'], t = now(), rand = Math.random) {
   let tr: Trouble;
@@ -62,6 +65,13 @@ export function troubleTick(t = now(), rand = Math.random) {
     else p.at -= ms * (RAIN_ROT - 1);
   });
   if (tr.kind === 'dry') S.plots.forEach((p, i) => { if (thirsty(i)) p.at += ms; });
+  if (tr.kind === 'crows' && S.tech?.includes('drone') && t >= tr.start + DRONE_SHOO_MS) {
+    // The crop drone chases the crows off by itself (no XP: the player didn't do it).
+    for (const c of tr.crows!) emit('crowShooed', { i: c.i });
+    tr.crows = [];
+    emit('troubleBeaten', { kind: 'crows' });
+    return endTrouble(t, rand, false);
+  }
   if (tr.kind === 'crows') {
     for (const c of tr.crows!.slice()) {
       if (t < c.at) continue;
