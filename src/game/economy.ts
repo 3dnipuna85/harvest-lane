@@ -1,3 +1,4 @@
+import { live } from './live';
 import { CROPS, CROP_IDS, DOUBLE_HARVEST_CHANCE, type CropId } from '../data/crops';
 import { ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
@@ -77,8 +78,10 @@ export const unlockedCrops = () => CROP_IDS.filter(k => CROPS[k].lvl <= S.level)
 
 export function gainXP(n: number) {
   if (hands.staff) return;
-  // A Double XP boost from the diamond shop (game/store.ts) doubles what you earn while it lasts.
-  S.xp += S.xpBoost > now() ? n * 2 : n;
+  // A Double XP boost from the diamond shop (game/store.ts) doubles what you earn while it lasts, and so does
+  // an XP event the owner runs from the admin page (game/live.ts); together they make it triple.
+  const t = now(), boost = S.xpBoost > t, ev = live.xpEventUntil > t;
+  S.xp += boost && ev ? n * 3 : boost || ev ? n * 2 : n;
   const cap = TIERS[S.tier]?.cap ?? Infinity;
   if (S.level >= cap) {
     // The farm tier caps the level: the bar fills and waits for a farm upgrade.

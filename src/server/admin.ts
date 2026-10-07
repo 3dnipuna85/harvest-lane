@@ -1,0 +1,91 @@
+/**
+ * The admin page's server side (/api/admin) and the public settings feed (/api/settings).
+ * The admin signs in with Google (Firebase Auth) in the browser; every request carries the Firebase ID token,
+ * which we check here against Google's public keys. Only emails listed in the ADMIN_EMAILS Cloudflare variable
+ * get in. Secrets typed into the admin page are stored under "secret:" keys and are never sent back out.
+ */
+import { cleanSettings } from '../data/settings';
+import { json, loadSettings, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
+
+const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+interface Jwk { kid: string; n: string; e: string; kty: string }
+let keyCache: { at: number; keys: Jwk[] } | null = null;
+/** For tests. */
+export const forgetKeys = () => { keyCache = null; };
+type Fetch = (url: string) => Promise<{ json(): Promise<unknown> }>;
+
+const b64 = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const part = (s: string) => JSON.parse(new TextDecoder().decode(b64(s)));
+
+async function googleKeys(get: Fetch, fresh = false) {
+  if ((fresh && Date.now() - (keyCache?.at ?? 0) > 60_000) || !keyCache || Date.now() - keyCache.at > 3600_000) keyCache = { at: Date.now(), keys: ((await (await get(JWKS)).json()) as { keys: Jwk[] }).keys };
+  return keyCache.keys;
+}
+
+/** The signed-in admin's email, or why not. */
+export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetch(u)): Promise<{ email: string } | { error: string; status: number }> {
+  const project = env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID;
+  const admins = (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!project || !admins.length) return { error: 'setup', status: 503 };
+  const tok = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const [h, p, sig] = tok.split('.');
+  if (!h || !p || !sig) return { error: 'signin', status: 401 };
+  try {
+    const head = part(h), claims = part(p), now = Date.now() / 1000;
+    if (head.alg !== 'RS256') return { error: 'signin', status: 401 };
+    // Google rotates its keys; an unknown key id means our copy is old.
+    const jwk = (await googleKeys(get)).find(k => k.kid === head.kid) ?? (await googleKeys(get, true)).find(k => k.kid === head.kid);
+    if (!jwk) return { error: 'signin', status: 401 };
+    const key = await crypto.subtle.importKey('jwk', { kty: 'RSA', n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+    const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64(sig), new TextEncoder().encode(h + '.' + p));
+    if (!ok || claims.aud !== project || claims.iss !== 'https://securetoken.google.com/' + project || !(claims.exp > now) || !(claims.iat < now + 300)) return { error: 'signin', status: 401 };
+    const email = String(claims.email || '').toLowerCase();
+    if (!claims.email_verified || !admins.includes(email)) return { error: 'notadmin', status: 403 };
+    return { email };
+  } catch { return { error: 'signin', status: 401 }; }
+}
+
+/** GET /api/settings: what every player's game reads. Nothing secret is in it. */
+export async function publicSettings(env: Env) {
+  const s = await loadSettings(env);
+  return new Response(JSON.stringify(s), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' } });
+}
+
+async function recentOrders(env: Env, max = 60) {
+  if (!env.PURCHASES) return [];
+  const out: (Order & { buyer: string })[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await env.PURCHASES.list({ prefix: 'o:', cursor });
+    for (const { name } of page.keys) {
+      const raw = await env.PURCHASES.get(name);
+      if (raw) out.push({ ...JSON.parse(raw), buyer: name.split(':')[1] });
+    }
+    cursor = page.list_complete || out.length > 500 ? undefined : page.cursor;
+  } while (cursor);
+  return out.sort((a, b) => b.at - a.at).slice(0, max);
+}
+
+/** GET/POST /api/admin. */
+export async function handleAdmin(req: Request, env: Env, get?: Fetch) {
+  const who = await verifyAdmin(req, env, get);
+  if ('error' in who) return json({ error: who.error }, who.status);
+  if (!env.PURCHASES) return json({ error: 'nokv' }, 503);
+  if (req.method === 'POST') {
+    let body: { settings?: unknown; webhookSecret?: string };
+    try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
+    if (body.settings !== undefined) {
+      const s = cleanSettings(body.settings);
+      s.updatedAt = Date.now();
+      await env.PURCHASES.put(SETTINGS_KEY, JSON.stringify(s));
+    }
+    if (typeof body.webhookSecret === 'string' && body.webhookSecret.trim().length >= 16) await env.PURCHASES.put(WEBHOOK_SECRET_KEY, body.webhookSecret.trim());
+  }
+  return json({
+    email: who.email,
+    settings: await loadSettings(env),
+    secrets: { webhook: !!(await webhookSecret(env)), webhookFromCloudflare: !!env.LS_WEBHOOK_SECRET },
+    testFromCloudflare: env.LS_ALLOW_TEST === '1',
+    orders: await recentOrders(env),
+  });
+}

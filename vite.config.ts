@@ -11,7 +11,7 @@ function serviceWorker(): Plugin {
     name: 'harvest-lane-sw',
     apply: 'build',
     generateBundle(_, bundle) {
-      const built = Object.keys(bundle).filter(f => f !== 'index.html').map(f => '/' + f);
+      const built = Object.keys(bundle).filter(f => !f.endsWith('.html')).map(f => '/' + f);
       const sprites = ['ui', 'chars'].flatMap(d => readdirSync('public/' + d).map(f => `/${d}/${f}`));
       const files = [...PUBLIC_FILES, ...sprites, ...built];
       const version = createHash('sha256').update(files.join('\n')).digest('hex').slice(0, 10);
@@ -28,6 +28,6 @@ export default defineConfig({
   // Listen on the local network so the game can be tested on a phone or iPad over Wi-Fi.
   server: { host: true, port: 5173 },
   preview: { host: true, port: 4173 },
-  build: { target: 'es2020', chunkSizeWarningLimit: 900 },
+  build: { target: 'es2020', chunkSizeWarningLimit: 900, rollupOptions: { input: { main: 'index.html', admin: 'admin.html' } } },
   test: { include: ['tests/**/*.test.ts'], environment: 'node' },
 });

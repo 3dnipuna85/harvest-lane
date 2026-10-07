@@ -49,7 +49,8 @@ const pendingFor = () => Date.now() - (+(get(PENDING) || 0));
 
 let busy = false;
 export async function claimPacks() {
-  if (busy || visiting || !anyLink()) return 0;
+  // Only browsers that opened a checkout this week ask the server (each ask costs a storage lookup).
+  if (busy || visiting || !anyLink() || pendingFor() > 7 * 86_400_000) return 0;
   busy = true;
   try {
     const r = await fetch('/api/claim', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ buyer: buyerId() }) });
@@ -65,7 +66,7 @@ export async function claimPacks() {
       toast(`Thank you! ${p.name} arrived: ${gemHTML()}${p.gems.toLocaleString()} diamonds.`);
       n++;
     }
-    if (n) { set(PENDING, null); markDirty(); }
+    if (n) markDirty();
     return n;
   } catch { return 0; } finally { busy = false; }
 }
@@ -76,7 +77,7 @@ export function claimSoon() { if (Date.now() - lastLook > 20_000) { lastLook = D
 
 /** Collect on start, when the tab comes back after a checkout, and every few seconds for a while after one. */
 export function bindPayments() {
-  if (!anyLink()) return;
+  testPay();
   if (/[?&]paid=/.test(location.search)) { markCheckout(); history.replaceState(null, '', location.pathname); }
   setTimeout(claimPacks, 3000);
   addEventListener('visibilitychange', () => { if (!document.hidden && pendingFor() < 30 * 60_000) claimPacks(); });

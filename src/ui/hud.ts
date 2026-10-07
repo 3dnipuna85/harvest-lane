@@ -4,6 +4,7 @@ import { updateGems } from './estate';
 import { on } from '../game/events';
 import { matsOk, nextParcel, plotCost, plotLvl, plotMats, plotSlot, xpNeed } from '../game/economy';
 import { S } from '../game/state';
+import { live } from '../game/live';
 import { now } from '../game/clock';
 import { canFillTruck } from '../game/trucks';
 import { inv } from '../game/economy';
@@ -55,7 +56,7 @@ export function updateHud() {
   $('coins').textContent = fmt(S.coins);
   $('lvl').textContent = String(S.level);
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
-  document.querySelector('.lvlpill')?.classList.toggle('xp2', S.xpBoost > Date.now());
+  document.querySelector('.lvlpill')?.classList.toggle('xp2', S.xpBoost > Date.now() || live.xpEventUntil > Date.now());
   const ex = $('expand') as HTMLButtonElement;
   const slot = plotSlot();
   if (!slot) {
