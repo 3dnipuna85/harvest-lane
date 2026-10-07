@@ -5,6 +5,7 @@ import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS } from '../data/limits';
 import { TIERS } from '../data/tiers';
 import { LAND, PARCEL_PLOTS, RIVER0, RIVER_PLOTS } from '../data/land';
+import { BARN_PAY, HOUSE_XP } from '../data/buildings';
 import { now } from './clock';
 import { emit } from './events';
 import { S, type Plot } from './state';
@@ -32,7 +33,9 @@ const GLUT_HALF_MS = 15 * 60_000;
 const GLUT_SIZE = 30;
 const glut = (k: ItemId, t = now()) => { const m = S.market[k]; return m ? m.n * Math.pow(0.5, (t - m.t) / GLUT_HALF_MS) : 0; };
 export const priceFactor = (k: ItemId, t = now()) => Math.max(0.35, 1 / (1 + glut(k, t) / GLUT_SIZE));
-export const unitPrice = (k: ItemId, t = now()) => Math.max(1, Math.round(ITEMS[k].sell * priceFactor(k, t)));
+/** A bigger barn (data/buildings.ts) keeps goods fresher, so everything sold pays a little more. */
+export const barnPay = () => 1 + BARN_PAY * (S.build?.barn || 0);
+export const unitPrice = (k: ItemId, t = now()) => Math.max(1, Math.round(ITEMS[k].sell * priceFactor(k, t) * barnPay()));
 /** Record a sale in the market's memory. */
 export function flood(k: ItemId, n = 1, t = now()) { S.market[k] = { n: glut(k, t) + n, t }; }
 /** Where the next plot would go: the home field, a riverside row (once all land is bought), or nowhere (buy land). */
@@ -81,7 +84,9 @@ export function gainXP(n: number) {
   // A Double XP boost from the diamond shop (game/store.ts) doubles what you earn while it lasts, and so does
   // an XP event the owner runs from the admin page (game/live.ts); together they make it triple.
   const t = now(), boost = S.xpBoost > t, ev = live.xpEventUntil > t;
-  S.xp += boost && ev ? n * 3 : boost || ev ? n * 2 : n;
+  // A nicer farmhouse adds a little on top.
+  n *= 1 + HOUSE_XP * (S.build?.house || 0);
+  S.xp += Math.round(boost && ev ? n * 3 : boost || ev ? n * 2 : n);
   const cap = TIERS[S.tier]?.cap ?? Infinity;
   if (S.level >= cap) {
     // The farm tier caps the level: the bar fills and waits for a farm upgrade.

@@ -1,10 +1,13 @@
 import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
+import { PEN_SPEED } from '../data/buildings';
 import { now } from './clock';
 import { add, gainXP, inv, type BuyResult } from './economy';
 import { emit } from './events';
 import { S } from './state';
 import { maxAnimals } from './town';
 
+/** Seconds an animal takes to make its product; better pens (data/buildings.ts) make it quicker. */
+export const animalTime = (k: AnimalId) => ANIMALS[k].time * Math.pow(1 - PEN_SPEED, S.build?.pens || 0);
 export const animalUnlocked = (k: AnimalId) => S.level >= ANIMALS[k].lvl;
 export const animalCost = (k: AnimalId) => Math.round(ANIMALS[k].cost * Math.pow(1.6, Math.max(0, S.animals[k].n - ANIMALS[k].start)));
 
@@ -60,7 +63,7 @@ export function healAll(t = now()) {
 export function animalProgress(k: AnimalId, i: number, t = now()) {
   const r = S.animals[k].ready[i];
   if (r == null) return 0;
-  return Math.min(1, 1 - (r - t) / (ANIMALS[k].time * 1000));
+  return Math.min(1, 1 - (r - t) / (animalTime(k) * 1000));
 }
 
 export type FeedResult = 'fed' | 'locked' | 'busy' | 'nofeed' | 'sick';
@@ -73,7 +76,7 @@ export function feedAnimal(k: AnimalId, i: number, t = now()): FeedResult {
   if (h.ready[i] != null) return 'busy';
   if (inv(a.feed) < a.feedQty) return 'nofeed';
   S.inv[a.feed] = inv(a.feed) - a.feedQty;
-  h.ready[i] = t + a.time * 1000;
+  h.ready[i] = t + animalTime(k) * 1000;
   h.hungry[i] = null;
   emit('animalFed', { kind: k, i });
   return 'fed';

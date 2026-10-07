@@ -29,6 +29,7 @@ import { buildBarn, updateBarn } from './world/barn';
 import { initPlots, syncPlots, updatePlots } from './world/plots';
 import { buildDecor, updateDecor } from './world/decor';
 import { buildEstate, updateEstate } from './world/estate';
+import { buildUpgrades, updateUpgrades } from './world/buildings';
 import { buildWilds, updateWilds } from './world/wilds';
 import { bindChatter, updateChatter } from './fx/chatter';
 import { buildCart, buildTownSign, buildWorld, updateCart } from './world/props';
@@ -87,6 +88,7 @@ export function initScene() {
   buildWorld();
   buildDecor();
   buildEstate();
+  buildUpgrades();
   buildWilds();
   bindChatter();
   buildRiver();
@@ -131,6 +133,7 @@ export function renderScene(dt: number, t: number) {
   updateLorry(dt);
   updateDecor(dt, t);
   updateEstate(t);
+  updateUpgrades();
   updateWilds(dt);
   updateChatter();
   updatePlots(t, dt);

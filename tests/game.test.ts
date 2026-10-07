@@ -929,3 +929,30 @@ describe('rush levels', () => {
     expect(g.have).toBe(0);
   });
 });
+
+describe('building upgrades', () => {
+  it('cost coins, diamonds and mats, unlock by level, and pay their perks', async () => {
+    const b = await import('../src/game/buildings');
+    const eco = await import('../src/game/economy');
+    const an = await import('../src/game/animals');
+    expect(b.upgradeBuilding('barn')).toEqual({ ok: false, reason: 'locked', lvl: 6 });
+    S.level = 12; S.coins = 100_000; S.gems = 0;
+    const before = eco.unitPrice('egg');
+    expect(b.upgradeBuilding('barn')).toEqual({ ok: true, lvl: 1 });
+    expect(S.coins).toBe(97_000);
+    expect(eco.unitPrice('egg')).toBeGreaterThanOrEqual(before);
+    expect(b.upgradeBuilding('barn')).toMatchObject({ ok: false, reason: 'gems' });
+    S.gems = 50;
+    expect(b.upgradeBuilding('barn')).toMatchObject({ ok: false, reason: 'mats' });
+    S.inv.plank = 20; S.inv.brick = 10;
+    expect(b.upgradeBuilding('barn')).toEqual({ ok: true, lvl: 2 });
+    expect(S.inv.plank).toBe(0);
+    expect(S.gems).toBe(40);
+    expect(eco.barnPay()).toBeCloseTo(1.1);
+    const slow = an.animalTime('cow');
+    S.build.pens = 2;
+    expect(an.animalTime('cow')).toBeCloseTo(slow * 0.85 * 0.85);
+    // saves keep the levels, clamped
+    expect(migrate(JSON.parse(JSON.stringify({ ...S, build: { barn: 9, pens: 2 } }))).build).toEqual({ barn: 3, pens: 2, house: 0 });
+  });
+});

@@ -523,6 +523,10 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .upgradecard .cost.ok{color:var(--leaf)}
 .upgradecard .btn{margin-left:auto}
 .capnote{color:#b5452a}
+.secthead{margin:8px 2px 0;font-weight:900;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a44}
+.pips{display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px}
+.pips i{width:9px;height:9px;border-radius:50%;background:#e6d3ae;box-shadow:inset 0 0 0 1.5px #c9a46a}
+.pips i.on{background:#ffc93c;box-shadow:inset 0 0 0 1.5px #c48a1e}
 .gemfx{color:#3d7be0}
 
 /* Sound settings */

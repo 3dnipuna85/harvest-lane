@@ -259,7 +259,7 @@ export function bindPanelInput() {
     sfxTap();
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
-    if (townAction(a!, k) || farmAction(a!) || shopAction(a!, k, i)) { save(); return; }
+    if (townAction(a!, k) || farmAction(a!, k) || shopAction(a!, k, i)) { save(); return; }
     if (a === 'seed') S.sel = k as CropId;
     else if (a === 'expand') { if (plotSlot()) act.buyPlot(); else act.buyLand(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);
