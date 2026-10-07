@@ -1,4 +1,4 @@
-import { canDouble, doubleGoal, FAILED_GAP_MS, GOAL_ICON, GOAL_TEXT, SKIP_GEMS, skipWait } from '../game/goals';
+import { canDouble, canExtend, doubleGoal, EXTEND_GEMS, extendChallenge, FAILED_GAP_MS, GOAL_ICON, GOAL_TEXT, SKIP_GEMS, skipWait } from '../game/goals';
 import { adsLeft, useAdView } from '../game/ads';
 import { adsAvailable, watchFor } from './ads';
 import { save } from '../game/state';
@@ -23,7 +23,7 @@ export function updateGoals() {
   if (!g || visiting) return;
   const t = now(), ch = g.list[2];
   const ad = adsAvailable() && adsLeft(t) > 0;
-  const s = [open, g.lvl, g.list.map(x => x.kind + x.have + x.state + x.until + !!x.dbl).join(','), g.nextTimed, ch.until - t < 60_000, ad, S.gems >= SKIP_GEMS].join('|');
+  const s = [open, g.lvl, g.list.map(x => x.kind + x.have + x.state + x.until + !!x.dbl).join(','), g.nextTimed, ch.until - t < 60_000, ad, S.gems >= SKIP_GEMS, canExtend(t)].join('|');
   if (s === sig) {
     // Only the countdowns change from second to second: update them in place.
     el.querySelectorAll<HTMLElement>('[data-until]').forEach(e => { e.textContent = mmss(+e.dataset.until! - t); });
@@ -43,6 +43,7 @@ export function updateGoals() {
     // Optional ways forward: start the next challenge now, or double a finished target's reward.
     const acts = waiting
       ? `<div class="gacts">${ad ? `<button class="btn alt" data-gact="skipad">📺 ${x.state === 'failed' ? 'Retry' : 'Next'} now</button>` : ''}<button class="btn gold" data-gact="skipgem" ${S.gems >= SKIP_GEMS ? '' : 'disabled'}>${gemHTML()}${SKIP_GEMS} ${ad ? '' : x.state === 'failed' ? 'Retry now' : 'Next now'}</button></div>`
+      : timed && canExtend(t) ? `<div class="gacts">${ad ? '<button class="btn alt" data-gact="extad">📺 +5 min</button>' : ''}<button class="btn gold" data-gact="extgem" ${S.gems >= EXTEND_GEMS ? '' : 'disabled'}>${gemHTML()}${EXTEND_GEMS} +5 min</button></div>`
       : canDouble(i) && ad ? `<div class="gacts"><button class="btn alt" data-gact="double" data-i="${i}">📺 Watch to double it</button></div>` : '';
     return `<div class="goal ${x.state} ${timed ? 'timed' : ''}"><span class="gi">${GOAL_ICON[x.kind]}</span><div class="grow">
       <div class="gt">${timed ? '<b>Challenge:</b> ' : ''}${GOAL_TEXT[x.kind](x.n)}</div>
@@ -59,6 +60,8 @@ export function bindGoalsUI() {
       const a = b.dataset.gact, i = +(b.dataset.i ?? 0);
       if (a === 'skipgem') { if (skipWait('gems')) { toast('A new challenge has started. Go!'); save(); } }
       else if (a === 'skipad') watchFor('next-challenge', () => useAdView() && skipWait('ad'), 'A new challenge has started. Go!', toast).then(() => save());
+      else if (a === 'extgem') { if (extendChallenge('gems')) { toast('+5 minutes. You can do it!'); save(); } }
+      else if (a === 'extad') watchFor('extend-challenge', () => useAdView() && extendChallenge('ad'), '+5 minutes. You can do it!', toast).then(() => save());
       else if (a === 'double') watchFor('double-target', () => useAdView() && doubleGoal(i), 'Reward doubled! 🎉', toast).then(() => save());
       sig = '';
       return;

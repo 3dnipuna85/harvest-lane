@@ -38,6 +38,20 @@ export const TIMED_GAP_MS = 3 * 60_000;
 export const FAILED_GAP_MS = 10 * 60_000;
 /** Diamonds to start the next challenge right away instead of waiting. */
 export const SKIP_GEMS = 3;
+/** Nearly out of time but close: buy 5 more minutes, once per challenge. */
+export const EXTEND_MS = 5 * 60_000, EXTEND_GEMS = 2;
+export function canExtend(t = now()) {
+  const c = S.goals?.list[2];
+  return !!c && c.state === 'open' && !c.ext && c.until - t < 2 * 60_000 && c.until > t && c.have >= c.n / 2;
+}
+export function extendChallenge(pay: 'ad' | 'gems', t = now()) {
+  if (!canExtend(t)) return false;
+  if (pay === 'gems') { if (S.gems < EXTEND_GEMS) return false; S.gems -= EXTEND_GEMS; }
+  const c = S.goals!.list[2];
+  c.ext = true;
+  c.until += EXTEND_MS;
+  return true;
+}
 export const timedMin = (l: number) => Math.min(15, 8 + Math.floor(l / 5));
 
 export function goalKinds(level = S.level): GoalKind[] {

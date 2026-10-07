@@ -888,3 +888,23 @@ describe('targets: skip the wait and double rewards', () => {
     expect(goals.doubleGoal(0)).toBe(false);
   });
 });
+
+describe('challenge: 5 more minutes', () => {
+  it('only when nearly out of time and at least halfway, once', async () => {
+    const goals = await import('../src/game/goals');
+    S.goals = null; S.level = 5;
+    const t0 = Date.now();
+    goals.goalsTick(t0);
+    const c = S.goals!.list[2];
+    const late = c.until - 60_000;
+    expect(goals.canExtend(late)).toBe(false); // not halfway yet
+    c.have = Math.ceil(c.n / 2);
+    expect(goals.canExtend(t0)).toBe(false); // plenty of time left
+    S.gems = 5;
+    const end = c.until;
+    expect(goals.extendChallenge('gems', late)).toBe(true);
+    expect(c.until).toBe(end + goals.EXTEND_MS);
+    expect(S.gems).toBe(5 - goals.EXTEND_GEMS);
+    expect(goals.canExtend(c.until - 60_000)).toBe(false);
+  });
+});
