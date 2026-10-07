@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forgetKeys, handleAdmin, verifyAdmin } from '../src/server/admin';
+import { forgetKeys, handleAdmin, OWNER_HASHES, verifyAdmin } from '../src/server/admin';
 import { cleanSettings, livePacks } from '../src/data/settings';
 import type { KV } from '../src/server/payments';
 
@@ -35,7 +35,15 @@ describe('admin page server', () => {
     expect(await verifyAdmin(req(await token({ exp: 1 })), ENV, get)).toMatchObject({ status: 401 });
     const t = await token({});
     expect(await verifyAdmin(req(t.slice(0, -4) + 'AAAA'), ENV, get)).toMatchObject({ status: 401 });
-    expect(await verifyAdmin(req(t), { FIREBASE_PROJECT_ID: 'farm' }, get)).toMatchObject({ status: 503 });
+    expect(await verifyAdmin(req(t), { FIREBASE_PROJECT_ID: 'farm' }, get)).toMatchObject({ status: 403 });
+  });
+  it('always lets the owner in, with no Cloudflare setup', async () => {
+    const { get, token } = await setup();
+    // The owner is matched by a hash of the email; add one for a made-up owner.
+    OWNER_HASHES.push(Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('owner@farm.test'))).toString('hex'));
+    const t = await token({ aud: 'harvest-lane-b6dcd', iss: 'https://securetoken.google.com/harvest-lane-b6dcd', email: 'Owner@Farm.test' });
+    expect(await verifyAdmin(req(t), {}, get)).toEqual({ email: 'owner@farm.test' });
+    OWNER_HASHES.pop();
   });
   it('saves settings and a write-only webhook secret', async () => {
     const { get, token } = await setup();

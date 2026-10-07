@@ -7,6 +7,12 @@
 import { cleanSettings } from '../data/settings';
 import { json, loadSettings, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
 
+/** The game's Firebase project (public: it is in every copy of the game's code). */
+const FIREBASE_PROJECT = 'harvest-lane-b6dcd';
+/** The owner's sign-in email, as a SHA-256 hash so the address itself isn't published. Always an admin. */
+export const OWNER_HASHES = ['2b577e1006a97c329ebe9d9dbfb6858cdc0a32d14a79bc266140bbc099d023e6'];
+const sha256 = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, '0')).join('');
+
 const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 interface Jwk { kid: string; n: string; e: string; kty: string }
 let keyCache: { at: number; keys: Jwk[] } | null = null;
@@ -24,9 +30,9 @@ async function googleKeys(get: Fetch, fresh = false) {
 
 /** The signed-in admin's email, or why not. */
 export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetch(u)): Promise<{ email: string } | { error: string; status: number }> {
-  const project = env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID;
+  const project = env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID || FIREBASE_PROJECT;
+  // More admins can be added with the optional ADMIN_EMAILS Cloudflare variable (comma separated).
   const admins = (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  if (!project || !admins.length) return { error: 'setup', status: 503 };
   const tok = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const [h, p, sig] = tok.split('.');
   if (!h || !p || !sig) return { error: 'signin', status: 401 };
@@ -40,7 +46,7 @@ export async function verifyAdmin(req: Request, env: Env, get: Fetch = u => fetc
     const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64(sig), new TextEncoder().encode(h + '.' + p));
     if (!ok || claims.aud !== project || claims.iss !== 'https://securetoken.google.com/' + project || !(claims.exp > now) || !(claims.iat < now + 300)) return { error: 'signin', status: 401 };
     const email = String(claims.email || '').toLowerCase();
-    if (!claims.email_verified || !admins.includes(email)) return { error: 'notadmin', status: 403 };
+    if (!claims.email_verified || !(admins.includes(email) || OWNER_HASHES.includes(await sha256(email)))) return { error: 'notadmin', status: 403 };
     return { email };
   } catch { return { error: 'signin', status: 401 }; }
 }

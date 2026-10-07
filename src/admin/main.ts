@@ -44,9 +44,14 @@ async function call(body?: unknown) {
 
 function problem(err: string) {
   const fix: Record<string, string> = {
-    setup: `<p>The admin server isn't set up yet. In Cloudflare, open <b>Workers &amp; Pages → harvest-lane → Settings → Variables and Secrets</b> and add a variable <code>ADMIN_EMAILS</code> with your Google email as its value (several emails can be separated by commas). Then retry the latest deployment and reload this page.</p>`,
-    notadmin: `<p>You're signed in as <b>${esc(user?.email)}</b>, which isn't on the admin list. Sign out and use the Google account whose email is in the <code>ADMIN_EMAILS</code> Cloudflare variable.</p>`,
-    nokv: `<p>The game's storage isn't connected. In Cloudflare, bind a KV namespace named <code>PURCHASES</code> to harvest-lane (Settings → Bindings), then retry the latest deployment.</p>`,
+    notadmin: `<p>You're signed in as <b>${esc(user?.email)}</b>, which isn't an admin of this game. Sign out and sign in with the owner's Google account.</p>`,
+    nokv: `<p>You're signed in as the owner ✓. One thing is missing: <b>storage</b> for settings and orders. Cloudflare needs it connected once, then this page works:</p>
+      <ol class="steps">
+        <li>Open <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">dash.cloudflare.com</a> → <b>Workers &amp; Pages</b> → <b>harvest-lane</b> → <b>Settings</b> → <b>Bindings</b>.</li>
+        <li>Click <b>Add</b> → <b>KV namespace</b>.</li>
+        <li>Variable name: <code>PURCHASES</code>. For the namespace, choose <b>Create new</b> and call it <code>harvest-purchases</code>. Save.</li>
+        <li>Go to <b>Deployments</b>, open the latest one and click <b>Retry deployment</b>. When it finishes, reload this page.</li>
+      </ol>`,
     signin: '<p>Your sign-in expired. Reload the page and sign in again.</p>',
   };
   show(`<section><h2>Can't open the admin page</h2>${fix[err] ?? `<p>The server didn't answer (${esc(err)}). If the site was just deployed, wait a minute and reload.</p>`}</section>`);
