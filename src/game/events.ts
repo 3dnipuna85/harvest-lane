@@ -12,6 +12,7 @@ export interface GameEvents {
   earn: { amount: number };
   treeChop: { i: number };
   treeFelled: { i: number; n: number };
+  saplingPlanted: { i: number };
   rockHit: { i: number };
   rockBroken: { i: number; n: number };
   gems: { n: number; why: string };

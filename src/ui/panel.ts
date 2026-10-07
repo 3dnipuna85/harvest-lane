@@ -5,10 +5,10 @@ import { farmAction, farmPanel, farmSignature } from './estate';
 import { shopAction, shopPanel, shopSignature } from './shop';
 import type { CropId } from '../data/crops';
 import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
-import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
+import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_SELLERS } from '../data/limits';
 import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines';
 import { now } from '../game/clock';
-import { farmhandCost, fire, inv, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
+import { farmhandCost, fire, inv, plotSlot, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
 import { toast } from './toasts';
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
@@ -261,7 +261,7 @@ export function bindPanelInput() {
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
     if (townAction(a!, k) || farmAction(a!) || shopAction(a!, k, i)) { save(); return; }
     if (a === 'seed') S.sel = k as CropId;
-    else if (a === 'expand') { if (S.plots.length >= MAX_PLOTS) act.buyLand(); else act.buyPlot(); }
+    else if (a === 'expand') { if (plotSlot()) act.buyPlot(); else act.buyLand(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);
     else if (a === 'close') closeOffice();
     else if (a === 'sell') act.sell(k as ItemId, b.dataset.n === 'all' ? inv(k as ItemId) : 1, cx, cy);

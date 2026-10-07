@@ -67,9 +67,11 @@ describe('levels', () => {
 });
 
 describe('purchases', () => {
-  it('plot cost grows by 1.5x', () => {
+  it('plot cost grows by 1.5x, and each new plot needs a level', () => {
     S.coins = 1000;
     expect(plotCost()).toBe(40);
+    expect(buyPlot()).toMatchObject({ ok: false, reason: 'locked', lvl: 2 });
+    S.level = 2;
     expect(buyPlot().ok).toBe(true);
     expect(plotCost()).toBe(60);
   });
@@ -274,6 +276,20 @@ describe('land', () => {
     expect(buyLand()).toMatchObject({ ok: true, k: 1 });
     expect(buyLand()).toMatchObject({ ok: false, reason: 'max' });
     expect(migrate(JSON.parse(JSON.stringify(S))).land).toBe(2);
+  });
+
+  it('with all the land bought, riverside plots unlock with level', async () => {
+    const eco = await import('../src/game/economy');
+    S.level = 20; S.coins = 1e6;
+    while (S.plots.length < 20) S.plots.push({ crop: null, at: 0 });
+    eco.buyLand(); eco.buyLand();
+    expect(eco.plotSlot()).toBe('river');
+    for (let k = 0; k < 3; k++) expect(eco.buyPlot().ok).toBe(true);
+    expect(eco.buyPlot()).toMatchObject({ ok: false, reason: 'locked', lvl: 21 });
+    S.level = 21;
+    for (let k = 0; k < 3; k++) expect(eco.buyPlot().ok).toBe(true);
+    expect(eco.buyPlot()).toMatchObject({ ok: false, reason: 'max' });
+    expect(S.plots.length).toBe(50);
   });
 });
 
@@ -603,15 +619,33 @@ describe('contract lorries', () => {
 
 describe('woods and quarry', () => {
   it('three chops fell a tree for logs, and the stump regrows', async () => {
-    const { chopTree, TREE_REGROW_MS } = await import('../src/game/resources');
+    const { chopTree, plantSapling, TREE_REGROW_MS } = await import('../src/game/resources');
     expect(chopTree(0, t)).toBe('locked');
     S.level = 9;
     expect(chopTree(0, t)).toBe('hit');
     expect(chopTree(0, t)).toBe('hit');
     expect(chopTree(0, t, () => 0.9)).toBe('done');
     expect(S.inv.log).toBe(2);
+    // a stump stays a stump until a sapling is planted
+    expect(chopTree(0, t + 10 * TREE_REGROW_MS)).toBe('stump');
+    S.coins = 0;
+    expect(plantSapling(0, t)).toMatchObject({ ok: false, reason: 'coins' });
+    S.coins = 1000;
+    expect(plantSapling(0, t).ok).toBe(true);
     expect(chopTree(0, t)).toBe('regrowing');
     expect(chopTree(0, t + TREE_REGROW_MS)).toBe('hit');
+  });
+
+  it('Pine Ridge and Hill Quarry open later; hill rocks are tougher and richer', async () => {
+    const r = await import('../src/game/resources');
+    S.level = 15;
+    expect(r.chopTree(r.WOODS_TREES, t)).toBe('locked');
+    S.level = 18;
+    const i = r.QUARRY_ROCKS;
+    for (let k = 0; k < r.HILL_HITS - 1; k++) expect(r.mineRock(i, t)).toBe('hit');
+    expect(r.mineRock(i, t, () => 0.01)).toBe('done');
+    expect(S.inv.stone).toBe(4);
+    expect(S.gems).toBeGreaterThan(0);
   });
 
   it('four hits break a rock for stone', async () => {

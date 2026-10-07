@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { CROPS } from '../../data/crops';
-import { MAX_PLOTS } from '../../data/limits';
-import { growProgress, plotCost, rotIn } from '../../game/economy';
+import { growProgress, plotCost, plotLvl, plotSlot, rotIn } from '../../game/economy';
 import { S } from '../../game/state';
 import { coinHTML, fmt } from '../../ui/format';
 import { isQueued } from '../actors/ai';
@@ -73,7 +72,7 @@ export function syncPlots() {
     ctx.scene.remove(p.g);
     ctx.pickables.splice(ctx.pickables.indexOf(p.g), 1);
   }
-  if (S.plots.length < MAX_PLOTS) { const q = plotPos(S.plots.length); buySlot.position.set(q.x, 0, q.z); buySlot.visible = true; }
+  if (plotSlot()) { const q = plotPos(S.plots.length); buySlot.position.set(q.x, 0, q.z); buySlot.visible = true; }
   else buySlot.visible = false;
   buySlot.userData.n = S.plots.length;
 }
@@ -118,8 +117,8 @@ export function updatePlots(t: number, dt: number) {
     }
   }
   if (buySlot.visible) {
-    const c = plotCost(), q = plotPos(S.plots.length);
-    lbl('buy', `<span>Buy plot</span><span class="r">${coinHTML}${fmt(c)}</span>`, tmp.set(q.x, 0.25, q.z), 'buy');
-    ((buySlot.children[0] as THREE.Mesh).material as THREE.Material).opacity = S.coins >= c ? 0.55 : 0.25;
+    const c = plotCost(), q = plotPos(S.plots.length), need = plotLvl(), locked = S.level < need;
+    lbl('buy', locked ? `<span>New plot</span><span class="r">🔒 Lv ${need}</span>` : `<span>Buy plot</span><span class="r">${coinHTML}${fmt(c)}</span>`, tmp.set(q.x, 0.25, q.z), 'buy');
+    ((buySlot.children[0] as THREE.Mesh).material as THREE.Material).opacity = !locked && S.coins >= c ? 0.55 : 0.25;
   }
 }

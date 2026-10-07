@@ -3,7 +3,7 @@ import { ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS } from '../data/limits';
 import { TIERS } from '../data/tiers';
-import { LAND, PARCEL_PLOTS } from '../data/land';
+import { LAND, PARCEL_PLOTS, RIVER0, RIVER_PLOTS } from '../data/land';
 import { now } from './clock';
 import { emit } from './events';
 import { S, type Plot } from './state';
@@ -34,7 +34,18 @@ export const priceFactor = (k: ItemId, t = now()) => Math.max(0.35, 1 / (1 + glu
 export const unitPrice = (k: ItemId, t = now()) => Math.max(1, Math.round(ITEMS[k].sell * priceFactor(k, t)));
 /** Record a sale in the market's memory. */
 export function flood(k: ItemId, n = 1, t = now()) { S.market[k] = { n: glut(k, t) + n, t }; }
-export const plotCost = () => Math.round(40 * Math.pow(1.5, S.plots.length - START_PLOTS));
+/** Where the next plot would go: the home field, a riverside row (once all land is bought), or nowhere (buy land). */
+export function plotSlot(n = S.plots.length): 'home' | 'river' | null {
+  if (n < MAX_PLOTS) return 'home';
+  if (S.land >= LAND.length && n >= RIVER0 && n < RIVER0 + RIVER_PLOTS.length) return 'river';
+  return null;
+}
+/** Level needed for the next plot: home plots unlock two per level from level 2; riverside plots have their own. */
+export function plotLvl(n = S.plots.length) {
+  if (plotSlot(n) === 'river') return RIVER_PLOTS[n - RIVER0].lvl;
+  return n < START_PLOTS ? 1 : Math.ceil((n - START_PLOTS + 1) / 2) + 1;
+}
+export const plotCost = (n = S.plots.length) => plotSlot(n) === 'river' ? RIVER_PLOTS[n - RIVER0].cost : Math.round(40 * Math.pow(1.5, n - START_PLOTS));
 export const farmhandCost = () => Math.round(80 * Math.pow(1.8, S.farmhands));
 export const sellerCost = () => Math.round(150 * Math.pow(1.9, S.sellers));
 /** Production time in seconds; each upgrade level is 18% faster. */
@@ -127,11 +138,12 @@ export function sell(k: ItemId, n: number): number {
   return g;
 }
 
-export type BuyResult = { ok: true } | { ok: false; reason: 'max' | 'coins' | 'locked'; cost?: number };
+export type BuyResult = { ok: true } | { ok: false; reason: 'max' | 'coins' | 'locked'; cost?: number; lvl?: number };
 
 export function buyPlot(): BuyResult {
+  if (!plotSlot()) return { ok: false, reason: 'max' };
+  if (S.level < plotLvl()) return { ok: false, reason: 'locked', lvl: plotLvl() };
   const c = plotCost();
-  if (S.plots.length >= MAX_PLOTS) return { ok: false, reason: 'max' };
   if (S.coins < c) return { ok: false, reason: 'coins', cost: c };
   S.coins -= c;
   S.plots.push({ crop: null, at: 0 });

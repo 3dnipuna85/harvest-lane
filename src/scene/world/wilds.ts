@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { now } from '../../game/clock';
 import { on } from '../../game/events';
-import { CHOPS, HITS, QUARRY_LVL, WOODS_LVL, chopsOn, hitsOn, rockUp, treeUp } from '../../game/resources';
+import { CHOPS, HILL_LVL, QUARRY_LVL, QUARRY_ROCKS, RIDGE_LVL, WOODS_LVL, chopsOn, hitsFor, hitsOn, isStump, rockUp, saplingCost, treeOpen, treeUp } from '../../game/resources';
 import { S } from '../../game/state';
 import { ctx } from '../context';
 import { lbl, toScreen } from '../fx/labels';
@@ -12,10 +12,14 @@ import { T } from '../materials';
 import { pine } from './decor';
 
 /** The Woods (north-west) and the Quarry (north-east), beyond the back fence. */
-export const TREE_AT: [number, number][] = [[-12.2, -11.0], [-10.2, -11.4], [-8.2, -11.0], [-6.3, -11.6], [-11.4, -13.2], [-9.3, -13.5], [-7.2, -13.3], [-12.3, -15.3], [-10.2, -15.6], [-8.0, -15.4]];
-export const ROCK_AT: [number, number][] = [[9.6, -11.2], [11.4, -11.0], [13.1, -11.7], [10.3, -13.3], [12.3, -13.5], [9.4, -15.1], [11.3, -15.5], [13.2, -15.2]];
+export const TREE_AT: [number, number][] = [[-12.2, -11.0], [-10.2, -11.4], [-8.2, -11.0], [-6.3, -11.6], [-11.4, -13.2], [-9.3, -13.5], [-7.2, -13.3], [-12.3, -15.3], [-10.2, -15.6], [-8.0, -15.4],
+  // Pine Ridge, further west
+  [-16.2, -11.6], [-18.3, -11.2], [-20.4, -12.0], [-17.0, -13.8], [-19.3, -14.2], [-17.9, -16.0]];
+export const ROCK_AT: [number, number][] = [[9.6, -11.2], [11.4, -11.0], [13.1, -11.7], [10.3, -13.3], [12.3, -13.5], [9.4, -15.1], [11.3, -15.5], [13.2, -15.2],
+  // Hill Quarry, further east
+  [16.0, -11.4], [18.0, -11.0], [20.0, -11.8], [16.8, -13.6], [19.0, -14.0], [17.6, -15.8]];
 
-interface Spot { g: THREE.Group; up: THREE.Group; down: THREE.Group; shake: number; was: boolean | null }
+interface Spot { g: THREE.Group; up: THREE.Group; down: THREE.Group; young?: THREE.Group; shake: number; was: string | null }
 let trees: Spot[] = [], rocks: Spot[] = [];
 
 function treeSpot(i: number, parent: THREE.Group): Spot {
@@ -28,8 +32,12 @@ function treeSpot(i: number, parent: THREE.Group): Spot {
   part(Cyl(0.24, 0.28, 0.32, 14), '#9a6438', down, 0, 0.16, 0);
   part(Cyl(0.2, 0.2, 0.02, 14), '#e6c08a', down, 0, 0.33, 0, { ol: false });
   part(Sph(0.08), '#6cc04a', down, 0.18, 0.36, 0.1, { ol: 0.01 });
+  // a sapling growing where a stump was replanted
+  const young = new THREE.Group(); g.add(young);
+  part(Cyl(0.05, 0.06, 0.5, 10), '#8a5a30', young, 0, 0.25, 0);
+  pine(young, 0, 0.1, 0.35);
   parent.add(g); ctx.pickables.push(g);
-  return { g, up, down, shake: 0, was: null };
+  return { g, up, down, young, shake: 0, was: null };
 }
 
 function rockSpot(i: number, parent: THREE.Group): Spot {
@@ -37,11 +45,12 @@ function rockSpot(i: number, parent: THREE.Group): Spot {
   g.position.set(x, 0, z);
   g.userData = { type: 'rock', i };
   const up = new THREE.Group(); g.add(up);
-  const c = i % 2 ? '#a9a59a' : '#bdb8ab';
-  part(Sph(0.62), c, up, 0, 0.36, 0, { s: [1.2, 0.85, 1] });
-  part(Sph(0.38), '#9c978b', up, 0.5, 0.25, 0.25, { s: [1, 0.8, 1] });
+  const hill = i >= QUARRY_ROCKS, c = hill ? (i % 2 ? '#8f897e' : '#9d978a') : i % 2 ? '#a9a59a' : '#bdb8ab';
+  part(Sph(hill ? 0.72 : 0.62), c, up, 0, 0.4, 0, { s: [1.2, 0.85, 1] });
+  part(Sph(0.38), hill ? '#7f796f' : '#9c978b', up, 0.5, 0.25, 0.25, { s: [1, 0.8, 1] });
   part(Sph(0.3), c, up, -0.45, 0.2, 0.3);
-  if (i % 3 === 0) part(Sph(0.09), '#7fd3ff', up, 0.2, 0.75, 0.3, { ol: 0.01 });
+  if (hill) for (const [a, b, d] of [[0.25, 0.8, 0.3], [-0.2, 0.7, 0.45], [0.55, 0.45, 0.4]]) part(Sph(0.07), '#f2c84b', up, a, b, d, { ol: 0.01 });
+  else if (i % 3 === 0) part(Sph(0.09), '#7fd3ff', up, 0.2, 0.75, 0.3, { ol: 0.01 });
   const down = new THREE.Group(); g.add(down);
   for (const [a, b] of [[-0.3, 0.1], [0.25, -0.2], [0.1, 0.3]]) part(Sph(0.14), '#9c978b', down, a, 0.08, b, { s: [1, 0.6, 1] });
   parent.add(g); ctx.pickables.push(g);
@@ -58,6 +67,10 @@ export function buildWilds() {
   floor.rotation.x = -Math.PI / 2; floor.position.set(-9.4, 0.01, -13.3); floor.scale.set(1, 0.8, 1); floor.receiveShadow = true; g.add(floor);
   const pit = new THREE.Mesh(new THREE.CircleGeometry(4.2, 40), T('#cbbfa6'));
   pit.rotation.x = -Math.PI / 2; pit.position.set(11.3, 0.01, -13.3); pit.scale.set(1, 0.8, 1); pit.receiveShadow = true; g.add(pit);
+  const ridge = new THREE.Mesh(new THREE.CircleGeometry(3.6, 40), T('#4f8f34'));
+  ridge.rotation.x = -Math.PI / 2; ridge.position.set(-18.3, 0.01, -13.6); ridge.scale.set(1, 0.85, 1); ridge.receiveShadow = true; g.add(ridge);
+  const hillPit = new THREE.Mesh(new THREE.CircleGeometry(3.5, 40), T('#b3a68a'));
+  hillPit.rotation.x = -Math.PI / 2; hillPit.position.set(18, 0.01, -13.4); hillPit.scale.set(1, 0.85, 1); hillPit.receiveShadow = true; g.add(hillPit);
   trees = TREE_AT.map((_, i) => treeSpot(i, g));
   rocks = ROCK_AT.map((_, i) => rockSpot(i, g));
   if (bound) return;
@@ -72,23 +85,29 @@ export function buildWilds() {
 
 const mmss = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
-function sync(list: Spot[], isUp: (i: number) => boolean, back: number[], done: (i: number) => number, need: number, dt: number) {
+function sync(list: Spot[], isUp: (i: number) => boolean, back: number[], done: (i: number) => number, need: (i: number) => number, dt: number, trees = false) {
   const t = now();
   list.forEach((s, i) => {
-    const up = isUp(i);
-    if (s.was !== up) { s.up.visible = up; s.down.visible = !up; s.was = up; }
+    // A locked area still shows its trees and rocks standing.
+    const open = trees ? treeOpen(i) : true, up = !open || isUp(i), stump = trees && open && isStump(i);
+    const state = up ? 'up' : stump || !s.young ? 'down' : 'young';
+    if (s.was !== state) { s.up.visible = state === 'up'; s.down.visible = state === 'down'; if (s.young) s.young.visible = state === 'young'; s.was = state; }
+    if (stump) { lbl('wild' + list.length + i, `🌱 Plant ${saplingCost()}`, tmp.set(s.g.position.x, 0.9, s.g.position.z), 'timer plantme'); return; }
+    if (state === 'young') s.young!.scale.setScalar(0.6 + 0.4 * Math.min(1, 1 - ((back[i] || 0) - t) / 240_000));
     if (s.shake > 0) { s.shake -= dt; s.up.rotation.z = Math.sin(s.shake * 60) * 0.06; } else s.up.rotation.z = 0;
     // chopped trees and cracked rocks lean and shrink a little with each blow
     const d = done(i);
     s.up.scale.setScalar(1 - d * 0.06);
-    if (d) lbl('wild' + list.length + i, '●'.repeat(d) + '○'.repeat(need - d), tmp.set(s.g.position.x, 2.6, s.g.position.z), 'timer');
+    if (d) lbl('wild' + list.length + i, '●'.repeat(d) + '○'.repeat(need(i) - d), tmp.set(s.g.position.x, 2.6, s.g.position.z), 'timer');
     else if (!up && (back[i] || 0) - t < 60_000) lbl('wild' + list.length + i, mmss((back[i] || 0) - t), tmp.set(s.g.position.x, 0.9, s.g.position.z), 'timer');
   });
 }
 
 export function updateWilds(dt: number) {
-  sync(trees, i => treeUp(i), S.woods, chopsOn, CHOPS, dt);
-  sync(rocks, i => rockUp(i), S.rocks, hitsOn, HITS, dt);
+  sync(trees, i => treeUp(i), S.woods, chopsOn, () => CHOPS, dt, true);
+  sync(rocks, i => rockUp(i) || S.level < (i < QUARRY_ROCKS ? QUARRY_LVL : HILL_LVL), S.rocks, hitsOn, hitsFor, dt);
   lbl('woodsign', S.level < WOODS_LVL ? `<b>🌲 Woods</b><span>Opens at level ${WOODS_LVL}</span>` : '<b>🌲 Woods</b><span>Tap a tree to chop</span>', tmp.set(-9.4, 2.2, -10.0), 'townsign');
+  lbl('ridgesign', S.level < RIDGE_LVL ? `<b>🌲 Pine Ridge</b><span>Found at level ${RIDGE_LVL}</span>` : '<b>🌲 Pine Ridge</b><span>Chop and replant</span>', tmp.set(-18.3, 2.2, -10.2), 'townsign');
+  lbl('hillsign', S.level < HILL_LVL ? `<b>⛏️ Hill Quarry</b><span>Found at level ${HILL_LVL}</span>` : '<b>⛏️ Hill Quarry</b><span>Tough rock, more stone 💎</span>', tmp.set(18, 2.2, -10.2), 'townsign');
   lbl('quarrysign', S.level < QUARRY_LVL ? `<b>⛏️ Quarry</b><span>Opens at level ${QUARRY_LVL}</span>` : '<b>⛏️ Quarry</b><span>Tap a rock to mine</span>', tmp.set(11.3, 2.2, -10.0), 'townsign');
 }

@@ -19,6 +19,7 @@ export function bindSfx() {
   on('cropRotted', () => sfxThud());
   on('treeChop', () => { if (!hands.staff) sfxChop(); });
   on('treeFelled', () => { if (!hands.staff) sfxTimber(); });
+  on('saplingPlanted', () => { if (!hands.staff) sfxPlant(); });
   on('rockHit', () => { if (!hands.staff) sfxClink(); });
   on('rockBroken', () => { if (!hands.staff) { sfxClink(); sfxThud(); } });
 

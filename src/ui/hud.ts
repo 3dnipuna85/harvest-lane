@@ -1,9 +1,8 @@
 import { updateTroubles } from './troubles';
 import { updateGoals } from './goals';
 import { updateGems } from './estate';
-import { MAX_PLOTS } from '../data/limits';
 import { on } from '../game/events';
-import { nextParcel, plotCost, xpNeed } from '../game/economy';
+import { nextParcel, plotCost, plotLvl, plotSlot, xpNeed } from '../game/economy';
 import { S } from '../game/state';
 import { now } from '../game/clock';
 import { canFillTruck } from '../game/trucks';
@@ -58,7 +57,8 @@ export function updateHud() {
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
   document.querySelector('.lvlpill')?.classList.toggle('xp2', S.xpBoost > Date.now());
   const ex = $('expand') as HTMLButtonElement;
-  if (S.plots.length >= MAX_PLOTS) {
+  const slot = plotSlot();
+  if (!slot) {
     // The home field is full: the button becomes a savings goal for the next parcel of land.
     const p = nextParcel();
     ex.classList.toggle('land', !!p);
@@ -71,9 +71,10 @@ export function updateHud() {
       ex.classList.toggle('ready', S.coins >= p.cost && S.level >= p.lvl);
     }
   } else {
-    const c = plotCost();
-    ex.disabled = S.coins < c;
-    const h = '<b>New plot</b><span>' + coinHTML + fmt(c) + '</span>';
+    const c = plotCost(), need = plotLvl();
+    ex.classList.remove('land', 'ready');
+    ex.disabled = S.coins < c || S.level < need;
+    const h = (slot === 'river' ? '<b>Riverside plot</b>' : '<b>New plot</b>') + (S.level < need ? `<span>🔒 Lv ${need}</span>` : '<span>' + coinHTML + fmt(c) + '</span>');
     if (ex.innerHTML !== h) ex.innerHTML = h;
   }
 }

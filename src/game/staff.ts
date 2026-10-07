@@ -6,7 +6,7 @@ import { clock, now } from './clock';
 import { byStaff, harvest, inv, plant, ripe, sell, unlockedCrops } from './economy';
 import { emit, muteEvents } from './events';
 import { landCatch } from './fishing';
-import { chopsOn, chopTree, hitsOn, mineRock, QUARRY_LVL, rockUp, ROCKS, treeUp, TREES, WOODS_LVL } from './resources';
+import { chopsOn, chopTree, hitsOn, isStump, mineRock, plantSapling, QUARRY_LVL, rockUp, ROCKS, treeOpen, treeUp, TREES, WOODS_LVL } from './resources';
 import { SHOP_EVERY_MS, shopSale } from './town';
 import { S } from './state';
 import { canFillTruck, deliverTruck } from './trucks';
@@ -23,7 +23,7 @@ export const STAFF: Record<StaffId, StaffDef> = {
   manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops, loads trucks so you never lose a buyer, keeps your animal keeper re-hired, and sells spare crops to pay your helpers’ wages. Works while you’re away too.' },
   fisher: { name: 'Fisherman', lvl: 3, perHour: l => 24 + 7 * l, job: 'Fishes from the rowboat and brings in a catch every 15 seconds: fish, crabs and now and then a golden fish. Works while you’re away too.' },
   shopkeeper: { name: 'Shopkeeper', lvl: 8, perHour: l => 50 + 12 * l, job: 'Runs your shop in Market Town, selling your goods and animal products for 50% more than the farm gate. Works while you’re away too.' },
-  lumberjack: { name: 'Lumberjack', lvl: WOODS_LVL, perHour: l => 45 + 10 * l, job: 'Chops trees in the Woods, a swing every 8 seconds, and stacks the logs in your barn for the sawmill. Works while you’re away too.' },
+  lumberjack: { name: 'Lumberjack', lvl: WOODS_LVL, perHour: l => 45 + 10 * l, job: 'Chops trees in the Woods, a swing every 8 seconds, stacks the logs in your barn for the sawmill and plants saplings on the stumps (you pay for the saplings). Works while you’re away too.' },
   miner: { name: 'Quarry worker', lvl: QUARRY_LVL, perHour: l => 60 + 12 * l, job: 'Breaks rocks in the Quarry, a swing every 8 seconds, and carts the stone to your barn for the stonecutter. Works while you’re away too.' },
   keeper: { name: 'Animal keeper', lvl: 4, perHour: l => 30 + 9 * l, job: 'Feeds your animals and collects eggs, milk, truffles and wool, even while you’re away.' },
 };
@@ -167,6 +167,9 @@ function work(t: number, patient: boolean) {
     if (!jackAt || jackAt > t) jackAt = t;
     while (t - jackAt >= SWING_EVERY_MS) {
       jackAt += SWING_EVERY_MS;
+      // He replants a stump first (if you can pay for the sapling), then chops.
+      const stump = Array.from({ length: TREES }, (_, k) => k).find(k => treeOpen(k) && isStump(k));
+      if (stump !== undefined && plantSapling(stump, t).ok) continue;
       const i = jackTree(t), had = inv('log');
       if (i >= 0 && chopTree(i, t) === 'done') done.logs += inv('log') - had;
     }

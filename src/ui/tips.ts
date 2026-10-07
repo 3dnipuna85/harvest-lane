@@ -1,6 +1,6 @@
 import { MACHINES, type MachineId } from '../data/machines';
 import { capped } from '../game/estate';
-import { QUARRY_LVL, WOODS_LVL } from '../game/resources';
+import { HILL_LVL, QUARRY_LVL, RIDGE_LVL, WOODS_LVL } from '../game/resources';
 import { save, S, visiting } from '../game/state';
 import { SHOP_LVL } from '../game/town';
 import { focusOn } from '../scene/camera';
@@ -33,13 +33,23 @@ const TIPS: Tip[] = [
   },
   {
     id: 'woods', when: () => S.level >= WOODS_LVL, title: 'The Woods are open! 🌲', art: uiImg('log'), look: [-9.4, -13],
-    steps: ['Drag the view up past the barn to the forest behind the fence.', 'Tap a tree 3 times to chop it down for logs. Stumps grow back in 4 minutes.', `Build a Sawmill to turn 2 logs into planks. Farm upgrades need planks!`, 'Tired arms? Hire a Lumberjack in Helpers to chop for you.'],
+    steps: ['Drag the view up past the barn to the forest behind the fence.', 'Tap a tree 3 times to chop it down for logs. Then tap the stump to plant a sapling: a new tree grows in 4 minutes.', `Build a Sawmill to turn 2 logs into planks. Farm upgrades need planks!`, 'Tired arms? Hire a Lumberjack in Helpers to chop for you.'],
     goal: 'Goal: chop 10 logs and make your first planks.',
   },
   {
     id: 'quarry', when: () => S.level >= QUARRY_LVL, title: 'The Quarry is open! ⛏️', art: uiImg('stone'), look: [11.3, -13],
     steps: ['The Quarry is behind the fence on the right, past the workshops.', 'Tap a rock 4 times to break it for stone. New rocks are dug out in 5 minutes.', 'Build a Stonecutter to turn stone into bricks for farm upgrades.', 'Tired arms? Hire a Quarry worker in Helpers to dig for you.'],
     goal: 'Goal: mine 10 stone and make 5 bricks.',
+  },
+  {
+    id: 'ridge', when: () => S.level >= RIDGE_LVL, title: 'You found Pine Ridge! 🌲', art: uiImg('log'), look: [-18.3, -13.5],
+    steps: ['A new forest, past the Woods on the far left.', 'Six more trees to chop, and saplings to plant on the stumps.', 'More trees means more logs and planks for your farm upgrades.'],
+    goal: 'Goal: chop a tree on Pine Ridge.',
+  },
+  {
+    id: 'hill', when: () => S.level >= HILL_LVL, title: 'You found Hill Quarry! ⛏️', art: uiImg('stone'), look: [18, -13.4],
+    steps: ['A new stone pit, past the Quarry on the far right.', 'Hill rocks are tough (5 hits) but give more stone.', 'Miners say there are diamonds in these hills… 💎'],
+    goal: 'Goal: break a rock on Hill Quarry.',
   },
   machineTip('dairy', ['It turns 3 milk into a wheel of cheese.', 'Keep your cows fed: no milk, no cheese!', 'The Estate upgrade needs 10 cheese.'], 'Goal: make 3 cheese.'),
   machineTip('apiary', ['The bees turn 3 strawberries into a jar of honey.', 'Honey is the most valuable thing on the farm.', 'The Grand Estate upgrade needs 20 honey.'], 'Goal: fill 5 jars of honey.'),

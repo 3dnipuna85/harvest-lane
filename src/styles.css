@@ -592,3 +592,4 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 @media (max-width:760px){.trouble{top:calc(var(--safe-t) + 112px);font-size:12px}.has-trouble .goals{top:calc(var(--safe-t) + 200px)}}
 @media (min-width:761px){.has-trouble .goals{top:calc(var(--safe-t) + 66px)}}
 @media (min-width:761px) and (max-width:1100px){.trouble{left:auto;right:calc(var(--safe-r) + 76px);transform:none}}
+.lbl.timer.plantme{background:#e9f8da;color:#2c6820;border-color:#7bbf3a;cursor:pointer}

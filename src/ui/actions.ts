@@ -1,6 +1,6 @@
 import { sfxCoin } from './sound';
 import { deliverContract } from '../game/contracts';
-import { QUARRY_LVL, WOODS_LVL, chopTree, mineRock } from '../game/resources';
+import { chopTree, mineRock, plantSapling, rockLvl, treeLvl, WOODS_TREES } from '../game/resources';
 import { MACHINES, type MachineId } from '../data/machines';
 import * as eco from '../game/economy';
 import { deliver as deliverOrder, fillOrders, skip as skipOrder } from '../game/orders';
@@ -22,6 +22,7 @@ import { fx, shakeScene, toast } from './toasts';
 export function buyPlot() {
   const r = eco.buyPlot();
   if (r.ok) toast('New plot ready to plant');
+  else if (r.reason === 'locked') { toast(`Your next plot unlocks at level ${r.lvl}. Keep levelling up!`); shakeScene(); }
   else if (r.reason === 'coins') { toast('A new plot costs ' + fmt(r.cost!) + ' coins'); shakeScene(); }
 }
 
@@ -63,14 +64,19 @@ export function loadTruck(_x: number, _y: number) {
 
 export function chop(i: number) {
   const r = chopTree(i);
-  if (r === 'locked') toast(`The Woods open at level ${WOODS_LVL}.`);
-  else if (r === 'regrowing') toast('Just a stump for now. It grows back soon.');
+  if (r === 'locked') toast(`${i < WOODS_TREES ? 'The Woods open' : 'Pine Ridge is found'} at level ${treeLvl(i)}.`);
+  else if (r === 'regrowing') toast('A young tree is growing here. Give it a few minutes.');
+  else if (r === 'stump') {
+    const p = plantSapling(i);
+    if (p.ok) toast('🌱 Sapling planted! A new tree grows in 4 minutes.');
+    else if (p.reason === 'coins') { toast(`A sapling costs ${fmt(p.cost!)} coins.`); shakeScene(); }
+  }
   return r;
 }
 
 export function mine(i: number) {
   const r = mineRock(i);
-  if (r === 'locked') toast(`The Quarry opens at level ${QUARRY_LVL}.`);
+  if (r === 'locked') toast(`${rockLvl(i) === rockLvl(0) ? 'The Quarry opens' : 'Hill Quarry is found'} at level ${rockLvl(i)}.`);
   else if (r === 'regrowing') toast('Only rubble here. A new rock is being dug out.');
   return r;
 }
