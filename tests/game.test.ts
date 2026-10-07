@@ -721,11 +721,11 @@ describe('diamond shop', () => {
     const st = await import('../src/game/store');
     S.gems = 0;
     expect(st.grantPack('starter', t)).toBe(true);
-    expect(S.gems).toBe(120);
+    expect(S.gems).toBe(250);
     expect(st.grantPack('starter', t)).toBe(false);
     expect(st.grantPack('handful', t)).toBe(true);
     expect(st.grantPack('handful', t)).toBe(true);
-    expect(S.gems).toBe(280);
+    expect(S.gems).toBe(570);
   });
 
   it('machines earn no XP by themselves', () => {

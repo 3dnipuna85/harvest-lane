@@ -101,6 +101,8 @@ export interface State {
   nextTrouble: number;
   /** Real-money packs already bought, by id (one-time packs can't be bought twice). */
   bought: string[];
+  /** Paid orders already turned into diamonds (Lemon Squeezy order ids), so a retry never pays out twice. */
+  paid: string[];
   /** The contract lorry waiting for machine goods (game/contracts.ts), and when the next one comes (0 = not scheduled). */
   contract: Contract | null;
   nextContract: number;
@@ -145,7 +147,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], paid: [], goals: null, trouble: null, nextTrouble: 0, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -180,6 +182,7 @@ export function migrate(raw: unknown): State {
   out.nextTrouble = +s.nextTrouble || 0;
   out.goals = s.goals && Array.isArray(s.goals.list) && s.goals.list.length === 3 ? s.goals : null;
   out.bought = Array.isArray(s.bought) ? s.bought.filter((v: unknown) => typeof v === 'string') : [];
+  out.paid = Array.isArray(s.paid) ? s.paid.filter((v: unknown) => typeof v === 'string').slice(-200) : [];
   out.gemAt = +s.gemAt || 0;
   out.nextContract = +s.nextContract || 0;
   out.woods = Array.isArray(s.woods) ? s.woods.map((v: unknown) => +(v as number) || 0) : [];

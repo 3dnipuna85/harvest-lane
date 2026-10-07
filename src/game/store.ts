@@ -64,11 +64,11 @@ export function testShop(): boolean {
 
 export const canBuyPack = (id: string) => { const p = PACKS.find(x => x.id === id); return !!p && !(p.once && S.bought.includes(id)); };
 
-/** Give the player a pack (after a payment, or a test purchase). */
-export function grantPack(id: string, t = now()) {
+/** Give the player a pack (after a payment, or a test purchase). `paid` delivers even a repeat one-time pack, since the money is in. */
+export function grantPack(id: string, t = now(), paid = false) {
   const p = PACKS.find(x => x.id === id);
-  if (!p || !canBuyPack(id)) return false;
-  if (p.once) S.bought.push(id);
+  if (!p || (!paid && !canBuyPack(id))) return false;
+  if (p.once && !S.bought.includes(id)) S.bought.push(id);
   gainGems(p.gems, 'pack');
   if (p.coins) S.coins += p.coins;
   if (p.xpMin) S.xpBoost = Math.max(t, S.xpBoost) + p.xpMin * 60_000;

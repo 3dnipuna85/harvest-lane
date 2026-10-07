@@ -6,6 +6,7 @@ import '@fontsource/nunito/latin-900.css';
 import './styles.css';
 
 import { initCloud, syncCloud } from './cloud';
+import { bindPayments } from './ui/payments';
 import { onlineEnabled } from './online/config';
 import { now } from './game/clock';
 import { fillOrders } from './game/orders';
@@ -77,6 +78,7 @@ function start() {
   if (anyAway(staffAway)) toast(awayNote(staffAway));
   else if (away > 60 && S.plots.some(p => p.crop)) toast('Welcome back. Your crops kept growing while you were away.');
   if (away > 60) warnTrouble();
+  bindPayments();
   setInterval(() => { save(); syncCloud(); }, 5000);
   // A hidden tab stops drawing frames, so replay the staff's work for that time when it comes back.
   let hiddenAt = 0;
