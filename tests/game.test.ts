@@ -836,3 +836,24 @@ describe('troubles', () => {
     expect(S.trouble).toBeNull();
   });
 });
+
+describe('rewarded ads', () => {
+  it('gives the reward and respects the daily limit', async () => {
+    const ads = await import('../src/game/ads');
+    const { live } = await import('../src/game/live');
+    live.adCap = 2;
+    S.ads = { day: '', n: 0 };
+    const g = S.gems;
+    expect(ads.grantAd('gems')).toBe(true);
+    expect(S.gems).toBe(g + ads.AD_GEMS);
+    expect(ads.adsLeft()).toBe(1);
+    S.machines.bakery = { owned: true, lvl: 1, job: null, on: false };
+    for (const k of Object.keys(S.machines) as (keyof typeof S.machines)[]) S.machines[k].job = null;
+    expect(ads.grantAd('rush')).toBe(false); // nothing to rush, no ad spent
+    expect(ads.grantAd('coins')).toBe(true);
+    expect(ads.grantAd('gems')).toBe(false);
+    S.ads = { day: '2000-01-01', n: 99 };
+    expect(ads.adsLeft()).toBe(2); // a new day
+    live.adCap = 10;
+  });
+});

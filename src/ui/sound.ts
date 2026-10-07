@@ -139,3 +139,6 @@ addEventListener('visibilitychange', () => { if (document.hidden) stopMusic(); e
 
 export function setMusic(on: boolean) { prefs.music = on; savePrefs(); if (on) startMusic(); else stopMusic(); }
 export function setSfx(on: boolean) { prefs.sfx = on; savePrefs(); if (ac) sfxBus.gain.value = on ? 1 : 0; }
+
+/** Quiet the game while an ad plays. */
+export function pauseAudio(on: boolean) { if (ac) void (on ? ac.suspend() : ac.resume()); }

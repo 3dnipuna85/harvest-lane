@@ -2,4 +2,6 @@
 export const live = {
   /** Everyone earns Double XP until this time (ms). */
   xpEventUntil: 0,
+  /** Rewarded ads a player may watch per day. */
+  adCap: 10,
 };

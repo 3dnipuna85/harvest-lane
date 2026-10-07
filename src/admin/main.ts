@@ -29,7 +29,7 @@ async function previewCall(body?: unknown): Promise<AdminData & { error?: string
   const b = body as { settings?: GameSettings; lsApiKey?: string; lsSync?: boolean } | undefined;
   if (b?.settings) data = { ...data!, settings: { ...b.settings, updatedAt: Date.now() } };
   if (b?.lsApiKey || b?.lsSync) data = { ...data!, secrets: { ...data!.secrets, lsApi: true, webhook: true }, lemon: { ok: true, store: 'cgsapiens', testMode: true, webhook: 'created', missing: ['Starter Pack'], products: [{ name: 'Pouch of Diamonds', price: 499, pack: 'pouch', status: 'published' }, { name: 'Old thing', price: 100, pack: null, status: 'draft' }] } };
-  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, updatedAt: 0 },
+  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, updatedAt: 0 },
     secrets: { webhook: false, webhookFromCloudflare: false, lsApi: false }, testFromCloudflare: false,
     orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }] };
 }
@@ -119,6 +119,16 @@ function render(d: AdminData) {
     <p class="muted">Write-only: it's kept on the server and never shown again, not even here. At least 16 characters.</p></details>
   </section>
 
+  <section><h2>Ads</h2>
+    <p class="muted">Players who don't pay can watch a short video ad for a small reward: 3 diamonds, a coin bag, finishing the workshops, or growing their crops. Ads come from Google H5 Games Ads. Apply at adsense.google.com, add harvest-lane.pages.dev, and once approved turn on H5 Games Ads in AdSense. To try the flow before then, open the game with <code>?testads</code> for a practice ad.</p>
+    <label class="check"><input type="checkbox" id="adsOn" ${s.adsOn ? 'checked' : ''}> Show ads</label>
+    <div class="row">
+      <div><label>AdSense publisher ID</label><input type="text" id="adClient" value="${esc(s.adClient)}" placeholder="ca-pub-1234567890123456"></div>
+      <div><label>Ads per player per day</label><input type="number" id="adCap" min="0" max="50" value="${s.adCap}"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="adsTest" ${s.adsTest ? 'checked' : ''}> Google test ads (no money earned; turn off once approved)</label>
+  </section>
+
   <section><h2>Store details</h2>
     <label>Support email <span class="muted">(shown on the Pricing, Terms, Privacy, Refund and Contact pages)</span></label>
     <input type="email" id="email" value="${esc(s.supportEmail)}" placeholder="help@example.com">
@@ -161,6 +171,10 @@ async function save() {
   s.allowTest = (document.getElementById('allowTest') as HTMLInputElement).checked;
   s.supportEmail = (document.getElementById('email') as HTMLInputElement).value.trim();
   s.news = (document.getElementById('news') as HTMLTextAreaElement).value.trim();
+  s.adsOn = (document.getElementById('adsOn') as HTMLInputElement).checked;
+  s.adClient = (document.getElementById('adClient') as HTMLInputElement).value.trim();
+  s.adsTest = (document.getElementById('adsTest') as HTMLInputElement).checked;
+  s.adCap = +(document.getElementById('adCap') as HTMLInputElement).value || 0;
   const ev = (document.getElementById('xpev') as HTMLSelectElement).value;
   if (ev !== 'keep') s.xpEventUntil = ev === '0' ? 0 : Date.now() + +ev * 3600_000;
   const secret = (document.getElementById('secret') as HTMLInputElement).value.trim();
@@ -170,11 +184,11 @@ async function save() {
   if (r.error) { msg.textContent = 'Not saved: ' + r.error; msg.className = 'warn'; return; }
   // The server drops anything invalid, such as a link that isn't a Lemon Squeezy page; say so.
   const dropped = PACKS.filter(p => { const sent = s.packs[p.id], kept = r.settings.packs[p.id] ?? {}; return (sent.link && sent.link !== kept.link) || (sent.testLink && sent.testLink !== kept.testLink); });
-  const badEmail = s.supportEmail && !r.settings.supportEmail;
+  const badEmail = s.supportEmail && !r.settings.supportEmail, badAd = s.adClient && !r.settings.adClient;
   data = r; render(r);
   const m = document.getElementById('msg')!;
-  m.textContent = dropped.length || badEmail ? `Saved, but ${[...dropped.map(p => p.name + ' link'), ...(badEmail ? ['the support email'] : [])].join(', ')} didn't look right and wasn't kept. Links must start with https://…lemonsqueezy.com/` : 'Saved ✓';
-  m.className = dropped.length || badEmail ? 'warn' : 'ok';
+  m.textContent = dropped.length || badEmail || badAd ? `Saved, but ${[...dropped.map(p => p.name + ' link'), ...(badEmail ? ['the support email'] : []), ...(badAd ? ['the publisher ID (ca-pub- and digits)'] : [])].join(', ')} didn't look right and wasn't kept. Links must start with https://…lemonsqueezy.com/` : 'Saved ✓';
+  m.className = dropped.length || badEmail || badAd ? 'warn' : 'ok';
 }
 
 function signedOut() {

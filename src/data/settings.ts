@@ -18,10 +18,15 @@ export interface GameSettings {
   news: string;
   /** Everyone earns Double XP until this time (ms; 0 = no event). */
   xpEventUntil: number;
+  /** Rewarded ads (Google H5 Games Ads): on/off, the AdSense publisher id (public), Google's test ads, and how many a player may watch a day. */
+  adsOn: boolean;
+  adClient: string;
+  adsTest: boolean;
+  adCap: number;
   updatedAt: number;
 }
 
-export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, updatedAt: 0 };
+export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: false, adCap: 10, updatedAt: 0 };
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v: unknown, lo: number, hi: number) => { const n = Number(v); return Number.isFinite(n) && n >= lo && n <= hi ? n : undefined; };
@@ -52,6 +57,10 @@ export function cleanSettings(raw: unknown): GameSettings {
     supportEmail: /^[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}$/i.test(email) ? email : '',
     news: str(r.news, 280),
     xpEventUntil: num(r.xpEventUntil, 0, 4e12) ?? 0,
+    adsOn: r.adsOn === true,
+    adClient: /^ca-pub-\d{10,20}$/.test(str(r.adClient, 40)) ? str(r.adClient, 40) : '',
+    adsTest: r.adsTest === true,
+    adCap: Math.round(num(r.adCap, 0, 50) ?? 10),
     updatedAt: num(r.updatedAt, 0, 4e12) ?? 0,
   };
 }

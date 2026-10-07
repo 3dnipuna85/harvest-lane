@@ -7,6 +7,7 @@ import { cleanSettings, livePacks } from '../data/settings';
 import { live } from '../game/live';
 import { markDirty } from './dirty';
 import { toast } from './toasts';
+import { configureAds } from './ads';
 
 const BASE: Pack[] = PACKS.map(p => ({ ...p }));
 const SEEN = 'harvest-lane-news';
@@ -18,6 +19,8 @@ export async function loadSettings() {
     const s = cleanSettings(await r.json());
     PACKS.splice(0, PACKS.length, ...livePacks(s, BASE));
     live.xpEventUntil = s.xpEventUntil;
+    live.adCap = s.adCap;
+    configureAds({ on: s.adsOn, client: s.adClient, test: s.adsTest });
     let seen = '';
     try { seen = localStorage.getItem(SEEN) || ''; } catch { /* private mode */ }
     if (s.news && s.news !== seen) {

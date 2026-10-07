@@ -17,6 +17,7 @@ export interface GameEvents {
   rockBroken: { i: number; n: number };
   gems: { n: number; why: string };
   packBought: { id: string };
+  adReward: { r: string };
   orderDone: { coins: number };
   troubleStart: { kind: 'rain' | 'dry' | 'crows' | 'fox' };
   troubleEnd: { kind: 'rain' | 'dry' | 'crows' | 'fox'; weather: boolean };

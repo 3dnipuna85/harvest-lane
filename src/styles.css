@@ -598,3 +598,8 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 /* Store info links (terms, privacy...) under the sign-in box, the guide and the shop. */
 .legal { margin: 10px 0 0; font-size: 12px; text-align: center; opacity: .8 }
 .legal a, .townintro a { color: inherit }
+
+/* Practice ad (ui/ads.ts). */
+.adcover { position: fixed; inset: 0; z-index: 9999; background: rgba(20, 16, 10, .82); display: grid; place-items: center; padding: 16px }
+.adbox { background: #fffaf0; color: #3b2a1a; border-radius: 16px; padding: 22px 26px; text-align: center; max-width: 320px; display: grid; gap: 10px }
+.adcount { font-size: 44px; font-weight: 900; color: #e2a31f }
