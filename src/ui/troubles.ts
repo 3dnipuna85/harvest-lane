@@ -8,13 +8,17 @@ import { plotPos, PEN } from '../scene/layout';
 import { inTown } from '../scene/mode';
 import { $, coinHTML, fmt } from './format';
 import { shakeScene, toast } from './toasts';
+import { setRain } from './sound';
 
 /** The banner that says what trouble is hitting the farm, how long it lasts, and what to do about it. */
 
 const mmss = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 let sig = '';
 
+let raining = false;
 export function updateTroubles() {
+  const r = S.trouble?.kind === 'rain' && !visiting;
+  if (r !== raining && setRain(r)) raining = r;
   const el = $('trouble'), tr = S.trouble;
   el.hidden = !tr || visiting;
   document.body.classList.toggle('has-trouble', !el.hidden);

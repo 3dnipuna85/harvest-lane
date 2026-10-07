@@ -2,12 +2,20 @@ import { hands } from '../game/economy';
 import { on } from '../game/events';
 import { $ } from './format';
 import {
-  prefs, setMusic, setSfx, sfxBell, sfxCatch, sfxChop, sfxClink, sfxTimber, sfxCluck, sfxGem, sfxHarvest, sfxLevelUp, sfxMoo, sfxPlant, sfxSplash, sfxThud,
+  prefs, setMusic, setSfx, thunder, sfxBell, sfxCatch, sfxChop, sfxClink, sfxTimber, sfxCluck, sfxGem, sfxHarvest, sfxLevelUp, sfxMoo, sfxPlant, sfxSplash, sfxThud,
 } from './sound';
 
 /** Game events → sound effects, and the sound settings pop-up. Staff work stays quiet so a busy farm isn't noisy. */
 export function bindSfx() {
   on('plant', () => { if (!hands.staff) sfxPlant(); });
+  // Sound travels slower than light: the closer the strike, the sooner the thunder.
+  on('lightning', ({ near }) => {
+    setTimeout(() => thunder(near), 250 + (1 - near) * 2200);
+    const el = document.createElement('div');
+    el.className = 'skyflash';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  });
   on('harvest', () => { if (!hands.staff) sfxHarvest(); });
   on('machineDone', () => sfxBell());
   on('animalCollect', ({ kind }) => { if (!hands.staff) (kind === 'cow' ? sfxMoo : sfxCluck)(); });

@@ -21,6 +21,8 @@ export interface GameEvents {
   orderDone: { coins: number };
   troubleStart: { kind: 'rain' | 'dry' | 'crows' | 'fox' };
   troubleEnd: { kind: 'rain' | 'dry' | 'crows' | 'fox'; weather: boolean };
+  /** A lightning strike in the 3D view; near: 0 far … 1 close. */
+  lightning: { near: number };
   troubleBeaten: { kind: 'crows' | 'fox' };
   cropEaten: { i: number; crop: CropId };
   crowShooed: { i: number };

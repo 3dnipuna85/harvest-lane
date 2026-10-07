@@ -142,3 +142,58 @@ export function setSfx(on: boolean) { prefs.sfx = on; savePrefs(); if (ac) sfxBu
 
 /** Quiet the game while an ad plays. */
 export function pauseAudio(on: boolean) { if (ac) void (on ? ac.suspend() : ac.resume()); }
+
+/* ---------------- Storm: a rain loop and thunder ---------------- */
+
+let rainSrc: AudioBufferSourceNode | null = null, rainGain: GainNode | null = null, rainBuf: AudioBuffer | null = null;
+
+/** Start or stop the steady hiss of heavy rain (fades in and out). Follows the sound-effects switch. */
+export function setRain(on: boolean): boolean {
+  if (!unlocked) return false;
+  try {
+    const a = ctx(), t = a.currentTime;
+    if (on && !rainSrc) {
+      if (!rainBuf) {
+        // Two seconds of noise with soft random "drops" on top, looped.
+        rainBuf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+        const d = rainBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.002 ? 3 : 0.6);
+      }
+      const s = a.createBufferSource(), lp = a.createBiquadFilter(), hp = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = rainBuf; s.loop = true;
+      lp.type = 'lowpass'; lp.frequency.value = 5200;
+      hp.type = 'highpass'; hp.frequency.value = 400;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.09, t + 2.5);
+      s.connect(hp).connect(lp).connect(g).connect(sfxBus);
+      s.start();
+      rainSrc = s; rainGain = g;
+    } else if (!on && rainSrc) {
+      const s = rainSrc;
+      rainGain!.gain.cancelScheduledValues(t);
+      rainGain!.gain.setValueAtTime(rainGain!.gain.value, t);
+      rainGain!.gain.linearRampToValueAtTime(0, t + 2);
+      s.stop(t + 2.1);
+      rainSrc = null; rainGain = null;
+    }
+  } catch { /* no audio */ }
+  return true;
+}
+
+/** Thunder after a lightning flash: a sharp crack when close, then a long low rumble. `near` is 0 (far) to 1 (close). */
+export const thunder = (near: number) => fx(t => {
+  const a = ac!;
+  if (!noiseBuf) noise(t, 0.01, 0.0001);
+  const rumble = (start: number, dur: number, vol: number, freq: number) => {
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    s.buffer = noiseBuf; s.loop = true;
+    f.type = 'lowpass'; f.frequency.setValueAtTime(freq, start); f.frequency.exponentialRampToValueAtTime(60, start + dur);
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(vol, start + 0.08 + (1 - near) * 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0008, start + dur);
+    s.connect(f).connect(g).connect(sfxBus);
+    s.start(start, Math.random() * 0.5); s.stop(start + dur + 0.05);
+  };
+  if (near > 0.6) noise(t, 0.25, 0.22 * near, 2500);
+  rumble(t, 2.5 + 2 * (1 - near), 0.18 + 0.2 * near, 280 + 500 * near);
+  rumble(t + 0.4 + Math.random() * 0.6, 2.2, 0.1, 160);
+});

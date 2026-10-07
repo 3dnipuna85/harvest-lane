@@ -603,3 +603,8 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .adcover { position: fixed; inset: 0; z-index: 9999; background: rgba(20, 16, 10, .82); display: grid; place-items: center; padding: 16px }
 .adbox { background: #fffaf0; color: #3b2a1a; border-radius: 16px; padding: 22px 26px; text-align: center; max-width: 320px; display: grid; gap: 10px }
 .adcount { font-size: 44px; font-weight: 900; color: #e2a31f }
+
+/* Lightning: the whole screen flickers white (ui/sfx.ts). */
+.skyflash { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: #eef3ff; opacity: 0; animation: skyflash .6s ease-out }
+@keyframes skyflash { 0% { opacity: .55 } 12% { opacity: .05 } 22% { opacity: .65 } 100% { opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .skyflash { animation-duration: 1.2s; opacity: 0; animation-name: skyflash-soft } @keyframes skyflash-soft { 0% { opacity: .2 } 100% { opacity: 0 } } }
