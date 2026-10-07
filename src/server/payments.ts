@@ -10,8 +10,9 @@ import { cleanSettings, livePacks, type GameSettings } from '../data/settings';
 /** The bits of a Cloudflare KV namespace we use. */
 export interface KV {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string, o?: { expirationTtl?: number }): Promise<void>;
-  list(o: { prefix: string; cursor?: string }): Promise<{ keys: { name: string }[]; list_complete: boolean; cursor?: string }>;
+  put(key: string, value: string, o?: { expirationTtl?: number; metadata?: unknown }): Promise<void>;
+  list(o: { prefix: string; cursor?: string }): Promise<{ keys: { name: string; metadata?: unknown }[]; list_complete: boolean; cursor?: string }>;
+  delete?(key: string): Promise<void>;
 }
 /**
  * Cloudflare environment. LS_ALLOW_TEST=1 accepts Lemon Squeezy test-mode orders (fake cards), like the admin

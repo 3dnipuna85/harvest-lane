@@ -2,6 +2,7 @@ import { updateTroubles } from './troubles';
 import { updateGoals } from './goals';
 import { updateGems } from './estate';
 import { updateTechBtns } from './tech';
+import { bindAlerts, updateAlerts } from './alerts';
 import { on } from '../game/events';
 import { matsOk, nextParcel, plotCost, plotLvl, plotMats, plotSlot, xpNeed } from '../game/economy';
 import { S } from '../game/state';
@@ -16,6 +17,7 @@ import { $, coinHTML, fmt } from './format';
 import { celebrateLevel } from './levelup';
 
 export function bindHud() {
+  bindAlerts();
   on('earn', () => {
     const p = $('coinPill');
     p.classList.remove('bump');
@@ -54,6 +56,7 @@ export function updateHud() {
   updateTroubles();
   updateGems();
   updateTechBtns();
+  updateAlerts();
   updateTruckPill();
   $('coins').textContent = fmt(S.coins);
   $('lvl').textContent = String(S.level);

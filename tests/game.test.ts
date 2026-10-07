@@ -1005,3 +1005,15 @@ describe('farm machines', () => {
     expect(migrate(JSON.parse(JSON.stringify(S))).tech).toEqual(['tractor', 'harvester', 'sprinkler', 'drone']);
   });
 });
+
+describe('alert times', () => {
+  it('warn before hungry animals fall sick and before ripe crops rot', async () => {
+    const { alertTimes, SICK_WARN_MS } = await import('../src/game/alerts');
+    const { SICK_AFTER_MS } = await import('../src/game/animals');
+    const a = alertTimes(t);
+    expect(a.sick).toBe(t + SICK_AFTER_MS - SICK_WARN_MS);
+    expect(a.rot).toBeGreaterThan(t);
+    S.plots.forEach(p => { p.crop = null; });
+    expect(alertTimes(t).rot).toBeUndefined();
+  });
+});

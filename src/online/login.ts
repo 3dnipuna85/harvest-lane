@@ -6,6 +6,7 @@ import { connectRemote, disconnectRemote } from '../cloud';
 import { toast } from '../ui/toasts';
 import { S } from '../game/state';
 import { catchInvite, friendsMe, friendsUser, initFriends } from './friends';
+import { onPrefs, prefs, pushSupported, setEmail, setPush, startNotify, stopNotify } from './notify';
 
 type Fb = typeof import('./firebase');
 let fb: Fb | null = null;
@@ -86,6 +87,10 @@ function accountPanel() {
       <div><img src="./ui/crate.webp" alt=""><b>${n(S.stats.orders)}</b><span>Orders delivered</span></div>
       <div><img src="./ui/farmer.webp" alt=""><b>${S.plots.length}</b><span>Farm plots</span></div>
     </div>
+    <div class="notify-box"><b>Notifications</b>
+      <label class="toggle"><input type="checkbox" id="ntEmail" ${prefs.email ? 'checked' : ''}>Email me when my farm needs me</label>
+      <label class="toggle"><input type="checkbox" id="ntPush" ${prefs.push ? 'checked' : ''} ${pushSupported() ? '' : 'disabled'}>Push notifications on this device</label>
+      <span class="small nt-note"></span></div>
     <p class="login-lead small">Your farm saves to your account automatically.</p>
     <div class="login-row">
       <button class="btn alt" data-login="close">Back to the farm</button>
@@ -96,6 +101,22 @@ function accountPanel() {
   const mail = panel.querySelector<HTMLElement>('.profile-mail')!;
   mail.textContent = who?.email ?? '';
   mail.hidden = !who?.email || who.email === who.name;
+  const em = panel.querySelector<HTMLInputElement>('#ntEmail')!, pu = panel.querySelector<HTMLInputElement>('#ntPush')!, note = panel.querySelector<HTMLElement>('.nt-note')!;
+  const say = (t: string) => { note.textContent = t; };
+  const sync = () => {
+    em.checked = prefs.email; pu.checked = prefs.push;
+    say(!prefs.emailOk && prefs.email ? 'Emails start once your email address is verified.' : !pushSupported() ? 'This browser can’t show push notifications. On iPhone, add the game to your Home Screen first.' : '');
+  };
+  sync();
+  onPrefs(sync);
+  em.onchange = async () => { say('Saving…'); if (!(await setEmail(em.checked))) { say('Couldn’t save. Check your connection.'); em.checked = !em.checked; } };
+  pu.onchange = async () => {
+    say(pu.checked ? 'Allow notifications when your browser asks…' : 'Saving…');
+    const r = await setPush(pu.checked);
+    if (r === 'denied') { pu.checked = false; say('Notifications are blocked for this site. Allow them in your browser settings, then try again.'); }
+    else if (r !== 'ok') { pu.checked = !pu.checked; say(r === 'unsupported' ? 'This browser can’t show push notifications.' : 'Couldn’t save. Check your connection.'); }
+    else say(pu.checked ? 'You’ll get a notification when your farm needs you.' : '');
+  };
 }
 
 async function act(kind: string) {
@@ -164,12 +185,13 @@ export async function initOnline() {
     if (u) {
       who = { uid: u.uid, name: u.displayName || u.email || 'Farmer', email: u.email || '', photo: u.photoURL || '' };
       setGuest(false); hide(); updateAccount();
+      startNotify(fb!.idToken);
       // Friends know who is signed in straight away; the public card waits until the cloud farm has loaded.
       friendsMe(who);
       const me = who;
       try { await connectRemote(fb!.farmStore(u.uid, { name: me.name, photo: me.photo })); } finally { friendsUser(me); }
     } else {
-      who = null; disconnectRemote(); updateAccount(); friendsUser(null);
+      who = null; stopNotify(); disconnectRemote(); updateAccount(); friendsUser(null);
       if (!guest()) welcome();
     }
   });

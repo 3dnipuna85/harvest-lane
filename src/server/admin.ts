@@ -5,6 +5,7 @@
  * get in. Secrets typed into the admin page are stored under "secret:" keys and are never sent back out.
  */
 import { cleanSettings } from '../data/settings';
+import { notifyStatus } from './notify';
 import { connectLemon, newSecret, type LemonReport, type LsFetch } from './lemon';
 import { json, loadSettings, MAIL_KEY, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
 
@@ -129,5 +130,6 @@ export async function handleAdmin(req: Request, env: Env, get?: Fetch, lsFetch?:
     lemon,
     testFromCloudflare: env.LS_ALLOW_TEST === '1',
     orders: await recentOrders(env),
+    notify: await notifyStatus(env.PURCHASES),
   });
 }

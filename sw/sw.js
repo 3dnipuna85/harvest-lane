@@ -39,3 +39,24 @@ self.addEventListener('fetch', e => {
     })),
   );
 });
+
+// Farm alerts (server/notify.ts). Pushes arrive empty; ask the server what this one was about.
+self.addEventListener('push', e => {
+  e.waitUntil((async () => {
+    let m = { title: 'Harvest Lane', body: 'Your farm needs you! 🌾' };
+    try {
+      const sub = await self.registration.pushManager.getSubscription();
+      const r = await fetch('/api/notify/msg', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint: sub ? sub.endpoint : '' }) });
+      if (r.ok) m = await r.json();
+    } catch { /* keep the general message */ }
+    await self.registration.showNotification(m.title, { body: m.body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: 'farm-alert', data: { url: '/' } });
+  })());
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const open = list.find(c => new URL(c.url).origin === location.origin);
+    return open ? open.focus() : self.clients.openWindow('/');
+  }));
+});

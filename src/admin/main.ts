@@ -16,6 +16,7 @@ interface AdminData {
   email: string; settings: GameSettings; secrets: { webhook: boolean; webhookFromCloudflare: boolean; lsApi: boolean; mail: boolean };
   lemon?: LemonReport;
   testFromCloudflare: boolean; orders: (Order & { buyer: string })[];
+  notify?: { cronKey: string; lastRun: number };
 }
 
 const app = document.getElementById('app')!, who = document.getElementById('who')!;
@@ -31,7 +32,7 @@ async function previewCall(body?: unknown): Promise<AdminData & { error?: string
   if (b?.lsApiKey || b?.lsSync) data = { ...data!, secrets: { ...data!.secrets, lsApi: true, webhook: true }, lemon: { ok: true, store: 'cgsapiens', testMode: true, webhook: 'created', missing: ['Starter Pack'], products: [{ name: 'Pouch of Diamonds', price: 499, pack: 'pouch', status: 'published' }, { name: 'Old thing', price: 100, pack: null, status: 'draft' }] } };
   return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, adBreaks: true, adBreakMin: 3, rushEvery: 5, rushMin: 20, mailFrom: '', updatedAt: 0 },
     secrets: { webhook: false, webhookFromCloudflare: false, lsApi: false, mail: false }, testFromCloudflare: false,
-    orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }] };
+    orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }], notify: { cronKey: 'preview-key', lastRun: 0 } };
 }
 
 async function call(body?: unknown) {
@@ -141,6 +142,23 @@ function render(d: AdminData) {
     <p class="muted">The key is write-only: it's kept on the server and never shown again.</p>
   </section>
 
+  <section><h2>Farm alerts</h2>
+    <p class="muted">Signed-in players get a heads-up while they're away: "your animals are hungry" and "your crops are ready". Alerts go by email (through Brevo, set up above) and as push notifications on phones and computers. Players can switch either off under their name → Notifications, and every email has an unsubscribe link. At most one email per kind a day.</p>
+    <p>${d.notify?.lastRun && Date.now() - d.notify.lastRun < 2 * 3600_000 ? `<span class="ok">✓ The alert timer is running</span> (last run ${new Date(d.notify.lastRun).toLocaleString()})` : '<b>The alert timer is not set up yet.</b> Alerts need a small Cloudflare timer that wakes the game server every 5 minutes. One-time setup:'}</p>
+    <ol class="muted steps">
+      <li>In Cloudflare, open <b>Workers &amp; Pages</b> → <b>Create</b> → <b>Create Worker</b>. Name it <code>harvest-lane-alerts</code> and press <b>Deploy</b>.</li>
+      <li>Press <b>Edit code</b>, delete what's there, paste the code below, and press <b>Deploy</b>.</li>
+      <li>Go to the Worker's <b>Settings</b> → <b>Trigger events</b> (or Triggers) → <b>Add</b> → <b>Cron trigger</b>, choose every 5 minutes (<code>*/5 * * * *</code>) and save.</li>
+    </ol>
+    <textarea id="cronCode" readonly rows="6">export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(fetch("${esc(location.origin)}/api/notify/run?k=${esc(d.notify?.cronKey ?? '')}"));
+  },
+};</textarea>
+    <button class="btn" type="button" id="copyCron">Copy code</button>
+    <p class="muted">The code holds a private key that only lets it trigger the alerts. Don't share it.</p>
+  </section>
+
   <section><h2>Store details</h2>
     <label>Support email <span class="muted">(shown on the Pricing, Terms, Privacy, Refund and Contact pages)</span></label>
     <input type="email" id="email" value="${esc(s.supportEmail)}" placeholder="help@example.com">
@@ -166,6 +184,11 @@ function render(d: AdminData) {
   <section><h2>Sales</h2>${sales}<h2>Recent orders</h2>${orders}</section>
   <div class="bar"><span id="msg" class="muted">${s.updatedAt ? 'Last saved ' + esc(when(s.updatedAt)) : 'Not saved yet'}</span><button class="primary" id="save">Save changes</button></div>`);
   document.getElementById('save')!.onclick = save;
+  const copy = document.getElementById('copyCron') as HTMLButtonElement | null;
+  if (copy) copy.onclick = () => {
+    const ta = document.getElementById('cronCode') as HTMLTextAreaElement;
+    navigator.clipboard.writeText(ta.value).then(() => { copy.textContent = 'Copied ✓'; }, () => { ta.select(); });
+  };
   document.getElementById('lsgo')!.onclick = connect;
 }
 

@@ -619,3 +619,8 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .gacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap }
 .gacts .btn { padding: 4px 10px; font-size: 12px; min-height: 0 }
 .lu-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap }
+
+/* Notification switches in the profile */
+.notify-box{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:#fff3d6;text-align:left}
+.notify-box .nt-note{color:#8a6a44}
+.notify-box .nt-note:empty{display:none}
