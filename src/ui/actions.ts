@@ -15,6 +15,8 @@ import { focusOn } from '../scene/camera';
 import { parcelBox } from '../scene/layout';
 import { markDirty } from './dirty';
 import { fmt } from './format';
+import { matsShortText } from './art';
+import { LAND } from '../data/land';
 import { fx, shakeScene, toast } from './toasts';
 
 /** Player-facing wrappers: run the game action, then give feedback. */
@@ -23,6 +25,7 @@ export function buyPlot() {
   const r = eco.buyPlot();
   if (r.ok) toast('New plot ready to plant');
   else if (r.reason === 'locked') { toast(`Your next plot unlocks at level ${r.lvl}. Keep levelling up!`); shakeScene(); }
+  else if (r.reason === 'mats') { toast(`A riverside plot also needs ${matsShortText(eco.plotMats(), eco.inv)}. Make them at the Sawmill and Stonecutter.`); shakeScene(); }
   else if (r.reason === 'coins') { toast('A new plot costs ' + fmt(r.cost!) + ' coins'); shakeScene(); }
 }
 
@@ -37,6 +40,7 @@ export function buyLand() {
   if (r.reason === 'field') toast('Fill your home field with plots first, then you can buy ' + p.name + '.');
   else if (r.reason === 'locked') toast(p.name + ' opens at level ' + r.lvl + '.');
   else if (r.reason === 'coins') { toast('Save ' + fmt(r.cost! - S.coins) + ' more coins to buy ' + p.name + '.'); shakeScene(); }
+  else if (r.reason === 'mats') { toast(`${p.name} also needs ${matsShortText(LAND[S.land].mats, eco.inv)} for fences and paths.`); shakeScene(); }
 }
 
 export function sell(k: Parameters<typeof eco.sell>[0], n: number, x: number, y: number) {
@@ -114,7 +118,9 @@ export function buyMachine(k: MachineId) {
 }
 
 export function upgradeMachine(k: MachineId, x: number, y: number) {
-  if (eco.upgradeMachine(k).ok) fx(x, y, 'Faster!', 'green');
+  const need = eco.mUpMats(k), r = eco.upgradeMachine(k);
+  if (r.ok) fx(x, y, 'Faster!', 'green');
+  else if (r.reason === 'mats') { toast(`You also need ${matsShortText(need, eco.inv)}.`); shakeScene(); }
 }
 
 export function hire(kind: 'farmhand' | 'seller') {

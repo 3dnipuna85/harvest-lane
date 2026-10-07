@@ -33,3 +33,12 @@ export function customerFace(who: string) {
 export const charImg = (name: string, cls = 'face') => `<img class="${cls}" src="${charUrl(name)}" alt="" draggable="false">`;
 
 export const uiImg = (name: string, cls = 'ic-img') => `<img class="${cls}" src="${artUrl(name)}" alt="" draggable="false">`;
+
+/** Building materials as small icons with amounts; red where the barn is short. */
+export function matsHTML(m: Partial<Record<ItemId, number>>, have: (k: ItemId) => number) {
+  return (Object.entries(m) as [ItemId, number][]).map(([k, q]) => `<span class="mat ${have(k) >= q ? '' : 'short'}">${iconHTML(k, 'ic-inline')}${q}</span>`).join('');
+}
+/** "12 planks, 4 bricks": what's still missing. */
+export function matsShortText(m: Partial<Record<ItemId, number>>, have: (k: ItemId) => number) {
+  return (Object.entries(m) as [ItemId, number][]).filter(([k, q]) => have(k) < q).map(([k, q]) => `${q - have(k)} ${ITEMS[k].name.toLowerCase()}`).join(', ');
+}

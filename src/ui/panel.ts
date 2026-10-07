@@ -8,7 +8,7 @@ import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_SELLERS } from '../data/limits';
 import { MACHINES, MACHINE_IDS, recipe, type MachineId } from '../data/machines';
 import { now } from '../game/clock';
-import { farmhandCost, fire, inv, plotSlot, mTime, mUpCost, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
+import { farmhandCost, fire, inv, plotSlot, mTime, mUpCost, mUpMats, priceFactor, sellerCost, totalItems, unitPrice } from '../game/economy';
 import { toast } from './toasts';
 import { canFill, canSkip, orderItems } from '../game/orders';
 import { canFillTruck, truckOffer } from '../game/trucks';
@@ -16,7 +16,7 @@ import { ANIMALS, ANIMAL_IDS, type AnimalId } from '../data/animals';
 import { animalState, animalUnlocked, sickCount } from '../game/animals';
 import { save, S, type Order, type Tab } from '../game/state';
 import * as act from './actions';
-import { charImg, customerFace, iconHTML, uiImg } from './art';
+import { charImg, customerFace, iconHTML, matsHTML, uiImg } from './art';
 import { $, coinHTML, fmt } from './format';
 import { closeOffice, officeOpen, officePlace, toggleOffice } from './office';
 import { renderTownDock, townAction, townPanel, townSignature, updateTownPanel } from './town';
@@ -70,7 +70,7 @@ function machineCard(k: MachineId) {
       <button class="btn gold" data-act="buyM" data-k="${k}" data-check="cost:${d.cost}">${coinHTML}${fmt(d.cost)}</button></div></div>`;
   }
   const up = m.lvl < MAX_MACHINE_LEVEL
-    ? `<button class="btn alt" data-act="upM" data-k="${k}" data-check="cost:${mUpCost(k)}">Faster ${coinHTML}${fmt(mUpCost(k))}</button>`
+    ? `<button class="btn alt" data-act="upM" data-k="${k}" data-check="cost:${mUpCost(k)}">Faster ${coinHTML}${fmt(mUpCost(k))}${matsHTML(mUpMats(k), inv)}</button>`
     : '<span class="small">Max speed</span>';
   return `<div class="card"><div class="top"><div class="big">${iconHTML(d.out)}</div><div class="grow"><div class="ttl">${d.name} <span class="small">Lv ${m.lvl}</span></div><div class="sub">${rec} · ${mTime(k).toFixed(1)}s</div></div>
       <label class="toggle"><input type="checkbox" id="on-${k}" data-act="toggleM" data-k="${k}" ${m.on ? 'checked' : ''}>Run</label></div>

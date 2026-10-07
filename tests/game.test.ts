@@ -270,7 +270,10 @@ describe('land', () => {
     S.level = 20; S.coins = 100;
     expect(buyLand()).toMatchObject({ ok: false, reason: 'coins' });
     S.coins = 1e6;
+    expect(buyLand()).toMatchObject({ ok: false, reason: 'mats' });
+    S.inv = { plank: 60, brick: 25 };
     expect(buyLand()).toMatchObject({ ok: true, k: 0 });
+    expect(S.inv.plank).toBe(40);
     expect(S.plots.length).toBe(32);
     expect(S.land).toBe(1);
     expect(buyLand()).toMatchObject({ ok: true, k: 1 });
@@ -282,6 +285,7 @@ describe('land', () => {
     const eco = await import('../src/game/economy');
     S.level = 20; S.coins = 1e6;
     while (S.plots.length < 20) S.plots.push({ crop: null, at: 0 });
+    S.inv = { plank: 1000, brick: 1000 };
     eco.buyLand(); eco.buyLand();
     expect(eco.plotSlot()).toBe('river');
     for (let k = 0; k < 3; k++) expect(eco.buyPlot().ok).toBe(true);
@@ -634,6 +638,17 @@ describe('woods and quarry', () => {
     expect(plantSapling(0, t).ok).toBe(true);
     expect(chopTree(0, t)).toBe('regrowing');
     expect(chopTree(0, t + TREE_REGROW_MS)).toBe('hit');
+  });
+
+  it('making a workshop faster takes planks and bricks once the Woods are open', async () => {
+    const eco = await import('../src/game/economy');
+    S.level = 12; S.coins = 1e6;
+    S.machines.bakery.owned = true;
+    expect(eco.upgradeMachine('bakery')).toMatchObject({ ok: false, reason: 'mats' });
+    S.inv = { plank: 30, brick: 6 };
+    expect(eco.upgradeMachine('bakery').ok).toBe(true);
+    expect(eco.upgradeMachine('bakery').ok).toBe(true);
+    expect(S.inv).toMatchObject({ plank: 0, brick: 0 });
   });
 
   it('Pine Ridge and Hill Quarry open later; hill rocks are tougher and richer', async () => {

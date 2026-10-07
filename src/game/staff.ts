@@ -23,8 +23,8 @@ export const STAFF: Record<StaffId, StaffDef> = {
   manager: { name: 'Farm manager', lvl: 6, perHour: l => 60 + 18 * l, job: 'Harvests and replants ripe crops, loads trucks so you never lose a buyer, keeps your animal keeper re-hired, and sells spare crops to pay your helpers’ wages. Works while you’re away too.' },
   fisher: { name: 'Fisherman', lvl: 3, perHour: l => 24 + 7 * l, job: 'Fishes from the rowboat and brings in a catch every 15 seconds: fish, crabs and now and then a golden fish. Works while you’re away too.' },
   shopkeeper: { name: 'Shopkeeper', lvl: 8, perHour: l => 50 + 12 * l, job: 'Runs your shop in Market Town, selling your goods and animal products for 50% more than the farm gate. Works while you’re away too.' },
-  lumberjack: { name: 'Lumberjack', lvl: WOODS_LVL, perHour: l => 45 + 10 * l, job: 'Chops trees in the Woods, a swing every 8 seconds, stacks the logs in your barn for the sawmill and plants saplings on the stumps (you pay for the saplings). Works while you’re away too.' },
-  miner: { name: 'Quarry worker', lvl: QUARRY_LVL, perHour: l => 60 + 12 * l, job: 'Breaks rocks in the Quarry, a swing every 8 seconds, and carts the stone to your barn for the stonecutter. Works while you’re away too.' },
+  lumberjack: { name: 'Lumberjack', lvl: WOODS_LVL, perHour: l => 45 + 10 * l, job: 'Chops trees in the Woods, a swing every 12 seconds, stacks the logs in your barn for the sawmill and plants saplings on the stumps (you pay for the saplings). Works while you’re away too.' },
+  miner: { name: 'Quarry worker', lvl: QUARRY_LVL, perHour: l => 60 + 12 * l, job: 'Breaks rocks in the Quarry, a swing every 12 seconds, and carts the stone to your barn for the stonecutter. Works while you’re away too.' },
   keeper: { name: 'Animal keeper', lvl: 4, perHour: l => 30 + 9 * l, job: 'Feeds your animals and collects eggs, milk, truffles and wool, even while you’re away.' },
 };
 export const STAFF_IDS = Object.keys(STAFF) as StaffId[];
@@ -44,7 +44,7 @@ const TRUCK_DELAY_MS = 6000;
 /** The fisherman lands one catch this often. */
 const FISHER_EVERY_MS = 15000;
 /** The lumberjack and quarry worker swing once this often (3 swings fell a tree, 4 break a rock). */
-export const SWING_EVERY_MS = 8000;
+export const SWING_EVERY_MS = 12000;
 let fishAt = 0, jackAt = 0, minerAt = 0;
 
 /** The tree or rock a worker is busy on: one already started, else the first one standing. -1 when all are down. */

@@ -2,12 +2,12 @@ import { updateTroubles } from './troubles';
 import { updateGoals } from './goals';
 import { updateGems } from './estate';
 import { on } from '../game/events';
-import { nextParcel, plotCost, plotLvl, plotSlot, xpNeed } from '../game/economy';
+import { matsOk, nextParcel, plotCost, plotLvl, plotMats, plotSlot, xpNeed } from '../game/economy';
 import { S } from '../game/state';
 import { now } from '../game/clock';
 import { canFillTruck } from '../game/trucks';
 import { inv } from '../game/economy';
-import { iconHTML } from './art';
+import { iconHTML, matsHTML } from './art';
 import type { ItemId } from '../data/goods';
 import { markDirty } from './dirty';
 import { $, coinHTML, fmt } from './format';
@@ -66,15 +66,15 @@ export function updateHud() {
     else {
       ex.disabled = false;
       const pct = Math.min(100, (S.coins / p.cost) * 100).toFixed(0);
-      const h = `<b>${p.name}</b><span>${coinHTML}${fmt(p.cost)}</span><i class="save"><i style="width:${pct}%"></i></i>`;
+      const h = `<b>${p.name}</b><span>${coinHTML}${fmt(p.cost)}${matsHTML(p.mats, inv)}</span><i class="save"><i style="width:${pct}%"></i></i>`;
       if (ex.innerHTML !== h) ex.innerHTML = h;
-      ex.classList.toggle('ready', S.coins >= p.cost && S.level >= p.lvl);
+      ex.classList.toggle('ready', S.coins >= p.cost && S.level >= p.lvl && matsOk(p.mats));
     }
   } else {
     const c = plotCost(), need = plotLvl();
     ex.classList.remove('land', 'ready');
     ex.disabled = S.coins < c || S.level < need;
-    const h = (slot === 'river' ? '<b>Riverside plot</b>' : '<b>New plot</b>') + (S.level < need ? `<span>🔒 Lv ${need}</span>` : '<span>' + coinHTML + fmt(c) + '</span>');
+    const h = (slot === 'river' ? '<b>Riverside plot</b>' : '<b>New plot</b>') + (S.level < need ? `<span>🔒 Lv ${need}</span>` : '<span>' + coinHTML + fmt(c) + matsHTML(plotMats(), inv) + '</span>');
     if (ex.innerHTML !== h) ex.innerHTML = h;
   }
 }

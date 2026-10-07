@@ -45,12 +45,24 @@ export function plotLvl(n = S.plots.length) {
   if (plotSlot(n) === 'river') return RIVER_PLOTS[n - RIVER0].lvl;
   return n < START_PLOTS ? 1 : Math.ceil((n - START_PLOTS + 1) / 2) + 1;
 }
+/** Riverside plots also need building materials. */
+export const plotMats = (n = S.plots.length): Mats => (plotSlot(n) === 'river' ? RIVER_PLOTS[n - RIVER0].mats : {});
 export const plotCost = (n = S.plots.length) => plotSlot(n) === 'river' ? RIVER_PLOTS[n - RIVER0].cost : Math.round(40 * Math.pow(1.5, n - START_PLOTS));
 export const farmhandCost = () => Math.round(80 * Math.pow(1.8, S.farmhands));
 export const sellerCost = () => Math.round(150 * Math.pow(1.9, S.sellers));
 /** Production time in seconds; each upgrade level is 18% faster. */
 export const mTime = (k: MachineId) => MACHINES[k].time * Math.pow(0.82, S.machines[k].lvl - 1);
 export const mUpCost = (k: MachineId) => Math.round(MACHINES[k].cost * 0.6 * S.machines[k].lvl);
+/** Building materials, as {item: qty}. */
+export type Mats = Partial<Record<ItemId, number>>;
+export const matsOk = (m: Mats) => (Object.entries(m) as [ItemId, number][]).every(([k, q]) => inv(k) >= q);
+const payMats = (m: Mats) => { for (const [k, q] of Object.entries(m) as [ItemId, number][]) S.inv[k] = inv(k) - q; };
+/** Once the Woods are open (level 9), making a workshop faster also takes planks, and from its third level bricks. */
+export function mUpMats(k: MachineId): Mats {
+  const l = S.machines[k].lvl;
+  if (S.level < 9) return {};
+  return l >= 2 ? { plank: 10 * l, brick: 6 * (l - 1) } : { plank: 10 };
+}
 export const inv = (k: ItemId) => S.inv[k] || 0;
 export const add = (k: ItemId, n: number) => { S.inv[k] = inv(k) + n; };
 export const totalItems = () => (Object.keys(ITEMS) as ItemId[]).reduce((a, k) => a + inv(k), 0);
@@ -138,14 +150,16 @@ export function sell(k: ItemId, n: number): number {
   return g;
 }
 
-export type BuyResult = { ok: true } | { ok: false; reason: 'max' | 'coins' | 'locked'; cost?: number; lvl?: number };
+export type BuyResult = { ok: true } | { ok: false; reason: 'max' | 'coins' | 'locked' | 'mats'; cost?: number; lvl?: number };
 
 export function buyPlot(): BuyResult {
   if (!plotSlot()) return { ok: false, reason: 'max' };
   if (S.level < plotLvl()) return { ok: false, reason: 'locked', lvl: plotLvl() };
-  const c = plotCost();
+  const c = plotCost(), m = plotMats();
   if (S.coins < c) return { ok: false, reason: 'coins', cost: c };
+  if (!matsOk(m)) return { ok: false, reason: 'mats' };
   S.coins -= c;
+  payMats(m);
   S.plots.push({ crop: null, at: 0 });
   return { ok: true };
 }
@@ -153,7 +167,7 @@ export function buyPlot(): BuyResult {
 /** The next land parcel for sale, if any. */
 export const nextParcel = () => LAND[S.land];
 
-export type LandResult = { ok: true; k: number } | { ok: false; reason: 'max' | 'coins' | 'locked' | 'field'; cost?: number; lvl?: number };
+export type LandResult = { ok: true; k: number } | { ok: false; reason: 'max' | 'coins' | 'locked' | 'field' | 'mats'; cost?: number; lvl?: number };
 
 /** Buy the next parcel of land: it arrives with a full field of empty plots. The home field must be full first. */
 export function buyLand(): LandResult {
@@ -162,7 +176,9 @@ export function buyLand(): LandResult {
   if (S.plots.length < MAX_PLOTS + S.land * PARCEL_PLOTS) return { ok: false, reason: 'field' };
   if (S.level < p.lvl) return { ok: false, reason: 'locked', lvl: p.lvl };
   if (S.coins < p.cost) return { ok: false, reason: 'coins', cost: p.cost };
+  if (!matsOk(p.mats)) return { ok: false, reason: 'mats' };
   S.coins -= p.cost;
+  payMats(p.mats);
   const k = S.land++;
   for (let j = 0; j < PARCEL_PLOTS; j++) S.plots.push({ crop: null, at: 0 });
   emit('landBought', { k });
@@ -180,10 +196,12 @@ export function buyMachine(k: MachineId): BuyResult {
 }
 
 export function upgradeMachine(k: MachineId): BuyResult {
-  const c = mUpCost(k);
+  const c = mUpCost(k), m = mUpMats(k);
   if (S.machines[k].lvl >= MAX_MACHINE_LEVEL) return { ok: false, reason: 'max' };
   if (S.coins < c) return { ok: false, reason: 'coins', cost: c };
+  if (!matsOk(m)) return { ok: false, reason: 'mats' };
   S.coins -= c;
+  payMats(m);
   S.machines[k].lvl++;
   return { ok: true };
 }
