@@ -56,6 +56,39 @@ describe('admin page server', () => {
     expect(r.secrets.webhook).toBe(true);
     expect(JSON.stringify(r)).not.toContain('a-very-long-secret-value');
   });
+  it('connects Lemon Squeezy with an API key: links, prices and the webhook', async () => {
+    const { get, token } = await setup();
+    const env = { ...ENV, PURCHASES: memKV() };
+    const calls: { url: string; method: string; body?: string }[] = [];
+    const ls = async (url: string, init: RequestInit) => {
+      calls.push({ url, method: init.method || 'GET', body: init.body as string | undefined });
+      const ok = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 });
+      if (url.endsWith('/stores')) return ok([{ id: '9', attributes: { name: 'cgsapiens' } }]);
+      if (url.includes('/products')) return ok([
+        { id: '1', attributes: { name: 'Pouch of Diamonds', price: 499, status: 'published', test_mode: true, buy_now_url: 'https://cgsapiens.lemonsqueezy.com/buy/pp' } },
+        { id: '2', attributes: { name: 'Vault of Diamonds', price: 2499, status: 'published', test_mode: true, buy_now_url: 'https://cgsapiens.lemonsqueezy.com/buy/vv' } },
+        { id: '3', attributes: { name: 'Something else', price: 100, status: 'published', test_mode: true, buy_now_url: 'https://cgsapiens.lemonsqueezy.com/buy/xx' } },
+      ]);
+      if (url.includes('/webhooks?')) return ok([{ id: '50', attributes: { url: 'https://x/api/ls-webhook' } }]);
+      if (url.endsWith('/webhooks/50')) return new Response(null, { status: 204 });
+      if (url.endsWith('/webhooks')) return ok({ id: '77', attributes: {} });
+      return new Response('{}', { status: 404 });
+    };
+    const r = await (await handleAdmin(req(await token({}), { method: 'POST', body: JSON.stringify({ lsApiKey: 'test-key-0123456789abcdefghij' }) }), env, get, ls)).json() as
+      { lemon: { ok: boolean; webhook: string; missing: string[] }; settings: { allowTest: boolean; packs: Record<string, { testLink?: string; usd?: number }> }; secrets: { lsApi: boolean; webhook: boolean } };
+    expect(r.lemon.ok).toBe(true);
+    expect(r.settings.packs.pouch.testLink).toBe('https://cgsapiens.lemonsqueezy.com/buy/pp');
+    expect(r.settings.packs.vault.usd).toBe(24.99);
+    expect(r.settings.allowTest).toBe(true);
+    expect(r.lemon.webhook).toBe('created');
+    expect(r.lemon.missing).toContain('Starter Pack');
+    expect(calls.some(c => c.method === 'DELETE' && c.url.endsWith('/webhooks/50'))).toBe(true);
+    const made = JSON.parse(calls.find(c => c.method === 'POST')!.body!);
+    expect(made.data.attributes.secret).toBe(env.PURCHASES.m.get('secret:ls_webhook'));
+    expect(made.data.attributes.test_mode).toBe(true);
+    expect(r.secrets).toMatchObject({ lsApi: true, webhook: true });
+    expect(JSON.stringify(r)).not.toContain('test-key-0123456789');
+  });
   it('applies pack changes and hides switched-off packs', () => {
     const live = livePacks(cleanSettings({ packs: { handful: { off: true }, vault: { gems: 2500 } } }));
     expect(live.find(p => p.id === 'handful')).toBeUndefined();

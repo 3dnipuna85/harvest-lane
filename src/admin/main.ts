@@ -10,9 +10,11 @@ import { firebaseConfig, onlineEnabled } from '../online/config';
 import { PACKS } from '../data/store';
 import type { GameSettings } from '../data/settings';
 import type { Order } from '../server/payments';
+import type { LemonReport } from '../server/lemon';
 
 interface AdminData {
-  email: string; settings: GameSettings; secrets: { webhook: boolean; webhookFromCloudflare: boolean };
+  email: string; settings: GameSettings; secrets: { webhook: boolean; webhookFromCloudflare: boolean; lsApi: boolean };
+  lemon?: LemonReport;
   testFromCloudflare: boolean; orders: (Order & { buyer: string })[];
 }
 
@@ -24,10 +26,11 @@ let data: AdminData | null = null;
 // Local preview with made-up data (npm run dev, then /admin.html?preview). Stripped from the real build.
 const preview = import.meta.env.DEV && location.search.includes('preview');
 async function previewCall(body?: unknown): Promise<AdminData & { error?: string }> {
-  const b = body as { settings?: GameSettings } | undefined;
+  const b = body as { settings?: GameSettings; lsApiKey?: string; lsSync?: boolean } | undefined;
   if (b?.settings) data = { ...data!, settings: { ...b.settings, updatedAt: Date.now() } };
+  if (b?.lsApiKey || b?.lsSync) data = { ...data!, secrets: { ...data!.secrets, lsApi: true, webhook: true }, lemon: { ok: true, store: 'cgsapiens', testMode: true, webhook: 'created', missing: ['Starter Pack'], products: [{ name: 'Pouch of Diamonds', price: 499, pack: 'pouch', status: 'published' }, { name: 'Old thing', price: 100, pack: null, status: 'draft' }] } };
   return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, updatedAt: 0 },
-    secrets: { webhook: false, webhookFromCloudflare: false }, testFromCloudflare: false,
+    secrets: { webhook: false, webhookFromCloudflare: false, lsApi: false }, testFromCloudflare: false,
     orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }] };
 }
 
@@ -79,12 +82,23 @@ function render(d: AdminData) {
       <td>${o.refunded ? '<span class="warn">Refunded</span>' : o.claimed ? '<span class="ok">Delivered</span>' : 'Waiting for the player'}</td>
       <td>#${esc(o.id)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No orders yet.</p>';
   const evOn = s.xpEventUntil > t;
-  show(`
+  const L = d.lemon, lerr: Record<string, string> = { badkey: 'Lemon Squeezy refused that API key. Copy it again (Settings → API → +) and paste the whole key.', nostore: 'That key has no store yet.', nokey: 'Paste your API key first.' };
+  const lemon = `<section><h2>Lemon Squeezy</h2>
+    <p>Paste your Lemon Squeezy API key once and press <b>Connect</b>. The panel then fills in every pack's checkout link and price from your products, and sets up the order webhook for you. Make one product per pack and put the pack's word in its name: Starter, Handful, Pouch, Chest or Vault.</p>
+    <label>API key <span class="muted">(Lemon Squeezy → Settings → API → +)</span></label>
+    <input type="password" id="lskey" autocomplete="off" placeholder="${d.secrets.lsApi ? 'Connected. Paste a new key only to switch (for example from test to live).' : 'Paste the key here'}">
+    <p class="muted">Write-only: it's stored on the server and never shown again. A test-mode key connects your test products, and a live key your real ones.</p>
+    <p><button class="primary" id="lsgo">${d.secrets.lsApi ? 'Refresh from Lemon Squeezy' : 'Connect'}</button> <span id="lsmsg" class="muted"></span></p>
+    ${L ? (L.ok ? `<p class="ok">✓ Connected to <b>${esc(L.store)}</b>${L.testMode ? ' in <b>test mode</b> (test payments switched on)' : L.testMode === false ? ' in <b>live mode</b> (test payments switched off)' : ''}. Webhook: ${L.webhook === 'failed' ? '<span class="warn">couldn\'t be created, add it by hand (see Advanced below)</span>' : L.webhook === 'created' ? 'created ✓' : 'already set up ✓'}.</p>
+      <div class="wrap"><table><thead><tr><th>Your product</th><th>Price</th><th>Used for</th></tr></thead><tbody>${(L.products ?? []).map(p => `<tr><td>${esc(p.name)}${p.status !== 'published' ? ' <span class="warn">(not published)</span>' : ''}</td><td>$${(p.price / 100).toFixed(2)}</td><td>${p.pack ? esc(PACKS.find(x => x.id === p.pack)?.name) : '<span class="muted">not a pack</span>'}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No products yet.</td></tr>'}</tbody></table></div>
+      ${L.missing?.length ? `<p class="warn">No product found for: ${esc(L.missing.join(', '))}. Those packs show “soon” until you add one and press Refresh.</p>` : ''}`
+      : `<p class="warn">${esc(lerr[L.error ?? ''] ?? 'Lemon Squeezy didn\'t answer (' + (L.error ?? '') + '). Try again in a minute.')}</p>`) : ''}
+  </section>`;
+  show(`${lemon}
   <section><h2>Setup</h2><ul class="steps">
     <li class="ok">✓ Storage connected and you're signed in as an admin.</li>
-    <li class="${d.secrets.webhook ? 'ok' : 'warn'}">${d.secrets.webhook ? '✓ Webhook signing secret is saved' + (d.secrets.webhookFromCloudflare ? ' (from Cloudflare)' : '') + '.' : '✗ No webhook signing secret yet: add it under Payments below.'}</li>
-    <li class="${PACKS.some(p => (s.packs[p.id]?.link || p.link)) ? 'ok' : 'warn'}">${PACKS.some(p => (s.packs[p.id]?.link || p.link)) ? '✓ At least one pack has a live checkout link.' : '✗ No live checkout links yet, so the shop shows “soon”.'}</li>
-    <li>Webhook URL for Lemon Squeezy: <code>${esc(location.origin)}/api/ls-webhook</code> (events: order_created, order_refunded)</li>
+    <li class="${d.secrets.webhook ? 'ok' : 'warn'}">${d.secrets.webhook ? '✓ Ready to receive orders' + (d.secrets.webhookFromCloudflare ? ' (secret from Cloudflare)' : '') + '.' : '✗ Orders can\'t be received yet: connect Lemon Squeezy above.'}</li>
+    <li class="${PACKS.some(p => (s.packs[p.id]?.link || p.link)) ? 'ok' : 'warn'}">${PACKS.some(p => (s.packs[p.id]?.link || p.link)) ? '✓ At least one pack has a live checkout link.' : '✗ No live checkout links yet, so players see “soon”. Connecting a live API key fills them in.'}</li>
   </ul></section>
 
   <section><h2>Diamond packs</h2><p class="muted">Changes reach players within about 10 minutes, or when they reload. The price here must match the price of the Lemon Squeezy product, because orders that paid less are not delivered.</p>${packs}</section>
@@ -92,9 +106,11 @@ function render(d: AdminData) {
   <section><h2>Payments</h2>
     <label class="check"><input type="checkbox" id="allowTest" ${s.allowTest ? 'checked' : ''}> Accept test payments (fake cards)</label>
     <p class="muted">Turn this on only while testing. Players test with the game link ending in <code>?testpay</code>. ${d.testFromCloudflare ? '<span class="warn">The Cloudflare variable LS_ALLOW_TEST=1 also turns this on; delete it when you go live.</span>' : ''}</p>
+    <details><summary class="muted">Advanced: set the webhook by hand</summary>
+    <p class="muted">Only needed if Connect couldn't create the webhook. In Lemon Squeezy → Settings → Webhooks, add <code>${esc(location.origin)}/api/ls-webhook</code> with the events order_created and order_refunded, and paste the same signing secret here.</p>
     <label>Webhook signing secret</label>
     <input type="password" id="secret" autocomplete="new-password" placeholder="${d.secrets.webhook ? 'Saved. Type a new one only to replace it.' : 'The secret you typed in Lemon Squeezy → Webhooks'}">
-    <p class="muted">Write-only: it's kept on the server and never shown again, not even here. At least 16 characters.</p>
+    <p class="muted">Write-only: it's kept on the server and never shown again, not even here. At least 16 characters.</p></details>
   </section>
 
   <section><h2>Store details</h2>
@@ -117,6 +133,16 @@ function render(d: AdminData) {
   <section><h2>Recent orders</h2>${orders}</section>
   <div class="bar"><span id="msg" class="muted">${s.updatedAt ? 'Last saved ' + esc(when(s.updatedAt)) : 'Not saved yet'}</span><button class="primary" id="save">Save changes</button></div>`);
   document.getElementById('save')!.onclick = save;
+  document.getElementById('lsgo')!.onclick = connect;
+}
+
+async function connect() {
+  const key = (document.getElementById('lskey') as HTMLInputElement).value.trim(), msg = document.getElementById('lsmsg')!;
+  if (!key && !data!.secrets.lsApi) { msg.textContent = 'Paste your API key first.'; msg.className = 'warn'; return; }
+  msg.textContent = 'Talking to Lemon Squeezy…'; msg.className = 'muted';
+  const r = await call(key ? { lsApiKey: key } : { lsSync: true });
+  if (r.error) { msg.textContent = 'Failed: ' + r.error; msg.className = 'warn'; return; }
+  data = r; render(r);
 }
 
 async function save() {

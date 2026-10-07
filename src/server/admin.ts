@@ -5,6 +5,7 @@
  * get in. Secrets typed into the admin page are stored under "secret:" keys and are never sent back out.
  */
 import { cleanSettings } from '../data/settings';
+import { connectLemon, newSecret, type LemonReport, type LsFetch } from './lemon';
 import { json, loadSettings, SETTINGS_KEY, WEBHOOK_SECRET_KEY, webhookSecret, type Env, type Order } from './payments';
 
 /** The game's Firebase project (public: it is in every copy of the game's code). */
@@ -72,13 +73,16 @@ async function recentOrders(env: Env, max = 60) {
   return out.sort((a, b) => b.at - a.at).slice(0, max);
 }
 
+const LS_KEY = 'secret:ls_api', LS_HOOKS = 'ls:hooks';
+
 /** GET/POST /api/admin. */
-export async function handleAdmin(req: Request, env: Env, get?: Fetch) {
+export async function handleAdmin(req: Request, env: Env, get?: Fetch, lsFetch?: LsFetch) {
   const who = await verifyAdmin(req, env, get);
   if ('error' in who) return json({ error: who.error }, who.status);
   if (!env.PURCHASES) return json({ error: 'nokv' }, 503);
+  let lemon: LemonReport | undefined;
   if (req.method === 'POST') {
-    let body: { settings?: unknown; webhookSecret?: string };
+    let body: { settings?: unknown; webhookSecret?: string; lsApiKey?: string; lsSync?: boolean };
     try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
     if (body.settings !== undefined) {
       const s = cleanSettings(body.settings);
@@ -86,11 +90,34 @@ export async function handleAdmin(req: Request, env: Env, get?: Fetch) {
       await env.PURCHASES.put(SETTINGS_KEY, JSON.stringify(s));
     }
     if (typeof body.webhookSecret === 'string' && body.webhookSecret.trim().length >= 16) await env.PURCHASES.put(WEBHOOK_SECRET_KEY, body.webhookSecret.trim());
+    const newKey = typeof body.lsApiKey === 'string' && body.lsApiKey.trim().length > 20 ? body.lsApiKey.trim() : '';
+    if (newKey || body.lsSync) {
+      const key = newKey || await env.PURCHASES.get(LS_KEY);
+      if (!key) lemon = { ok: false, error: 'nokey' };
+      else {
+        let secret = await webhookSecret(env);
+        if (!secret) { secret = newSecret(); await env.PURCHASES.put(WEBHOOK_SECRET_KEY, secret); }
+        const s = await loadSettings(env);
+        let ours: string[] = [];
+        try { ours = JSON.parse(await env.PURCHASES.get(LS_HOOKS) || '[]'); } catch { /* none yet */ }
+        lemon = await connectLemon(key, s, new URL(req.url).origin + '/api/ls-webhook', secret, ours, lsFetch);
+        // Keep the key only once Lemon Squeezy has accepted it.
+        if (lemon.ok) {
+          if (newKey) await env.PURCHASES.put(LS_KEY, newKey);
+          const clean = cleanSettings(s);
+          clean.updatedAt = Date.now();
+          await env.PURCHASES.put(SETTINGS_KEY, JSON.stringify(clean));
+          await env.PURCHASES.put(LS_HOOKS, JSON.stringify(lemon.hookIds ?? []));
+        }
+        delete lemon.hookIds;
+      }
+    }
   }
   return json({
     email: who.email,
     settings: await loadSettings(env),
-    secrets: { webhook: !!(await webhookSecret(env)), webhookFromCloudflare: !!env.LS_WEBHOOK_SECRET },
+    secrets: { webhook: !!(await webhookSecret(env)), webhookFromCloudflare: !!env.LS_WEBHOOK_SECRET, lsApi: !!(await env.PURCHASES.get(LS_KEY)) },
+    lemon,
     testFromCloudflare: env.LS_ALLOW_TEST === '1',
     orders: await recentOrders(env),
   });
