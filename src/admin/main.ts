@@ -29,7 +29,7 @@ async function previewCall(body?: unknown): Promise<AdminData & { error?: string
   const b = body as { settings?: GameSettings; lsApiKey?: string; lsSync?: boolean } | undefined;
   if (b?.settings) data = { ...data!, settings: { ...b.settings, updatedAt: Date.now() } };
   if (b?.lsApiKey || b?.lsSync) data = { ...data!, secrets: { ...data!.secrets, lsApi: true, webhook: true }, lemon: { ok: true, store: 'cgsapiens', testMode: true, webhook: 'created', missing: ['Starter Pack'], products: [{ name: 'Pouch of Diamonds', price: 499, pack: 'pouch', status: 'published' }, { name: 'Old thing', price: 100, pack: null, status: 'draft' }] } };
-  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, adBreaks: true, adBreakMin: 3, mailFrom: '', updatedAt: 0 },
+  return data ?? { email: 'owner@example.com', settings: { packs: { pouch: { testLink: 'https://cgsapiens.lemonsqueezy.com/buy/test-123' } }, allowTest: true, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: true, adCap: 10, adBreaks: true, adBreakMin: 3, rushEvery: 5, rushMin: 20, mailFrom: '', updatedAt: 0 },
     secrets: { webhook: false, webhookFromCloudflare: false, lsApi: false, mail: false }, testFromCloudflare: false,
     orders: [{ id: '1001', pack: 'pouch', at: Date.now() - 3600_000, cents: 499, test: true, claimed: Date.now(), buyer: 'x' }, { id: '1002', pack: 'chest', at: Date.now() - 600_000, cents: 999, buyer: 'y' }] };
 }
@@ -149,6 +149,11 @@ function render(d: AdminData) {
   <section><h2>Events and news</h2>
     <label>News message <span class="muted">(every player sees it once when they open the game; leave empty for none)</span></label>
     <textarea id="news" maxlength="280">${esc(s.news)}</textarea>
+    <div class="row">
+      <div><label>Rush level every … levels <span class="muted">(0 = never)</span></label><input type="number" id="rushEvery" min="0" max="50" value="${s.rushEvery}"></div>
+      <div><label>Rush targets timer (minutes)</label><input type="number" id="rushMin" min="3" max="240" value="${s.rushMin}"></div>
+    </div>
+    <p class="muted">On a rush level, the two main targets get a countdown and pay 50% more. A missed one restarts after 5 minutes, or straight away for an ad or 3 diamonds. New timers start from the next level reached.</p>
     <label>Double XP for everyone</label>
     <div class="row"><select id="xpev">
       <option value="keep">${evOn ? 'Running until ' + esc(when(s.xpEventUntil)) : 'Off'}</option>
@@ -188,6 +193,8 @@ async function save() {
   s.adsTest = (document.getElementById('adsTest') as HTMLInputElement).checked;
   s.adCap = +(document.getElementById('adCap') as HTMLInputElement).value || 0;
   s.adBreaks = (document.getElementById('adBreaks') as HTMLInputElement).checked;
+  s.rushEvery = Math.max(0, Math.round(+(document.getElementById('rushEvery') as HTMLInputElement).value || 0));
+  s.rushMin = Math.round(+(document.getElementById('rushMin') as HTMLInputElement).value || 20);
   s.adBreakMin = +(document.getElementById('adBreakMin') as HTMLInputElement).value || 3;
   s.mailFrom = (document.getElementById('mailFrom') as HTMLInputElement).value.trim();
   const brevo = (document.getElementById('brevo') as HTMLInputElement).value.trim();

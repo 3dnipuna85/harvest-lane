@@ -25,13 +25,16 @@ export interface GameSettings {
   adCap: number;
   /** Short ads between levels, and the fewest minutes between two of them. */
   adBreaks: boolean;
+  /** Every Nth level is a rush level with timed main targets (0 = never), and their timer in minutes. */
+  rushEvery: number;
+  rushMin: number;
   adBreakMin: number;
   /** The verified sender address for invite emails (Brevo). */
   mailFrom: string;
   updatedAt: number;
 }
 
-export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: false, adCap: 10, adBreaks: true, adBreakMin: 3, mailFrom: '', updatedAt: 0 };
+export const DEFAULT_SETTINGS: GameSettings = { packs: {}, allowTest: false, supportEmail: '', news: '', xpEventUntil: 0, adsOn: false, adClient: '', adsTest: false, adCap: 10, adBreaks: true, adBreakMin: 3, rushEvery: 5, rushMin: 20, mailFrom: '', updatedAt: 0 };
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v: unknown, lo: number, hi: number) => { const n = Number(v); return Number.isFinite(n) && n >= lo && n <= hi ? n : undefined; };
@@ -67,6 +70,8 @@ export function cleanSettings(raw: unknown): GameSettings {
     adsTest: r.adsTest === true,
     adCap: Math.round(num(r.adCap, 0, 50) ?? 10),
     adBreaks: r.adBreaks !== false,
+    rushEvery: Math.round(num(r.rushEvery, 0, 50) ?? 5),
+    rushMin: Math.round(num(r.rushMin, 3, 240) ?? 20),
     adBreakMin: Math.round(num(r.adBreakMin, 1, 120) ?? 3),
     mailFrom: (() => { const m = str(r.mailFrom, 120); return /^[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}$/i.test(m) ? m : ''; })(),
     updatedAt: num(r.updatedAt, 0, 4e12) ?? 0,

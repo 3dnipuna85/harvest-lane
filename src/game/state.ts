@@ -57,7 +57,9 @@ export interface Goal { kind: GoalKind; n: number; have: number; coins: number; 
   /** The reward was doubled by watching an ad. */
   dbl?: boolean;
   /** The challenge got its one extra 5 minutes. */
-  ext?: boolean }
+  ext?: boolean;
+  /** A missed rush-level target restarts at this time (ms). */
+  retryAt?: number }
 export type Tab = 'orders' | 'barn' | 'animals' | 'machines' | 'helpers' | 'farm' | 'shop';
 
 export interface State {

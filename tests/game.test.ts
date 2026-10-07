@@ -908,3 +908,24 @@ describe('challenge: 5 more minutes', () => {
     expect(goals.canExtend(c.until - 60_000)).toBe(false);
   });
 });
+
+describe('rush levels', () => {
+  it('every 5th level times the main targets; a missed one restarts', async () => {
+    const goals = await import('../src/game/goals');
+    S.goals = null; S.level = 4;
+    const t0 = Date.now();
+    goals.goalsTick(t0);
+    expect(S.goals!.list[0].until).toBe(0);
+    S.level = 10;
+    goals.goalsTick(t0);
+    const g = S.goals!.list[0];
+    expect(g.until).toBe(t0 + 20 * 60_000);
+    g.have = 2;
+    goals.goalsTick(g.until + 1);
+    expect(g.state).toBe('failed');
+    expect(goals.restartTarget(0, 'wait', g.until + 2)).toBe(false);
+    goals.goalsTick(g.retryAt! + 1);
+    expect(g.state).toBe('open');
+    expect(g.have).toBe(0);
+  });
+});

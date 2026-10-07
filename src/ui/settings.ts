@@ -20,6 +20,8 @@ export async function loadSettings() {
     PACKS.splice(0, PACKS.length, ...livePacks(s, BASE));
     live.xpEventUntil = s.xpEventUntil;
     live.adCap = s.adCap;
+    live.rushEvery = s.rushEvery;
+    live.rushMin = s.rushMin;
     configureAds({ on: s.adsOn, client: s.adClient, test: s.adsTest, breaks: s.adBreaks, breakMin: s.adBreakMin });
     let seen = '';
     try { seen = localStorage.getItem(SEEN) || ''; } catch { /* private mode */ }

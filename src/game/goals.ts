@@ -4,6 +4,7 @@ import { earn, gainXP, hands, xpNeed } from './economy';
 import { gainGems } from './estate';
 import { emit, on } from './events';
 import { WOODS_LVL } from './resources';
+import { live } from './live';
 import { S, type Goal, type GoalKind } from './state';
 
 /**
@@ -72,16 +73,37 @@ function timed(kind: GoalKind, l: number, t: number): Goal {
   return { kind, n: Math.max(1, Math.round(SIZE[kind](l) * 0.4)), have: 0, coins: 30 + 20 * l, xp: 0, gems: 2 + Math.floor(l / 10), until: t + timedMin(l) * 60_000, state: 'open' };
 }
 
+/** Rush levels: every few levels the two main targets get a timer as well, and pay half as much again. */
+export const isRush = (l = S.level) => live.rushEvery > 0 && l >= live.rushEvery && l % live.rushEvery === 0;
+export const RUSH_RETRY_MS = 5 * 60_000;
+const rushMs = () => live.rushMin * 60_000;
+
 /** A fresh set for this level: two targets and a timed challenge, each a different kind. */
 export function newGoals(t = now(), rand = Math.random) {
   const pool = goalKinds();
   const a = pickOut(pool, rand), b = pickOut(pool, rand), c = pickOut(pool, rand);
-  S.goals = { lvl: S.level, list: [target(a, S.level), target(b, S.level), timed(c, S.level, t)], nextTimed: 0 };
+  const main = [target(a, S.level), target(b, S.level)];
+  if (isRush()) for (const g of main) { g.until = t + rushMs(); g.coins = Math.round(g.coins * 1.5); g.xp = Math.round(g.xp * 1.5); }
+  S.goals = { lvl: S.level, list: [...main, timed(c, S.level, t)], nextTimed: 0 };
+}
+
+/** Start a missed rush target again, from zero with a full timer (after the wait, an ad, or diamonds). */
+export function restartTarget(i: number, pay: 'wait' | 'ad' | 'gems', t = now()) {
+  const g = S.goals?.list[i];
+  if (!g || i > 1 || g.state !== 'failed') return false;
+  if (pay === 'wait' && t < (g.retryAt ?? 0)) return false;
+  if (pay === 'gems') { if (S.gems < SKIP_GEMS) return false; S.gems -= SKIP_GEMS; }
+  g.state = 'open'; g.have = 0; g.until = t + rushMs(); delete g.retryAt;
+  return true;
 }
 
 export function goalsTick(t = now(), rand = Math.random) {
   if (!S.goals || S.goals.lvl !== S.level) { newGoals(t, rand); return; }
   const g = S.goals, ch = g.list[2];
+  for (const [i, x] of g.list.slice(0, 2).entries()) {
+    if (x.until && x.state === 'open' && t >= x.until) { x.state = 'failed'; x.retryAt = t + RUSH_RETRY_MS; emit('goalFailed', { kind: x.kind, rush: true }); }
+    else if (x.state === 'failed' && t >= (x.retryAt ?? 0)) restartTarget(i, 'wait', t);
+  }
   if (ch.state === 'open' && t >= ch.until) {
     ch.state = 'failed';
     g.nextTimed = t + FAILED_GAP_MS;

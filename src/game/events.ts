@@ -30,7 +30,7 @@ export interface GameEvents {
   foxStole: { egg: number; milk: number };
   watered: { i: number };
   goalDone: { kind: GoalKind; n: number; coins: number; xp: number; gems: number; timed: boolean };
-  goalFailed: { kind: GoalKind };
+  goalFailed: { kind: GoalKind; rush?: boolean };
   farmUpgrade: { tier: number };
   /** XP is full but the farm tier caps the level. */
   levelCapped: { level: number };

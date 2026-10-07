@@ -4,4 +4,7 @@ export const live = {
   xpEventUntil: 0,
   /** Rewarded ads a player may watch per day. */
   adCap: 10,
+  /** Every Nth level is a rush level whose main targets have a timer too (0 = never), and how long they get (minutes). */
+  rushEvery: 5,
+  rushMin: 20,
 };
