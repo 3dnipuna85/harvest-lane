@@ -46,7 +46,7 @@ export function shopPanel() {
     ${test ? '<div class="testnote">TEST MODE: purchases are free and nothing is charged. Turn it off with ?testshop=0</div>' : ''}
     ${packs}
     ${PACKS.some(p => p.link) && !test ? '<div class="testnote paynote">Payments are handled by Lemon Squeezy in a new tab. Your diamonds arrive here a few seconds after paying. Not there? Keep this page open, or reopen this shop.</div>' : ''}
-    <div class="townintro">Prices in US dollars. Everything in the game can be earned by playing; packs just get you there faster.${test || PACKS.some(p => p.link) ? '' : ' Real-money packs are coming soon.'}</div></div>`;
+    <div class="townintro">Prices in US dollars. Everything in the game can be earned by playing; packs just get you there faster. <a href="/refunds" target="_blank">Refunds</a> · <a href="/terms" target="_blank">Terms</a> · <a href="/contact" target="_blank">Help</a>${test || PACKS.some(p => p.link) ? '' : ' Real-money packs are coming soon.'}</div></div>`;
 }
 
 export const shopSignature = () => [S.gems, S.coins >= 0 && S.level, xpBoosted(), running().length, armed, S.bought.join(','), Math.floor((S.xpBoost - now()) / 60000)].join('|');

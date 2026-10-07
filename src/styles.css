@@ -594,3 +594,7 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 @media (min-width:761px) and (max-width:1100px){.trouble{left:auto;right:calc(var(--safe-r) + 76px);transform:none}}
 .lbl.timer.plantme{background:#e9f8da;color:#2c6820;border-color:#7bbf3a;cursor:pointer}
 .mat{display:inline-flex;align-items:center;gap:1px;margin-left:4px}.mat.short{color:#d23b2f}.mat .ic-inline{width:14px;height:14px}
+
+/* Store info links (terms, privacy...) under the sign-in box, the guide and the shop. */
+.legal { margin: 10px 0 0; font-size: 12px; text-align: center; opacity: .8 }
+.legal a, .townintro a { color: inherit }

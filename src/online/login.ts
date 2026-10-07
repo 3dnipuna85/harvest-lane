@@ -53,7 +53,8 @@ function welcome() {
       </div>
       <button class="linkbtn" type="button" data-login="reset">Forgot password?</button>
     </form>
-    <button class="linkbtn guest" data-login="guest">Play without an account (saves on this device only)</button>`);
+    <button class="linkbtn guest" data-login="guest">Play without an account (saves on this device only)</button>
+    <p class="legal"><a href="/pricing" target="_blank">Pricing</a> · <a href="/terms" target="_blank">Terms</a> · <a href="/privacy" target="_blank">Privacy</a> · <a href="/refunds" target="_blank">Refunds</a> · <a href="/contact" target="_blank">Contact</a></p>`);
 }
 
 const n = (v: number) => Math.floor(v).toLocaleString();

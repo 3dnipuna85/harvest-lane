@@ -17,7 +17,11 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  // The payment server (/api/) is always live.
+  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
+  // The store's info pages (terms, privacy, pricing...) come straight from the network.
+  if (req.mode === 'navigate' && url.pathname !== '/' && url.pathname !== '/index.html') return;
   if (req.mode === 'navigate') {
     // Page loads: try the network for the newest version, fall back to the cached page offline.
     e.respondWith(
