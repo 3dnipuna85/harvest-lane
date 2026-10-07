@@ -3,7 +3,7 @@ import { GOOD_IDS, MATERIALS, PRODUCT_IDS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, recipe } from '../data/machines';
 import { SELLER_INTERVAL_S } from '../data/limits';
 import { now } from './clock';
-import { add, byStaff, gainXP, goodXP, inv, mTime, sell, unitPrice } from './economy';
+import { add, byStaff, inv, mTime, sell, unitPrice } from './economy';
 import { truckReserve } from './town';
 import { animalTick } from './animals';
 import { emit } from './events';
@@ -47,8 +47,8 @@ export function sim(dt: number) {
     const m = S.machines[k], d = MACHINES[k];
     if (!m.owned) continue;
     if (m.job && t >= m.job.end) {
+      // Machines work by themselves, so they earn no XP: it comes when you deliver what they make.
       add(d.out, 1);
-      gainXP(goodXP(d.out));
       m.job = null;
       emit('machineDone', { id: k, out: d.out });
     }

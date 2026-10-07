@@ -540,3 +540,15 @@ body.in-town .towndock .tab{flex:none;width:68px;max-width:none}
 .tip-goal{display:flex;align-items:center;gap:8px;background:#fff3cf;border-radius:12px;padding:6px 10px;font-weight:900;color:#a0522d}
 .tip-goal .face{width:38px;height:38px;border-radius:50%}
 .tip-btns{justify-content:flex-end;gap:8px}
+/* Diamond shop */
+.card.shopitem,.card.gembank{flex-direction:row;align-items:center;gap:10px;text-align:left}
+.shopitem .grow,.gembank .grow{flex:1;min-width:0}
+.shopitem .big{flex:0 0 auto}
+.shopitem .btn{flex:0 0 auto;display:flex;align-items:center;gap:3px;text-decoration:none}
+.shopitem.starter{background:linear-gradient(135deg,#fff6d6,#ffe3a8);border-color:#e3a63a}
+.shophead{font-family:var(--display);font-size:16px;color:#7a4a1c;margin:8px 4px 0}
+.packtag{display:inline-block;font-size:10.5px;font-weight:900;color:#fff;background:#e2463a;border-radius:8px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.testnote{font-size:12px;font-weight:900;color:#fff;background:#d23b2f;border-radius:8px;padding:6px 8px}
+.gembank{display:flex;align-items:center;gap:10px}
+.lvlpill.xp2::after{content:'2× XP';position:absolute;left:52px;bottom:-9px;font-size:10px;font-weight:900;color:#fff;background:#7b4fd6;border-radius:7px;padding:0 5px}
+.lvlpill{position:relative}

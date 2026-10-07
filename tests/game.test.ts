@@ -397,8 +397,8 @@ describe('market town', () => {
 
 describe('harder economy', () => {
   it('levels past 5 need much more XP', () => {
-    expect(xpNeed(5)).toBe(Math.round(14 * Math.pow(5, 1.55)));
-    expect(xpNeed(20)).toBeGreaterThan(5 * Math.round(14 * Math.pow(20, 1.55)));
+    expect(xpNeed(3)).toBe(Math.round(14 * Math.pow(3, 1.55)));
+    expect(xpNeed(20)).toBeGreaterThan(15 * Math.round(14 * Math.pow(20, 1.55)));
   });
 
   it('staff work earns coins but no XP; your own work does', async () => {
@@ -644,5 +644,46 @@ describe('woods and quarry', () => {
     const { nextSale } = await import('../src/game/sim');
     S.sellers = 1; S.inv = { log: 50, plank: 20, brick: 9 };
     expect(nextSale()).toBeUndefined();
+  });
+});
+
+describe('diamond shop', () => {
+  it('swaps diamonds for coins, and refuses when short', async () => {
+    const st = await import('../src/game/store');
+    S.gems = 12; S.coins = 0; S.level = 10;
+    expect(st.buyBag(0).ok).toBe(true);
+    expect(S.gems).toBe(2);
+    expect(S.coins).toBe(st.bagCoins(0));
+    expect(st.buyBag(0)).toMatchObject({ ok: false, reason: 'gems', need: 8 });
+  });
+
+  it('Double XP doubles what you earn while it lasts', async () => {
+    const st = await import('../src/game/store');
+    S.gems = 20; S.level = 1; S.xp = 0;
+    expect(st.buyXpBoost(t).ok).toBe(true);
+    gainXP(3);
+    expect(S.xp).toBe(6);
+    clock.now = () => t + st.XP_BOOST_MIN * 60_000 + 1;
+    gainXP(3);
+    expect(S.xp).toBe(9);
+  });
+
+  it('a one-time pack can only be granted once', async () => {
+    const st = await import('../src/game/store');
+    S.gems = 0;
+    expect(st.grantPack('starter', t)).toBe(true);
+    expect(S.gems).toBe(120);
+    expect(st.grantPack('starter', t)).toBe(false);
+    expect(st.grantPack('handful', t)).toBe(true);
+    expect(st.grantPack('handful', t)).toBe(true);
+    expect(S.gems).toBe(280);
+  });
+
+  it('machines earn no XP by themselves', () => {
+    S.level = 1; S.xp = 0;
+    S.machines.bakery = { owned: true, lvl: 1, job: { start: t - 99999, end: t - 1 }, on: false };
+    sim(0.1);
+    expect(S.inv.bread).toBe(1);
+    expect(S.xp).toBe(0);
   });
 });

@@ -14,6 +14,7 @@ export interface GameEvents {
   rockHit: { i: number };
   rockBroken: { i: number; n: number };
   gems: { n: number; why: string };
+  packBought: { id: string };
   farmUpgrade: { tier: number };
   /** XP is full but the farm tier caps the level. */
   levelCapped: { level: number };

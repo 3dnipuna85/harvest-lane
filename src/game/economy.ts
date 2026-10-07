@@ -1,5 +1,5 @@
 import { CROPS, CROP_IDS, DOUBLE_HARVEST_CHANCE, type CropId } from '../data/crops';
-import { GOODS, ITEMS, type ItemId } from '../data/goods';
+import { ITEMS, type ItemId } from '../data/goods';
 import { MACHINES, MACHINE_IDS, type MachineId } from '../data/machines';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS, START_PLOTS } from '../data/limits';
 import { TIERS } from '../data/tiers';
@@ -9,7 +9,8 @@ import { emit } from './events';
 import { S, type Plot } from './state';
 
 /** XP for the next level. The first five levels come quickly; after that each one takes much longer. */
-export const xpNeed = (l: number) => Math.round(14 * Math.pow(l, 1.55) * (1 + Math.pow(Math.max(0, l - 5), 1.3) / 6));
+/** XP for the next level. The first few levels come quickly; from level 4 on each one asks a good deal more. */
+export const xpNeed = (l: number) => Math.round(14 * Math.pow(l, 1.55) * (1 + Math.pow(Math.max(0, l - 5), 1.3) / 6) * (1 + Math.max(0, l - 3) / 6));
 
 /**
  * Whose hands are doing the work. XP comes only from the player's own work: crops your staff pick, trucks your
@@ -53,7 +54,8 @@ export const unlockedCrops = () => CROP_IDS.filter(k => CROPS[k].lvl <= S.level)
 
 export function gainXP(n: number) {
   if (hands.staff) return;
-  S.xp += n;
+  // A Double XP boost from the diamond shop (game/store.ts) doubles what you earn while it lasts.
+  S.xp += S.xpBoost > now() ? n * 2 : n;
   const cap = TIERS[S.tier]?.cap ?? Infinity;
   if (S.level >= cap) {
     // The farm tier caps the level: the bar fills and waits for a farm upgrade.
@@ -198,5 +200,3 @@ export function fire(kind: 'farmhand' | 'seller'): boolean {
   return true;
 }
 
-/** XP for finishing one workshop product. */
-export const goodXP = (k: keyof typeof GOODS) => Math.max(2, Math.round(GOODS[k].sell / 10));

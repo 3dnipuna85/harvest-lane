@@ -52,6 +52,7 @@ export function updateHud() {
   $('coins').textContent = fmt(S.coins);
   $('lvl').textContent = String(S.level);
   $('xp').style.width = ((100 * S.xp) / xpNeed(S.level)).toFixed(1) + '%';
+  document.querySelector('.lvlpill')?.classList.toggle('xp2', S.xpBoost > Date.now());
   const ex = $('expand') as HTMLButtonElement;
   if (S.plots.length >= MAX_PLOTS) {
     // The home field is full: the button becomes a savings goal for the next parcel of land.

@@ -28,7 +28,7 @@ export function farmPanel() {
       <div class="sub">${capped() ? `<b class="capnote">Level ${S.level} is the top level for a ${t.name}. Upgrade the farm to keep levelling.</b>` : `Your farm allows ${capTxt(levelCap())}.`}</div></div></div></div>
     <div class="tiers">${ladder}</div>
     ${next}
-    <div class="townintro">${gemHTML()} <b>Diamonds</b> are rare. You get one each level-up, sometimes when your shopkeeper makes a sale in town, and sometimes when you load a truck yourself in time for the tip.</div></div>`;
+    <div class="townintro">${gemHTML()} <b>Diamonds</b> are rare. You get one each level-up, sometimes when your shopkeeper makes a sale in town, and sometimes when you load a truck yourself in time for the tip. <button class="btn gold" data-act="tab" data-t="shop">${gemHTML()} Diamond Shop</button></div></div>`;
 }
 
 export const farmSignature = () => [S.tier, S.gems, S.level, capped(), nextTier() ? S.coins >= nextTier()!.coins : 0, matsShort().map(([k]) => k + inv(k)).join(',')].join('|');

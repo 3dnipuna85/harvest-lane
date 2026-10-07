@@ -2,6 +2,7 @@ import { sfxTap } from './sound';
 import { canFillContract } from '../game/contracts';
 import { sellersIdle } from '../game/sim';
 import { farmAction, farmPanel, farmSignature } from './estate';
+import { shopAction, shopPanel, shopSignature } from './shop';
 import type { CropId } from '../data/crops';
 import { GOODS, ITEMS, ITEM_IDS, type ItemId } from '../data/goods';
 import { MAX_FARMHANDS, MAX_MACHINE_LEVEL, MAX_PLOTS, MAX_SELLERS } from '../data/limits';
@@ -49,6 +50,7 @@ export function panelSignature() {
   if (pl) return 'town|' + townSignature(pl);
   const parts: unknown[] = [S.tab, S.level];
   if (S.tab === 'farm') parts.push(farmSignature());
+  if (S.tab === 'shop') parts.push(shopSignature());
   if (S.tab === 'barn') parts.push(ITEM_IDS.filter(k => inv(k) > 0).join(','));
   if (S.tab === 'orders') parts.push(S.orders.map(o => o.id).join(','), S.truck?.id ?? 0, S.contract?.arrive ?? 0, Math.round(S.rep * 2));
   if (S.tab === 'machines') parts.push(MACHINE_IDS.map(k => { const m = S.machines[k]; return k + m.owned + m.lvl + m.on; }).join(','));
@@ -95,6 +97,7 @@ export function renderPanel() {
       : '<div class="empty-note">The barn is empty. Harvest crops and they will show up here.</div>';
   }
   if (S.tab === 'farm') h = farmPanel();
+  if (S.tab === 'shop') h = shopPanel();
   if (S.tab === 'machines') h = '<div class="list">' + MACHINE_IDS.map(machineCard).join('') + '</div>';
   if (S.tab === 'animals') h = `<div class="list">
       <div class="row tend"><span class="small grow">Tap an animal on the farm to feed it, then tap again to collect.</span>
@@ -256,7 +259,7 @@ export function bindPanelInput() {
     sfxTap();
     const a = b.dataset.act, k = b.dataset.k!, i = +b.dataset.i!;
     const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
-    if (townAction(a!, k) || farmAction(a!)) { save(); return; }
+    if (townAction(a!, k) || farmAction(a!) || shopAction(a!, k, i)) { save(); return; }
     if (a === 'seed') S.sel = k as CropId;
     else if (a === 'expand') { if (S.plots.length >= MAX_PLOTS) act.buyLand(); else act.buyPlot(); }
     else if (a === 'tab') toggleOffice(b.dataset.t as Tab);
