@@ -1,0 +1,107 @@
+import { MACHINE_IDS } from '../data/machines';
+import { now } from './clock';
+import { earn, gainXP, hands, xpNeed } from './economy';
+import { gainGems } from './estate';
+import { emit, on } from './events';
+import { WOODS_LVL } from './resources';
+import { S, type Goal, type GoalKind } from './state';
+
+/**
+ * Level targets. Every level brings two targets and one timed challenge with a countdown. Only your own work
+ * counts (staff don't). Targets pay coins and XP; the timed challenge pays diamonds. A missed challenge is replaced
+ * by a new one a few minutes later, and so is a finished one, so there is always something to race for.
+ */
+
+export const GOAL_TEXT: Record<GoalKind, (n: number) => string> = {
+  harvest: n => `Harvest ${n} crops`,
+  order: n => `Deliver ${n} orders`,
+  animal: n => `Collect ${n} animal goods`,
+  truck: n => `Load ${n} truck${n > 1 ? 's' : ''} yourself`,
+  fish: n => `Catch ${n} fish`,
+  make: n => `Make ${n} workshop goods`,
+  gather: n => `Chop or dig ${n} logs or stone`,
+};
+export const GOAL_ICON: Record<GoalKind, string> = { harvest: '🌾', order: '📋', animal: '🥚', truck: '🚚', fish: '🐟', make: '🍞', gather: '🪓' };
+
+const SIZE: Record<GoalKind, (l: number) => number> = {
+  harvest: l => 20 + 8 * l,
+  order: l => 2 + Math.floor(l / 4),
+  animal: l => 6 + 2 * l,
+  truck: l => 1 + Math.floor(l / 8),
+  fish: l => 3 + Math.floor(l / 5),
+  make: l => 4 + Math.floor(l / 2),
+  gather: l => 6 + Math.floor(l / 3),
+};
+
+/** A new timed challenge comes this long after the last one ended. */
+export const TIMED_GAP_MS = 3 * 60_000;
+export const timedMin = (l: number) => Math.min(15, 8 + Math.floor(l / 5));
+
+export function goalKinds(level = S.level): GoalKind[] {
+  const k: GoalKind[] = ['harvest', 'order', 'animal'];
+  if (level >= 2) k.push('truck');
+  if (level >= 3) k.push('fish');
+  if (MACHINE_IDS.some(m => S.machines[m].owned)) k.push('make');
+  if (level >= WOODS_LVL) k.push('gather');
+  return k;
+}
+
+const pickOut = (from: GoalKind[], rand: () => number) => from.splice(Math.floor(rand() * from.length), 1)[0];
+
+function target(kind: GoalKind, l: number): Goal {
+  return { kind, n: SIZE[kind](l), have: 0, coins: 60 + 35 * l, xp: Math.round(xpNeed(l) * 0.08), gems: 0, until: 0, state: 'open' };
+}
+function timed(kind: GoalKind, l: number, t: number): Goal {
+  return { kind, n: Math.max(1, Math.round(SIZE[kind](l) * 0.4)), have: 0, coins: 30 + 20 * l, xp: 0, gems: 2 + Math.floor(l / 10), until: t + timedMin(l) * 60_000, state: 'open' };
+}
+
+/** A fresh set for this level: two targets and a timed challenge, each a different kind. */
+export function newGoals(t = now(), rand = Math.random) {
+  const pool = goalKinds();
+  const a = pickOut(pool, rand), b = pickOut(pool, rand), c = pickOut(pool, rand);
+  S.goals = { lvl: S.level, list: [target(a, S.level), target(b, S.level), timed(c, S.level, t)], nextTimed: 0 };
+}
+
+export function goalsTick(t = now(), rand = Math.random) {
+  if (!S.goals || S.goals.lvl !== S.level) { newGoals(t, rand); return; }
+  const g = S.goals, ch = g.list[2];
+  if (ch.state === 'open' && t >= ch.until) {
+    ch.state = 'failed';
+    g.nextTimed = t + TIMED_GAP_MS;
+    emit('goalFailed', { kind: ch.kind });
+  } else if (ch.state !== 'open' && t >= g.nextTimed) {
+    const pool = goalKinds().filter(k => k !== g.list[0].kind && k !== g.list[1].kind);
+    g.list[2] = timed(pickOut(pool.length ? pool : goalKinds(), rand), S.level, t);
+  }
+}
+
+/** Count some of your own work towards the open targets of that kind. */
+export function progress(kind: GoalKind, n = 1, t = now()) {
+  if (hands.staff || !S.goals || S.goals.lvl !== S.level) return;
+  S.goals.list.forEach((g, i) => {
+    if (g.state !== 'open' || g.kind !== kind || (g.until && t >= g.until)) return;
+    g.have = Math.min(g.n, g.have + n);
+    if (g.have < g.n) return;
+    g.state = 'done';
+    if (i === 2) S.goals!.nextTimed = t + TIMED_GAP_MS;
+    earn(g.coins);
+    gainGems(g.gems, 'goal');
+    emit('goalDone', { kind: g.kind, n: g.n, coins: g.coins, xp: g.xp, gems: g.gems, timed: !!g.until });
+    // XP last: it can level you up, which brings the next level's targets.
+    gainXP(g.xp);
+  });
+}
+
+let bound = false;
+export function bindGoals() {
+  if (bound) return;
+  bound = true;
+  on('harvest', ({ n }) => progress('harvest', n));
+  on('orderDone', () => progress('order'));
+  on('animalCollect', () => progress('animal'));
+  on('truckDone', () => progress('truck'));
+  on('fishCaught', ({ byPlayer }) => { if (byPlayer) progress('fish'); });
+  on('machineDone', () => progress('make'));
+  on('treeFelled', ({ n }) => progress('gather', n));
+  on('rockBroken', ({ n }) => progress('gather', n));
+}

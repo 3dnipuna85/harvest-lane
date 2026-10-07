@@ -40,6 +40,9 @@ export interface Contract {
 }
 
 export interface Truck extends Order { arrive: number; end: number }
+export type GoalKind = 'harvest' | 'order' | 'animal' | 'truck' | 'fish' | 'make' | 'gather';
+/** One level target (game/goals.ts). `until` is the countdown end for a timed challenge, 0 for a plain target. */
+export interface Goal { kind: GoalKind; n: number; have: number; coins: number; xp: number; gems: number; until: number; state: 'open' | 'done' | 'failed' }
 export type Tab = 'orders' | 'barn' | 'animals' | 'machines' | 'helpers' | 'farm' | 'shop';
 
 export interface State {
@@ -80,6 +83,8 @@ export interface State {
   boost: number;
   /** Double XP runs until this time (ms), bought with diamonds in the shop. */
   xpBoost: number;
+  /** This level's targets; regenerated whenever the level changes. */
+  goals: { lvl: number; list: Goal[]; nextTimed: number } | null;
   /** Real-money packs already bought, by id (one-time packs can't be bought twice). */
   bought: string[];
   /** The contract lorry waiting for machine goods (game/contracts.ts), and when the next one comes (0 = not scheduled). */
@@ -126,7 +131,7 @@ export function fresh(t = now()): State {
     orders: [], skipUntil: 0, orderSeq: 0,
     animals: freshHerds(t),
     truck: null, nextTruck: t + 25000, nextWants: null, rep: 3,
-    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
+    stats: { earned: 0, harvested: 0, orders: 0, trucks: 0, missed: 0, fish: 0, shop: 0, rotted: 0 }, made: {}, market: {}, land: 0, staff: { manager: 0, keeper: 0, fisher: 0, shopkeeper: 0, lumberjack: 0, miner: 0 }, town: { shop: false, pen: 0 }, boost: 0, xpBoost: 0, bought: [], goals: null, saved: t, gems: 0, tier: 0, gemAt: 0, contract: null, nextContract: 0, woods: [], rocks: [], tips: [],
   };
   // A head start: three wheat plots, two of them close to ripe.
   s.plots[0] = { crop: 'wheat', at: t - 4500 };
@@ -157,6 +162,7 @@ export function migrate(raw: unknown): State {
   out.town = { shop: !!s.town?.shop, pen: Math.max(0, Math.min(3, Math.floor(+s.town?.pen || 0))) };
   out.boost = +s.boost || 0;
   out.xpBoost = +s.xpBoost || 0;
+  out.goals = s.goals && Array.isArray(s.goals.list) && s.goals.list.length === 3 ? s.goals : null;
   out.bought = Array.isArray(s.bought) ? s.bought.filter((v: unknown) => typeof v === 'string') : [];
   out.gemAt = +s.gemAt || 0;
   out.nextContract = +s.nextContract || 0;

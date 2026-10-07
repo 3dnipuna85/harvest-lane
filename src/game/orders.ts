@@ -5,6 +5,7 @@ import { MACHINES, MACHINE_IDS } from '../data/machines';
 import { ANIMALS, ANIMAL_IDS } from '../data/animals';
 import { ORDER_COUNT, SKIP_COOLDOWN_MS } from '../data/limits';
 import { now } from './clock';
+import { emit } from './events';
 import { earn, gainXP, inv, unlockedCrops } from './economy';
 import { S, type Order } from './state';
 
@@ -70,6 +71,7 @@ export function deliver(i: number): Order | null {
   gainXP(o.xp);
   S.orders.splice(i, 1);
   fillOrders();
+  emit('orderDone', { coins: o.coins });
   return o;
 }
 

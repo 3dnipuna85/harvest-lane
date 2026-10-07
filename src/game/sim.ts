@@ -6,6 +6,9 @@ import { now } from './clock';
 import { add, byStaff, inv, mTime, sell, unitPrice } from './economy';
 import { truckReserve } from './town';
 import { animalTick } from './animals';
+import { bindGoals, goalsTick } from './goals';
+
+bindGoals();
 import { emit } from './events';
 import { S } from './state';
 import { truckTick } from './trucks';
@@ -39,6 +42,7 @@ export function sim(dt: number) {
   const t = now();
   truckTick(t);
   contractTick(t);
+  goalsTick(t);
   fishTick(t);
   staffTick(t);
   animalTick(t);

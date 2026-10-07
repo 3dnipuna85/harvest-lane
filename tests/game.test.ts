@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { clock } from '../src/game/clock';
-import { buyMachine, buyPlot, gainXP, harvest, hire, inv, mTime, plant, plotCost, ripe, xpNeed } from '../src/game/economy';
+import { buyMachine, buyPlot, byStaff, gainXP, harvest, hire, inv, mTime, plant, plotCost, ripe, xpNeed } from '../src/game/economy';
 import { on } from '../src/game/events';
 import { canFill, deliver, fillOrders, skip } from '../src/game/orders';
 import { sim } from '../src/game/sim';
@@ -685,5 +685,49 @@ describe('diamond shop', () => {
     sim(0.1);
     expect(S.inv.bread).toBe(1);
     expect(S.xp).toBe(0);
+  });
+});
+
+describe('level targets', () => {
+  it('each level brings two targets and a timed challenge of different kinds', async () => {
+    const g = await import('../src/game/goals');
+    S.level = 5;
+    g.goalsTick(t, () => 0);
+    expect(S.goals!.lvl).toBe(5);
+    expect(S.goals!.list).toHaveLength(3);
+    expect(new Set(S.goals!.list.map(x => x.kind)).size).toBe(3);
+    expect(S.goals!.list[2].until).toBe(t + g.timedMin(5) * 60_000);
+    expect(S.goals!.list[2].gems).toBeGreaterThan(0);
+  });
+
+  it('your own work fills a target and pays; staff work does not', async () => {
+    const g = await import('../src/game/goals');
+    S.level = 5; S.gems = 0;
+    g.goalsTick(t, () => 0);
+    const harvest = S.goals!.list.findIndex(x => x.kind === 'harvest');
+    expect(harvest).toBeGreaterThanOrEqual(0);
+    const goal = S.goals!.list[harvest];
+    byStaff(() => g.progress('harvest', 999, t));
+    expect(goal.have).toBe(0);
+    const coins = S.coins;
+    g.progress('harvest', goal.n, t);
+    expect(goal.state).toBe('done');
+    expect(S.coins).toBe(coins + goal.coins);
+  });
+
+  it('a missed challenge is replaced after a short wait, and a new level brings new targets', async () => {
+    const g = await import('../src/game/goals');
+    S.level = 5;
+    g.goalsTick(t, () => 0);
+    const until = S.goals!.list[2].until;
+    g.goalsTick(until, () => 0);
+    expect(S.goals!.list[2].state).toBe('failed');
+    g.progress(S.goals!.list[2].kind, 999, until + 1);
+    expect(S.goals!.list[2].have).toBe(0);
+    g.goalsTick(until + g.TIMED_GAP_MS, () => 0);
+    expect(S.goals!.list[2].state).toBe('open');
+    S.level = 6;
+    g.goalsTick(until + g.TIMED_GAP_MS + 1, () => 0);
+    expect(S.goals!.lvl).toBe(6);
   });
 });

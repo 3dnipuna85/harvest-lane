@@ -17,6 +17,7 @@ import { initScene, renderScene, setup3D } from './scene/renderer';
 import { takeDirty } from './ui/dirty';
 import { $ } from './ui/format';
 import { bindHud, updateHud } from './ui/hud';
+import { bindGoalsUI } from './ui/goals';
 import { bindPanelInput, panelSignature, renderPanel, renderTabs, updatePanel } from './ui/panel';
 import { renderSeeds } from './ui/seeds';
 import { toast } from './ui/toasts';
@@ -52,6 +53,7 @@ function start() {
   const staffAway = catchUp(S.saved || now());
   fillOrders();
   bindHud();
+  bindGoalsUI();
   bindEstate();
   bindSfx();
   bindTips();

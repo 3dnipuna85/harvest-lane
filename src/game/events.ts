@@ -2,6 +2,7 @@ import type { CropId } from '../data/crops';
 import type { GoodId, ItemId, ProductId } from '../data/goods';
 import type { MachineId } from '../data/machines';
 import type { AnimalId } from '../data/animals';
+import type { GoalKind } from './state';
 
 /** Everything the game logic announces. The scene and UI listen; game/ never touches them directly. */
 export interface GameEvents {
@@ -15,6 +16,9 @@ export interface GameEvents {
   rockBroken: { i: number; n: number };
   gems: { n: number; why: string };
   packBought: { id: string };
+  orderDone: { coins: number };
+  goalDone: { kind: GoalKind; n: number; coins: number; xp: number; gems: number; timed: boolean };
+  goalFailed: { kind: GoalKind };
   farmUpgrade: { tier: number };
   /** XP is full but the farm tier caps the level. */
   levelCapped: { level: number };
