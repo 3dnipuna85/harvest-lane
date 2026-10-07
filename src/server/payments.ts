@@ -12,7 +12,8 @@ export interface KV {
   put(key: string, value: string): Promise<void>;
   list(o: { prefix: string; cursor?: string }): Promise<{ keys: { name: string }[]; list_complete: boolean; cursor?: string }>;
 }
-export interface Env { PURCHASES?: KV; LS_WEBHOOK_SECRET?: string }
+/** LS_ALLOW_TEST=1 accepts Lemon Squeezy test-mode orders (fake cards); leave it unset once the store is live. */
+export interface Env { PURCHASES?: KV; LS_WEBHOOK_SECRET?: string; LS_ALLOW_TEST?: string }
 
 /** One paid order waiting in KV. */
 export interface Order { id: string; pack: string; at: number; claimed?: number; refunded?: number }
@@ -37,7 +38,7 @@ function same(a: string, b: string) {
 export const signBody = hmacHex;
 
 /** GET /api/ls-webhook: says whether the server is set up, without revealing anything. */
-export const webhookHealth = (env: Env) => json({ ok: !!(env.PURCHASES && env.LS_WEBHOOK_SECRET), store: !!env.PURCHASES, secret: !!env.LS_WEBHOOK_SECRET });
+export const webhookHealth = (env: Env) => json({ ok: !!(env.PURCHASES && env.LS_WEBHOOK_SECRET), store: !!env.PURCHASES, secret: !!env.LS_WEBHOOK_SECRET, testOrders: env.LS_ALLOW_TEST === '1' });
 
 /** POST /api/ls-webhook: a signed event from Lemon Squeezy. */
 export async function handleWebhook(req: Request, env: Env) {
@@ -51,6 +52,7 @@ export async function handleWebhook(req: Request, env: Env) {
   const buyer = cd.buyer, pack = PACKS.find(p => p.id === cd.pack);
   // Orders made outside the game (no buyer or pack) are fine, there is just nothing to deliver.
   if (!okBuyer(buyer) || !pack || !id) return json({ ignored: true });
+  if (ev.meta?.test_mode && env.LS_ALLOW_TEST !== '1') return json({ ignored: 'test mode' });
   const k = key(buyer, id), old = await env.PURCHASES.get(k);
   if (name === 'order_created') {
     if (a.status !== 'paid') return json({ ignored: 'status' });

@@ -33,6 +33,14 @@ describe('lemon squeezy payments', () => {
     expect(await claim(env)).toEqual({ orders: [{ id: '777', pack: 'chest' }] });
     expect(await claim(env)).toEqual({ orders: [] });
   });
+  it('takes test-mode orders only while testing is switched on', async () => {
+    const body = event('order_created').replace('"custom_data"', '"test_mode":true,"custom_data"');
+    const env = { PURCHASES: memKV(), LS_WEBHOOK_SECRET: SECRET };
+    await handleWebhook(await post(body), env);
+    expect(env.PURCHASES.m.size).toBe(0);
+    await handleWebhook(await post(body), { ...env, LS_ALLOW_TEST: '1' });
+    expect(env.PURCHASES.m.size).toBe(1);
+  });
   it('ignores underpaid, unpaid and refunded orders', async () => {
     const env = { PURCHASES: memKV(), LS_WEBHOOK_SECRET: SECRET };
     await handleWebhook(await post(event('order_created', { subtotal_usd: 199 })), env);
