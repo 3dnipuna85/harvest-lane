@@ -58,7 +58,7 @@ export async function publicSettings(env: Env) {
   return new Response(JSON.stringify(s), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' } });
 }
 
-async function recentOrders(env: Env, max = 60) {
+async function recentOrders(env: Env, max = 1000) {
   if (!env.PURCHASES) return [];
   const out: (Order & { buyer: string })[] = [];
   let cursor: string | undefined;

@@ -76,12 +76,18 @@ function render(d: AdminData) {
       <label>Test-mode checkout link</label><input type="url" name="testLink" placeholder="https://cgsapiens.lemonsqueezy.com/buy/…" value="${esc(o.testLink || p.testLink || '')}">
     </div>`;
   }).join('');
-  const orders = d.orders.length ? `<div class="wrap"><table><thead><tr><th>When</th><th>Pack</th><th>Paid</th><th>Status</th><th>Order</th></tr></thead><tbody>${d.orders.map(o => `<tr>
+  const orders = d.orders.length ? `<div class="wrap"><table><thead><tr><th>When</th><th>Pack</th><th>Paid</th><th>Status</th><th>Order</th></tr></thead><tbody>${d.orders.slice(0, 60).map(o => `<tr>
       <td>${esc(when(o.at))}</td><td>${esc(PACKS.find(p => p.id === o.pack)?.name ?? o.pack)}</td>
       <td>${o.cents ? '$' + (o.cents / 100).toFixed(2) : '–'}${o.test ? ' <span class="warn">test</span>' : ''}</td>
       <td>${o.refunded ? '<span class="warn">Refunded</span>' : o.claimed ? '<span class="ok">Delivered</span>' : 'Waiting for the player'}</td>
       <td>#${esc(o.id)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No orders yet.</p>';
   const evOn = s.xpEventUntil > t;
+  // Sales totals from the orders the server keeps (refunds and test orders left out).
+  const real = d.orders.filter(o => !o.test && !o.refunded);
+  const sales = `<div class="wrap"><table><tbody>
+      <tr><td>Paid orders</td><td><b>${real.length}</b></td><td>Money in (before fees)</td><td><b>$${(real.reduce((n, o) => n + (o.cents || 0), 0) / 100).toFixed(2)}</b></td></tr>
+      <tr><td>Buyers (browsers)</td><td><b>${new Set(real.map(o => o.buyer)).size}</b></td><td>Refunded / test orders</td><td><b>${d.orders.filter(o => o.refunded).length} / ${d.orders.filter(o => o.test).length}</b></td></tr>
+    </tbody></table></div>`;
   const L = d.lemon, lerr: Record<string, string> = { badkey: 'Lemon Squeezy refused that API key. Copy it again (Settings → API → +) and paste the whole key.', nostore: 'That key has no store yet.', nokey: 'Paste your API key first.' };
   const lemon = `<section><h2>Lemon Squeezy</h2>
     <p>Paste your Lemon Squeezy API key once and press <b>Connect</b>. The panel then fills in every pack's checkout link and price from your products, and sets up the order webhook for you. Make one product per pack and put the pack's word in its name: Starter, Handful, Pouch, Chest or Vault.</p>
@@ -130,7 +136,7 @@ function render(d: AdminData) {
     </select></div>
   </section>
 
-  <section><h2>Recent orders</h2>${orders}</section>
+  <section><h2>Sales</h2>${sales}<h2>Recent orders</h2>${orders}</section>
   <div class="bar"><span id="msg" class="muted">${s.updatedAt ? 'Last saved ' + esc(when(s.updatedAt)) : 'Not saved yet'}</span><button class="primary" id="save">Save changes</button></div>`);
   document.getElementById('save')!.onclick = save;
   document.getElementById('lsgo')!.onclick = connect;
